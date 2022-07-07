@@ -1,12 +1,12 @@
 # fixed time + interarrival=True 
-# public data: UGR16, CIDDS, CAIDA, DC (1 chunk per dataset)
+# DG-emulab : ugr16, caida, dc
 import os
 
 dict_alias_data = {}
 dict_alias_maxFlowLen = {}
 
 for alias in ["ugr16", "cidds", "ton", "caida", "dc", "ca"]:
-    dirs = [x[0] for x in os.walk("../data/public/{}".format(alias))]
+    dirs = [x[0] for x in os.walk("../data/1M_privacy/{}".format(alias))]
     data = []
     for dir in dirs:
         if len(dir.split('/')) == 5 and \
@@ -30,8 +30,8 @@ for alias in ["ugr16", "cidds", "ton", "caida", "dc", "ca"]:
 
 config = {
 	"scheduler_config": {
-        "result_root_folder": "../results/results_test_public",
-        "ignored_keys_for_folder_name": ["extra_checkpoint_freq", "epoch_checkpoint_freq", "max_flow_len", "num_chunks", "epoch", "self_norm", "num_cores", "sn_mode", "scale", "dataset"]
+        "result_root_folder": "../results/results_test2_pcap_dp",
+        "ignored_keys_for_folder_name": ["extra_checkpoint_freq", "epoch_checkpoint_freq", "max_flow_len", "num_chunks", "epoch", "self_norm", "num_cores", "sn_mode", "scale", "dataset", "skip_chunk0_train", "pretrain_dir"]
     },
 	
 	"global_config": {
@@ -84,6 +84,10 @@ config = {
         # SN
         "sn_mode": None,
         "scale": 1.0,
+
+        "sleep_time_check_finish": 60,
+        "sleep_time_launch_cmd": 5,
+        "conda_virtual_env": "NetShare",
     },
 
     "test_config": [
@@ -91,26 +95,37 @@ config = {
             "dataset": dict_alias_data["caida"],
             "max_flow_len": [dict_alias_maxFlowLen["caida"]],
             "num_chunks": [len(dict_alias_data["caida"])],
-            "iteration": [40],
+            "iteration": [5],
             "run": [0],
             "sample_len": [10],
-            "extra_checkpoint_freq": [10],
-            "epoch_checkpoint_freq": [5],
+            "extra_checkpoint_freq": [5],
+            "epoch_checkpoint_freq": [1],
 
+            # pretrain_non_DP: only use for non-DP version
+            #   True: the first chunk will be trained first and every following chunk will be trained on this chunk (fewer total CPU hours)
+            #   False: every chunk will be trained simultaneously 
             "pretrain_non_dp": [False],
+            
+            # pretrain_non_dp_reduce_time: only use for non-DP version
+            # how much less of time you would like to train for starting the second chunk?
             "pretrain_non_dp_reduce_time": [None],
 
-            "pretrain_dp": [False],
+            # pretrain_DP: only use for DP version
+            #   True: every chunk will be trained on public data
+            #   False: naive DP-SGD, no public data involved
+            "pretrain_dp": [True],
 
             # DP
-            "dp_noise_multiplier": [None],
-            "dp_l2_norm_clip": [None],
+            "dp_noise_multiplier": [0.1],
+            "dp_l2_norm_clip": [1.0],
 
             # fine-tuning/pretrain
             # "restore": [False],
-            "pretrain_dir": [None],
+            "pretrain_dir": ["../results/results_test_public/public/caida/split-multiepoch_dep_v2,epochid-0,maxFlowLen-5000,Norm-ZERO_ONE,vecSize-10,df2epochs-fixed_time,interarrival-True,fullIPHdr-True,encodeIP-False/iteration-40,run-0,sample_len-10,pretrain_non_dp-False,pretrain_non_dp_reduce_time-None,pretrain_dp-False,dp_noise_multiplier-None,dp_l2_norm_clip-None/checkpoint/iteration_id-39/"],
 
+            "skip_chunk0_train": [False]
         }
+
     ]
 
 }

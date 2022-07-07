@@ -6,7 +6,7 @@
 USERNAME=yyucheng
 
 # NUMSLAVES = # of nodes - 1
-NUMSLAVES=50
+NUMSLAVES=20
 
 
 # HOSTNAME (general)
@@ -15,7 +15,7 @@ NUMSLAVES=50
 # HOSTNAME=dg-emulab.cloudmigration.emulab.net
 # HOSTNAME=dg-wisc.cloudmigration-pg0.wisc.cloudlab.us
 # HOSTNAME=test-wisc.cloudmigration-pg0.wisc.cloudlab.us
-HOSTNAME=dg-wisc2.cloudmigration-pg0.wisc.cloudlab.us
+HOSTNAME=dg-wisc.cloudmigration-pg0.wisc.cloudlab.us
 # HOSTNAME=dg-clemson.cloudmigration-pg0.clemson.cloudlab.us
 # HOSTNAME=dg-utah.cloudmigration-pg0.utah.cloudlab.us
 

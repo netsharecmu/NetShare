@@ -1,9 +1,9 @@
 #!/bin/bash
 
 USER=yyucheng
-NUMHOSTS=51
+NUMHOSTS=21
 # EXPERIMENTNAME=dg-utah
-EXPERIMENTNAME=dg-wisc2
+EXPERIMENTNAME=dg-wisc
 # EXPERIMENTNAME=dg-emulab
 # EXPERIMENTNAME=dg-clemson
 PROJECTNAME=cloudmigration-pg0

@@ -1,13 +1,12 @@
-# fixed time + interarrival=True
-# DP=False, Pretrain=True
-# DG-wisc: CAIDA, DC, WISC
+# fixed time + interarrival=True 
+# public data: UGR16, CIDDS, CAIDA, DC (1 chunk per dataset)
 import os
 
 dict_alias_data = {}
 dict_alias_maxFlowLen = {}
 
 for alias in ["ugr16", "cidds", "ton", "caida", "dc", "ca"]:
-    dirs = [x[0] for x in os.walk("../data/1M/{}".format(alias))]
+    dirs = [x[0] for x in os.walk("../data/public/{}".format(alias))]
     data = []
     for dir in dirs:
         if len(dir.split('/')) == 5 and \
@@ -31,7 +30,7 @@ for alias in ["ugr16", "cidds", "ton", "caida", "dc", "ca"]:
 
 config = {
 	"scheduler_config": {
-        "result_root_folder": "../results/results_sigcomm2022_fidelity_pretrain",
+        "result_root_folder": "../results/results_test_public",
         "ignored_keys_for_folder_name": ["extra_checkpoint_freq", "epoch_checkpoint_freq", "max_flow_len", "num_chunks", "epoch", "self_norm", "num_cores", "sn_mode", "scale", "dataset", "skip_chunk0_train", "pretrain_dir"]
     },
 	
@@ -89,22 +88,21 @@ config = {
         "sleep_time_check_finish": 60,
         "sleep_time_launch_cmd": 5,
         "conda_virtual_env": "NetShare",
-
     },
 
     "test_config": [
         {
-            "dataset": dict_alias_data["ca"],
-            "max_flow_len": [dict_alias_maxFlowLen["ca"]],
-            "num_chunks": [len(dict_alias_data["ca"])],
-            "iteration": [160000],
+            "dataset": dict_alias_data["caida"],
+            "max_flow_len": [dict_alias_maxFlowLen["caida"]],
+            "num_chunks": [len(dict_alias_data["caida"])],
+            "iteration": [40],
             "run": [0],
-            "sample_len": [5, 10, 25, 50, 100],
-            "extra_checkpoint_freq": [10000],
-            "epoch_checkpoint_freq": [1000],
+            "sample_len": [10],
+            "extra_checkpoint_freq": [10],
+            "epoch_checkpoint_freq": [5],
 
-            "pretrain_non_dp": [True],
-            "pretrain_non_dp_reduce_time": [4.0],
+            "pretrain_non_dp": [False],
+            "pretrain_non_dp_reduce_time": [None],
 
             "pretrain_dp": [False],
 
@@ -116,9 +114,9 @@ config = {
             # "restore": [False],
             "pretrain_dir": [None],
 
-            "skip_chunk0_train": [True]
+             "skip_chunk0_train": [True]
 
-        },
+        }
     ]
 
 }

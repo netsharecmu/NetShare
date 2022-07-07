@@ -1,12 +1,12 @@
 # fixed time + interarrival=True 
-# public data: UGR16, CIDDS, CAIDA, DC (1 chunk per dataset)
+# DG-emulab : ugr16, caida, dc
 import os
 
 dict_alias_data = {}
 dict_alias_maxFlowLen = {}
 
 for alias in ["ugr16", "cidds", "ton", "caida", "dc", "ca"]:
-    dirs = [x[0] for x in os.walk("../data/public/{}".format(alias))]
+    dirs = [x[0] for x in os.walk("../data/1M/{}".format(alias))]
     data = []
     for dir in dirs:
         if len(dir.split('/')) == 5 and \
@@ -30,7 +30,7 @@ for alias in ["ugr16", "cidds", "ton", "caida", "dc", "ca"]:
 
 config = {
 	"scheduler_config": {
-        "result_root_folder": "../results/results_sigcomm2022_public",
+        "result_root_folder": "../results/results_test1_pcap_no_dp",
         "ignored_keys_for_folder_name": ["extra_checkpoint_freq", "epoch_checkpoint_freq", "max_flow_len", "num_chunks", "epoch", "self_norm", "num_cores", "sn_mode", "scale", "dataset", "skip_chunk0_train", "pretrain_dir"]
     },
 	
@@ -85,79 +85,36 @@ config = {
         "sn_mode": None,
         "scale": 1.0,
 
+        # cmd time
         "sleep_time_check_finish": 60,
         "sleep_time_launch_cmd": 5,
         "conda_virtual_env": "NetShare",
+
     },
 
     "test_config": [
         {
-            "dataset": dict_alias_data["ugr16"],
-            "max_flow_len": [dict_alias_maxFlowLen["ugr16"]],
-            "num_chunks": [len(dict_alias_data["ugr16"])],
-            "iteration": [400000],
-            "run": [0],
-            "sample_len": [1],
-            "extra_checkpoint_freq": [25000],
-            "epoch_checkpoint_freq": [1000],
-
-            "pretrain_non_dp": [False],
-            "pretrain_non_dp_reduce_time": [None],
-
-            "pretrain_dp": [False],
-
-            # DP
-            "dp_noise_multiplier": [None],
-            "dp_l2_norm_clip": [None],
-
-            # fine-tuning/pretrain
-            # "restore": [False],
-            "pretrain_dir": [None],
-
-            "skip_chunk0_train": [False],
-
-        },
-
-        {
-            "dataset": dict_alias_data["cidds"],
-            "max_flow_len": [dict_alias_maxFlowLen["cidds"]],
-            "num_chunks": [len(dict_alias_data["cidds"])],
-            "iteration": [400000],
-            "run": [0],
-            "sample_len": [1],
-            "extra_checkpoint_freq": [25000],
-            "epoch_checkpoint_freq": [1000],
-
-            "pretrain_non_dp": [False],
-            "pretrain_non_dp_reduce_time": [None],
-
-            "pretrain_dp": [False],
-
-            # DP
-            "dp_noise_multiplier": [None],
-            "dp_l2_norm_clip": [None],
-
-            # fine-tuning/pretrain
-            # "restore": [False],
-            "pretrain_dir": [None],
-
-            "skip_chunk0_train": [False],
-
-        },
-
-        {
             "dataset": dict_alias_data["caida"],
             "max_flow_len": [dict_alias_maxFlowLen["caida"]],
             "num_chunks": [len(dict_alias_data["caida"])],
-            "iteration": [80000],
+            "iteration": [40],
             "run": [0],
             "sample_len": [10],
-            "extra_checkpoint_freq": [5000],
-            "epoch_checkpoint_freq": [1000],
+            "extra_checkpoint_freq": [10],
+            "epoch_checkpoint_freq": [5],
 
-            "pretrain_non_dp": [False],
-            "pretrain_non_dp_reduce_time": [None],
+            # pretrain_non_DP: only use for non-DP version
+            #   True: the first chunk will be trained first and every following chunk will be trained on this chunk (fewer total CPU hours)
+            #   False: every chunk will be trained simultaneously 
+            "pretrain_non_dp": [True],
+            
+            # pretrain_non_dp_reduce_time: only use for non-DP version
+            # how much less of time you would like to train for starting the second chunk?
+            "pretrain_non_dp_reduce_time": [4.0],
 
+            # pretrain_DP: only use for DP version
+            #   True: every chunk will be trained on public data
+            #   False: naive DP-SGD, no public data involved
             "pretrain_dp": [False],
 
             # DP
@@ -168,36 +125,8 @@ config = {
             # "restore": [False],
             "pretrain_dir": [None],
 
-            "skip_chunk0_train": [False],
-
-        },
-
-        {
-            "dataset": dict_alias_data["dc"],
-            "max_flow_len": [dict_alias_maxFlowLen["dc"]],
-            "num_chunks": [len(dict_alias_data["dc"])],
-            "iteration": [80000],
-            "run": [0],
-            "sample_len": [10],
-            "extra_checkpoint_freq": [5000],
-            "epoch_checkpoint_freq": [1000],
-
-            "pretrain_non_dp": [False],
-            "pretrain_non_dp_reduce_time": [None],
-
-            "pretrain_dp": [False],
-
-            # DP
-            "dp_noise_multiplier": [None],
-            "dp_l2_norm_clip": [None],
-
-            # fine-tuning/pretrain
-            # "restore": [False],
-            "pretrain_dir": [None],
-
-            "skip_chunk0_train": [False],
-
-        },
+            "skip_chunk0_train": [False]
+        }
 
     ]
 
