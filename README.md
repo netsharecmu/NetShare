@@ -1,6 +1,6 @@
 # Practical GAN-based Synthetic IP Header Trace Generation using NetShare
 
-**Update 8/23/2022: We are currently porting full funtionalities from the branch `camera-ready` as a python package. Please checkout `camera-ready` branch if you would like to replicate all the experiments in the [paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)**.
+**Update 8/23/2022: We are currently porting full funtionalities from the branch [`camera-ready`](https://github.com/netsharecmu/NetShare/tree/camera-ready) as a python package. Please checkout [`camera-ready`](https://github.com/netsharecmu/NetShare/tree/camera-ready) branch if you would like to replicate all the experiments in the [paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)**.
 
 [[paper (SIGCOMM 2022)](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)][[web service demo](https://drive.google.com/file/d/1vPuneEb14A2w7fKyCJ41NAHzsvpLQP5H/view)]
 
