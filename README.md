@@ -70,11 +70,10 @@ if __name__ == '__main__':
     ray.shutdown()
 ```
 
-The corresponding configuration file:
+The corresponding [configuration file](examples/pcap/config_example_pcap_nodp.json):
 ```json
 {
     "global_config": {
-        "overwrite": false,
         "original_data_file": "../../traces/1M/caida/raw.pcap",
         "dataset_type": "pcap",
         "n_chunks": 10,
