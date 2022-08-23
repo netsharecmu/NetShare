@@ -13,7 +13,9 @@
 We recommend installing NetShare in a virtual environment (e.g., Anaconda3). We test with virtual environment with Python==3.6.
 
 ```
-pip3 install NetShare
+git clone https://github.com/netsharecmu/NetShare.git
+cd NetShare/
+pip3 install -e .
 ```
 
 ## Step 2: How to start Ray? (Optional but **strongly** recommended)
@@ -26,50 +28,86 @@ ray start --head --port=6379 --include-dashboard=True --dashboard-host=0.0.0.0 -
 
 Please go to [http://localhost:8265](http://localhost:8265) to view the Ray dashboard.
 
-<p align="center">
+<!-- <p align="center">
   <img width="1000" src="doc/figs/ray_dashboard_example.png">
 </p>
 <p align="center">
   Figure 1: Example of Ray Dashboard
-</p>
+</p> -->
 
 ## Multi-machines (**strongly** recommended for faster training/generation)
 We provide a utility script and [README](util/README.md) under `util/` for setting up a Ray cluster. As a reference, we are using [Cloudlab](https://www.cloudlab.us/) which is referred as ``custom cluster'' in the Ray documentation. If you are using a different cluster (e.g., AWS, GCP, Azure), please refer to the [Ray doc](https://docs.ray.io/en/releases-2.0.0rc0/cluster/cloud.html#cluster-cloud) for full reference.
 
-# Dataset preparation
-## Description
-We use six public datasets for reproducibility. To be more specific,
+# Datasets
+***We are adding more datasets! Feel free to add your own and contribute!***
 
-Three NetFlow datasets:
+Our paper uses **six** public datasets for reproducibility. Please to refer to the [README](traces/1M/README.md) for detailed descriptions of the datasets.
 
-1. [UGR16](https://nesg.ugr.es/nesg-ugr16/) dataset consists of traffic (including attacks) from NetFlow v9 collectors in a Spanish ISP network. We used data from the third week of March 2016. 
-2. [CIDDS](https://www.hs-coburg.de/forschung/forschungsprojekte-oeffentlich/informationstechnologie/cidds-coburg-intrusion-detection-data-sets.html) dataset emulates a small business environment with several clients and servers (e.g., email, web) with injected malicious traffic was executed. Each NetFlow entry recorded with the label (benign/attack) and attack type (DoS, brute force, port scan). 
-3. [TON](https://research.unsw.edu.au/projects/toniot-datasets) dataset represents telemetry IoT sensors. We use a sub-dataset (“Train_Test_datasets”) for evaluating cybersecurity-related ML algorithms; of its 461,013 records, 300,000 (65.07%) are normal, and the rest (34.93%) combine nine evenly-distributed attack types (e.g., backdoor, DDoS, injection, MITM).
+Please download the six datasets as tar.gz file [here]() and unzip to traces/
 
-Three PCAP datasets:
+# Example usage
+***We are adding more examples of usage (PCAP, NetFlow, w/ and w/o DP). Please stay tuned!***
 
-1. [CAIDA](https://www.caida.org/catalog/datasets/passive_dataset/) contains anonymized traces from high-speed monitors on a commercial backbone link. Our subset is from the New York collector in March 2018. (**Require an CAIDA account to download the data**)
-2. [DC](https://pages.cs.wisc.edu/~tbenson/IMC10_Data.html) dataset is a packet capture from the "UNI1" data center studied in the [IMC 2010 paper](https://pages.cs.wisc.edu/~tbenson/papers/imc192.pdf).
-3. [CA](https://www.netresec.com/?page=MACCDC) dataset is traces from The U.S. National CyberWatch Mid-Atlantic Collegiate Cyber Defense Competitions from March 2012.
+Here is a minimal working example to generate synthetic PCAP files without differential privacy. Please refer to [`examples`](examples/) for scripts and config files.
 
-# Tests
+[Driver code](examples/pcap/pcap_nodp.py)
+```Python
+import netshare.ray as ray
+from netshare import Generator
+from config_io import Config
 
-## Ray
+if __name__ == '__main__':
+    # Change to False if you would not like to use Ray
+    ray.config.enabled = True
+    ray.init(address="auto")
 
-```
-python -m tests.ray.test_ray_disabled
-```
+    # configuration file
+    generator = Generator(config="config_example_pcap_nodp.json")
 
-```
-python -m tests.ray.test_ray_enabled
-```
+    # where you would like to store your intermediate files and results
+    generator.train_and_generate(work_folder='results/test')
 
-## Framework
-
-```
-python -m tests.framework.test_ray_disabled
+    ray.shutdown()
 ```
 
+The corresponding configuration file:
+```json
+{
+    "global_config": {
+        "overwrite": false,
+        "original_data_file": "../../traces/1M/caida/raw.pcap",
+        "dataset_type": "pcap",
+        "n_chunks": 10,
+        "dp": false
+    },
+    "default": "pcap.json"
+}
 ```
-python -m tests.framework.test_ray_enabled
+
+Notice that we provide a bunch of [default configurations](netshare/configs/default) for different datasets/training mechanisms. In most cases you only need to write a few lines of configs.
+
+
+# References
+Please cite our paper approriately if you find NetShare is useful!
+
+```bibtex
+@inproceedings{netshare-sigcomm2022,
+  author = {Yin, Yucheng and Lin, Zinan and Jin, Minhao and Fanti, Giulia and Sekar, Vyas},
+  title = {Practical GAN-Based Synthetic IP Header Trace Generation Using NetShare},
+  year = {2022},
+  isbn = {9781450394208},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  url = {https://doi.org/10.1145/3544216.3544251},
+  doi = {10.1145/3544216.3544251},
+  abstract = {We explore the feasibility of using Generative Adversarial Networks (GANs) to automatically learn generative models to generate synthetic packet- and flow header traces for networking tasks (e.g., telemetry, anomaly detection, provisioning). We identify key fidelity, scalability, and privacy challenges and tradeoffs in existing GAN-based approaches. By synthesizing domain-specific insights with recent advances in machine learning and privacy, we identify design choices to tackle these challenges. Building on these insights, we develop an end-to-end framework, NetShare. We evaluate NetShare on six diverse packet header traces and find that: (1) across all distributional metrics and traces, it achieves 46% more accuracy than baselines and (2) it meets users' requirements of downstream tasks in evaluating accuracy and rank ordering of candidate approaches.},
+  booktitle = {Proceedings of the ACM SIGCOMM 2022 Conference},
+  pages = {458–472},
+  numpages = {15},
+  keywords = {privacy, synthetic data generation, network packets, network flows, generative adversarial networks},
+  location = {Amsterdam, Netherlands},
+  series = {SIGCOMM '22}
+}
 ```
+
+

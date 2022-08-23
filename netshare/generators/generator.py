@@ -1,15 +1,23 @@
 import os
+import copy
 import warnings
 
 import netshare.pre_post_processors as pre_post_processors
 import netshare.model_managers as model_managers
 import netshare.models as models
 
+from config_io import Config
+from ..configs import default as default_configs
+
 
 class Generator(object):
     def __init__(self, config):
-        self._config = config
-        global_config = config["global_config"]
+        self._config = Config.load_from_file(
+            config, 
+            default_search_paths=default_configs.__path__)
+        config = copy.deepcopy(self._config)
+
+        global_config = self._config["global_config"]
 
         if 'original_data_folder' in global_config and \
                 'file_extension' not in global_config:
@@ -141,16 +149,16 @@ class Generator(object):
                 log_folder=self._get_generated_data_log_folder(work_folder)):
             print('Failed to generate synthetic data')
             return False
-        # if not self._post_process(
-        #         input_folder=self._get_generated_data_folder(work_folder),
-        #         output_folder=self._get_post_processed_data_folder(
-        #             work_folder),
-        #         log_folder=self._get_post_processed_data_log_folder(
-        #             work_folder)):
-        #     print('Failed to post-process data')
-        #     return False
-        # print(f'Generated data is at '
-        #       f'{self._get_post_processed_data_log_folder(work_folder)}')
+        if not self._post_process(
+                input_folder=self._get_generated_data_folder(work_folder),
+                output_folder=self._get_post_processed_data_folder(
+                    work_folder),
+                log_folder=self._get_post_processed_data_log_folder(
+                    work_folder)):
+            print('Failed to post-process data')
+            return False
+        print(f'Generated data is at '
+              f'{self._get_post_processed_data_log_folder(work_folder)}')
         return True
 
     def train(self, work_folder):
@@ -162,13 +170,13 @@ class Generator(object):
                     work_folder)):
             print('Failed to pre-process data')
             return False
-        # if not self._train(
-        #         input_train_data_folder=self._get_pre_processed_data_folder(
-        #             work_folder),
-        #         output_model_folder=self._get_model_folder(work_folder),
-        #         log_folder=self._get_model_log_folder(work_folder)):
-        #     print('Failed to train the model')
-        #     return False
+        if not self._train(
+                input_train_data_folder=self._get_pre_processed_data_folder(
+                    work_folder),
+                output_model_folder=self._get_model_folder(work_folder),
+                log_folder=self._get_model_log_folder(work_folder)):
+            print('Failed to train the model')
+            return False
         return True
 
     def train_and_generate(self, work_folder):

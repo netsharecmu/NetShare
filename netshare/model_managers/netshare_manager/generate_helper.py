@@ -448,3 +448,10 @@ def _merge_syn_df(
 
         best_syndf = best_syndf.sort_values(time_col_name)
         best_syndf.to_csv(best_syndf_filename, index=False)
+
+        if configs[0]["dataset_type"] == "pcap":
+            best_synpcap_filename = os.path.join(
+                best_syndf_folder,
+                "syn.pcap"
+            )
+            csv2pcap_single(best_syndf, best_synpcap_filename)

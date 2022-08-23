@@ -10,6 +10,7 @@ import json
 import pickle
 import ctypes
 import pkgutil
+import shutil
 
 import pandas as pd
 import numpy as np
@@ -23,7 +24,7 @@ from .word2vec_embedding import word2vec_train
 from .preprocess_helper import countList2cdf, continuous_list_flag, plot_cdf
 from .preprocess_helper import df2chunks, split_per_chunk
 from ..pre_post_processor import PrePostProcessor
-from netshare.utils import Tee, Output
+from netshare.utils import Tee, Output, output
 from netshare.utils import Normalization
 from netshare.utils import ContinuousField, DiscreteField, BitField
 from netshare.utils import exec_cmd
@@ -424,5 +425,10 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
     def _post_process(self, input_folder, output_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
+
+        shutil.copyfile(
+            os.path.join(input_folder, "best_syn_dfs", "syn.pcap"),
+            os.path.join(output_folder, "syn.pcap")
+        )
 
         return True

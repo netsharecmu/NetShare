@@ -5,6 +5,7 @@ __pycache__/
 placeholder
 data
 
+tests/
 traces/
 results/
 rsync*.sh
