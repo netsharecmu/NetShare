@@ -1,11 +1,15 @@
+__pycache__/
+*.py[cod]
 .DS_Store
-app/
-data*/
-archive
-.vscode
+.vscode/
+placeholder
+data
+
+traces/
+results/
 rsync*.sh
-results*/
-eval/
+*.pkl
+*.ini
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
