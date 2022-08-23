@@ -43,7 +43,7 @@ We provide a utility script and [README](util/README.md) under `util/` for setti
 
 Our paper uses **six** public datasets for reproducibility. Please to refer to the [README](traces/1M/README.md) for detailed descriptions of the datasets.
 
-Please download the six datasets as tar.gz file [here]() and unzip to traces/
+Please download the six datasets as tar.gz file [here]() and unzip to `traces`.
 
 # Example usage
 ***We are adding more examples of usage (PCAP, NetFlow, w/ and w/o DP). Please stay tuned!***
