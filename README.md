@@ -1,6 +1,6 @@
 # Practical GAN-based Synthetic IP Header Trace Generation using NetShare
 
-**Update 8/23/2022: We are currently porting full funtionalities from the branch ``camera-ready'' as a python package. Please checkout ``camera-ready'' branch if you would like to replicate all the experiments in the [paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)**
+**Update 8/23/2022: We are currently porting full funtionalities from the branch `camera-ready` as a python package. Please checkout `camera-ready` branch if you would like to replicate all the experiments in the [paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)**
 
 [[paper (SIGCOMM 2022)](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)][[web service demo](https://drive.google.com/file/d/1vPuneEb14A2w7fKyCJ41NAHzsvpLQP5H/view)]
 
@@ -10,7 +10,7 @@
 
 # Installation/Setup
 ## Step 1: Install NetShare Python package (Required)
-We recommend installing NetShare in a virtual environment (e.g., Anaconda3). Our virtual environment is tested with Python 3.6.
+We recommend installing NetShare in a virtual environment (e.g., Anaconda3). We test with virtual environment with Python==3.6.
 
 ```
 pip3 install NetShare
