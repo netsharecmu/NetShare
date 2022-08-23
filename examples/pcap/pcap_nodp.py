@@ -7,6 +7,6 @@ if __name__ == '__main__':
     ray.init(address="auto")
 
     generator = Generator(config="config_example_pcap_nodp.json")
-    generator.train_and_generate(work_folder='results/test')
+    generator.train_and_generate(work_folder='../../results/test')
 
     ray.shutdown()
