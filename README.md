@@ -109,4 +109,10 @@ Please cite our paper approriately if you find NetShare is useful!
 }
 ```
 
+Part of the source code is adapated from the following open-source projects:
 
+- [DoppelGANger](https://github.com/fjxmlzn/DoppelGANger)
+- [GPUTaskScheduler](https://github.com/fjxmlzn/GPUTaskScheduler)
+- [BSN](https://github.com/fjxmlzn/BSN)
+- [Ray](https://github.com/ray-project/ray)
+- [config_io](https://github.com/fjxmlzn/config_io)
