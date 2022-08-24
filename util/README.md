@@ -67,8 +67,3 @@ Python version
 Check if dashboard has been launched successfully
 
 dashboard: http://<host_public_ip>:8265/
-
-# Simple Test
-``` bash
-(NetShare) node1:/nfs/NetShare-dev$ python3 test.py
-```
