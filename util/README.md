@@ -11,7 +11,7 @@ When launching ray cluster on your own laptop or in the cluster, please make sur
 
 ```bash
 # Change the host and workers ip in example.yaml
-(NetShare) node1:/nfs/NetShare-dev$ setenv LC_ALL C.UTF-8
+(NetShare) node1:/nfs/NetShare-dev$ export LC_ALL=C.UTF-8
 (NetShare) node1:/nfs/NetShare-dev$ ray up ray/example.yaml
 ```
 
@@ -21,7 +21,7 @@ Solution is:
 
 ```bash
 # Change the host and workers ip in example.yaml
-(NetShare) node1:/nfs/NetShare-dev$ setenv LC_ALL C.UTF-8
+(NetShare) node1:/nfs/NetShare-dev$ export LC_ALL=C.UTF-8
 (NetShare) node1:/nfs/NetShare-dev$ ray start --head
 (NetShare) node1:/nfs/NetShare-dev$ ray stop
 (NetShare) node1:/nfs/NetShare-dev$ ray up ray/example.yaml

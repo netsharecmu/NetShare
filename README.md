@@ -76,7 +76,7 @@ The corresponding [configuration file](examples/pcap/config_example_pcap_nodp.js
 ```json
 {
     "global_config": {
-        "original_data_file": "../../traces/1M/caida/raw.pcap",
+        "original_data_file": "../traces/1M/caida/raw.pcap",
         "dataset_type": "pcap",
         "n_chunks": 10,
         "dp": false
