@@ -2,10 +2,11 @@
 cd $HOME
 
 VIRTUAL_ENV=$1
-CONDA_DIR=$HOME/anaconda3/bin/conda
+CONDA_EXEC=$HOME/anaconda3/bin/conda
+NETSHARE_LOCAL_REPO=/nfs/NetShare
 
 # Anaconda3
-if [ -d $CONDA_DIR ] 
+if [ -f $CONDA_EXEC ] 
 then
     echo "Anaconda3 installed."
 else
@@ -27,10 +28,23 @@ fi
 source $HOME/anaconda3/etc/profile.d/conda.sh
 conda activate $VIRTUAL_ENV
 
-pip3 install tensorflow==1.15
-# 0.5.1 won't work for tf==1.15 as tf-estimator is not compatible
-# 0.4.0 won't work since it does not have compute API compute_dp_sgd_privacy
-# 0.5.0 is compatible with tf==1.15 and will not cause conflict
-pip3 install tensorflow-privacy==0.5.0
+# pip3 install tensorflow==1.15
+# # 0.5.1 won't work for tf==1.15 as tf-estimator is not compatible
+# # 0.4.0 won't work since it does not have compute API compute_dp_sgd_privacy
+# # 0.5.0 is compatible with tf==1.15 and will not cause conflict
+# pip3 install tensorflow-privacy==0.5.0
 
-pip3 install tqdm matplotlib pandas sklearn more-itertools gensim==3.8.3 torch torchvision networkx notebook ipyplot jupyterlab statsmodels gdown annoy pyshark scapy ray "ray[default]" multiprocess addict config_io
+# pip3 install tqdm matplotlib pandas sklearn more-itertools gensim==3.8.3 torch torchvision networkx notebook ipyplot jupyterlab statsmodels gdown annoy pyshark scapy ray "ray[default]" multiprocess addict config_io
+
+
+# If already cloned
+if ! [ -d $NETSHARE_LOCAL_REPO]
+then
+    echo "git clone from remote repo..."
+    git clone https://github.com/netsharecmu/NetShare.git $NETSHARE_LOCAL_REPO
+else
+    echo "$NETSHARE_LOCAL_REPO exists! Skip git clone..."
+fi
+
+cd $NETSHARE_LOCAL_REPO
+pip3 install -e .
