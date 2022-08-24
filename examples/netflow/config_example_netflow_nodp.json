@@ -1,7 +1,7 @@
 {
     "global_config": {
-        "original_data_file": "../../traces/1M/caida/raw.pcap",
-        "dataset_type": "pcap",
+        "original_data_file": "../../traces/1M/ugr16/raw.csv",
+        "dataset_type": "netflow",
         "n_chunks": 10,
         "dp": false
     },
@@ -13,5 +13,5 @@
             "epoch_checkpoint_freq": 5
         }
     },
-    "default": "pcap.json"
+    "default": "netflow.json"
 }

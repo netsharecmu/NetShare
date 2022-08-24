@@ -50,7 +50,7 @@ Please download the six datasets as tar.gz file [here](https://drive.google.com/
 
 Here is a minimal working example to generate synthetic PCAP files without differential privacy. Please refer to [`examples`](examples/) for scripts and config files.
 
-[Driver code](examples/pcap/pcap_nodp.py)
+[Driver code](examples/driver.py)
 ```Python
 import netshare.ray as ray
 from netshare import Generator
@@ -64,7 +64,9 @@ if __name__ == '__main__':
     # configuration file
     generator = Generator(config="config_example_pcap_nodp.json")
 
-    # where you would like to store your intermediate files and results
+    # Please set the `worker_folder` as *absolute path*
+    # if you are using Ray with multi-machine setup
+    # since Ray has bugs when dealing with relative paths.
     generator.train_and_generate(work_folder='results/test')
 
     ray.shutdown()
@@ -85,9 +87,26 @@ The corresponding [configuration file](examples/pcap/config_example_pcap_nodp.js
 
 Notice that we provide a bunch of [default configurations](netshare/configs/default) for different datasets/training mechanisms. In most cases you only need to write a few lines of configs.
 
+# Codebase structure
+```
+├── doc                       # (tentative) NetShare tutorials and APIs
+├── examples                  # Examples of using NetShare on different datasets
+├── netshare                  # NetShare source code
+│   ├── configs               # Default configurations  
+│   ├── generators            # Generator class
+│   ├── model_managers        # Core of NetShare service (i.e, train/generate)
+│   ├── models                # Timeseries GAN models (e.g., DoppelGANger)
+│   ├── pre_post_processors   # Pre- and post-process data
+│   ├── ray                   # Ray functions overloading
+│   └── utils                 # Utility functions/common class definitions
+├── traces                    # Traces/datasets
+└── util                      # MISC/setup scripts
+    └── ray                   # Ray setup script
+```
+
 
 # References
-Please cite our paper approriately if you find NetShare is useful!
+Please cite our paper/codebase approriately if you find NetShare is useful.
 
 ```bibtex
 @inproceedings{netshare-sigcomm2022,

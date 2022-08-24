@@ -20,21 +20,21 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "ba
 scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/.ssh/netshare-package $NODE_SYSTEM:~/.ssh/id_rsa &
 pids+=($!)
 
-# setup workers
-# COUNTER=1
-# while [  $COUNTER -lt $NUMHOSTS ]; do
-#     NODE="node${COUNTER}" 
-#     NODE_SYSTEM="${USER}@${NODE}.${EXPERIMENTNAME}.${PROJECTNAME}.${LOCATION}.${SITE}"
-#     # NODE_SYSTEM="${USER}@${NODE}.${EXPERIMENTNAME}.cloudmigration.emulab.net"
-#     echo $NODE_SYSTEM
+setup workers
+COUNTER=1
+while [  $COUNTER -lt $NUMHOSTS ]; do
+    NODE="node${COUNTER}" 
+    NODE_SYSTEM="${USER}@${NODE}.${EXPERIMENTNAME}.${PROJECTNAME}.${LOCATION}.${SITE}"
+    # NODE_SYSTEM="${USER}@${NODE}.${EXPERIMENTNAME}.cloudmigration.emulab.net"
+    echo $NODE_SYSTEM
 
-#     ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "sudo -n env RESIZEROOT=192 bash -s" < grow-rootfs.sh
-#     ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "bash -s" < setup-cpu.sh "NetShare" & 
-#     scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/.ssh/netshare-package $NODE_SYSTEM:~/.ssh/id_rsa &
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "sudo -n env RESIZEROOT=192 bash -s" < grow-rootfs.sh
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "bash -s" < setup-cpu.sh "NetShare" & 
+    scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/.ssh/netshare-package $NODE_SYSTEM:~/.ssh/id_rsa &
 
-#     pids+=($!)
-#     let COUNTER=COUNTER+1
-# done
+    pids+=($!)
+    let COUNTER=COUNTER+1
+done
 
 for pid in "${pids[@]}"; do
     wait "$pid"

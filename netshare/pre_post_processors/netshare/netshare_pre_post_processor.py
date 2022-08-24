@@ -66,6 +66,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
             df = pd.read_csv(csv_file)
         elif self._config["dataset_type"] == "netflow":
             df = pd.read_csv(input_folder)
+            df.to_csv(os.path.join(output_folder, "raw.csv"), index=False)
         else:
             raise ValueError("Only PCAP and NetFlow are currently supported!")
 

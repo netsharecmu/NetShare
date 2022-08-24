@@ -1,8 +1,8 @@
 {
     "global_config": {
         "overwrite": false,
-        "original_data_file": "traces/1M/caida/raw.pcap",
-        "dataset_type": "pcap",
+        "original_data_file": "traces/1M/ugr16/raw.csv",
+        "dataset_type": "netflow",
         "n_chunks": 10,
         "dp": false,
         "word2vec_vecSize": 10,
@@ -42,7 +42,7 @@
                 100
             ],
             "sample_len_expand": true,
-            "iteration": 80000,
+            "iteration": 200000,
             "vis_freq": 100000,
             "vis_num_sample": 5,
             "d_rounds": 5,
@@ -79,7 +79,7 @@
             "num_cores": null,
             "sn_mode": null,
             "scale": 1.0,
-            "extra_checkpoint_freq": 4000,
+            "extra_checkpoint_freq": 20000,
             "epoch_checkpoint_freq": 1000,
             "dp_noise_multiplier": null,
             "dp_l2_norm_clip": null
