@@ -1,13 +1,13 @@
 #!/bin/bash
 
-USER=yyucheng
-NUMHOSTS=11
-EXPERIMENTNAME=netshare-package
-PROJECTNAME=cloudmigration-pg0
+USER=minhao
+NUMHOSTS=16
+EXPERIMENTNAME=netshare-ray-emu
+PROJECTNAME=cloudmigration
 # LOCATION=utah
-LOCATION=wisc
+LOCATION=emulab
 # LOCATION=clemson
-SITE=cloudlab.us
+SITE=net
 
 pids=()
 
@@ -16,8 +16,9 @@ NODE_SYSTEM="${USER}@nfs.${EXPERIMENTNAME}.${PROJECTNAME}.${LOCATION}.${SITE}"
 # NODE_SYSTEM="${USER}@nfs.${EXPERIMENTNAME}.cloudmigration.emulab.net"
 echo $NODE_SYSTEM
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "sudo -n env RESIZEROOT=192 bash -s" < grow-rootfs.sh
-ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "bash -s" < setup-cpu.sh "NetShare" & 
-scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/.ssh/netshare-package $NODE_SYSTEM:~/.ssh/id_rsa &
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "bash -s" < setup-cpu.sh "NetShare" $USER
+scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/.ssh/netshare-ray-emu/id_rsa $NODE_SYSTEM:~/.ssh/ &
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "chmod 600 ~/.ssh/id_rsa" & 
 pids+=($!)
 
 setup workers
@@ -29,8 +30,9 @@ while [  $COUNTER -lt $NUMHOSTS ]; do
     echo $NODE_SYSTEM
 
     ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "sudo -n env RESIZEROOT=192 bash -s" < grow-rootfs.sh
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "bash -s" < setup-cpu.sh "NetShare" & 
-    scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/.ssh/netshare-package $NODE_SYSTEM:~/.ssh/id_rsa &
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "bash -s" < setup-cpu.sh "NetShare" $USER
+    scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/.ssh/netshare-ray-emu/id_rsa $NODE_SYSTEM:~/.ssh/ &
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $NODE_SYSTEM "chmod 600 ~/.ssh/id_rsa" & 
 
     pids+=($!)
     let COUNTER=COUNTER+1

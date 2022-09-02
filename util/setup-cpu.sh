@@ -2,6 +2,7 @@
 cd $HOME
 
 VIRTUAL_ENV=$1
+USERNAME=$2
 CONDA_EXEC=$HOME/anaconda3/bin/conda
 NETSHARE_LOCAL_REPO=/nfs/NetShare
 
@@ -37,5 +38,8 @@ else
     echo "$NETSHARE_LOCAL_REPO exists! Skip git clone..."
 fi
 
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+sudo chown -R $USERNAME:users /nfs
 cd $NETSHARE_LOCAL_REPO
 pip3 install -e .
