@@ -1,17 +1,9 @@
 {
     "global_config": {
-        "original_data_file": "../traces/1M/ugr16/raw.csv",
+        "original_data_file": "../traces/ugr16/raw.csv",
         "dataset_type": "netflow",
         "n_chunks": 10,
         "dp": false
-    },
-    "model": {
-        "class": "DoppelGANgerTFModel",
-        "config": {
-            "iteration": 40,
-            "extra_checkpoint_freq": 10,
-            "epoch_checkpoint_freq": 5
-        }
     },
     "default": "netflow.json"
 }

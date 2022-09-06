@@ -4,14 +4,5 @@
         "dataset_type": "pcap",
         "n_chunks": 10,
         "dp": false
-    },
-    "model": {
-        "class": "DoppelGANgerTFModel",
-        "config": {
-            "iteration": 40,
-            "extra_checkpoint_freq": 10,
-            "epoch_checkpoint_freq": 5
-        }
-    },
-    "default": "pcap.json"
+    }
 }

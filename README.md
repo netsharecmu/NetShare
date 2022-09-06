@@ -8,11 +8,40 @@
 
 **Abstract:** We explore the feasibility of using Generative Adversarial Networks (GANs) to automatically learn generative models to generate synthetic packet- and flow header traces for network-ing tasks (e.g., telemetry, anomaly detection, provisioning). We identify key fidelity, scalability, and privacy challenges and tradeoffs in existing GAN-based approaches. By synthesizing domain-specific insights with recent advances in machine learning and privacy, we identify design choices to tackle these challenges. Building on these insights, we develop an end-to-end framework, NetShare. We evaluate NetShare on six diverse packet header traces and find that: (1) across distributional metrics and traces, it achieves 46% more accuracy than baselines, and (2) it meets users’ requirements of downstream tasks in evaluating accuracy and rank ordering of candidate approaches.
 
-# Installation/Setup
+# Overview
+<p align="center">
+  <img width="500" src="doc/figs/overview.png">
+</p>
+<p align="center">
+  Figure 1: Overview of the NetShare workflow
+</p>
+
+As shown in Figure 1, we envision a common workflow for NetShare: real data (e.g., PCAPs) stream in as different epochs, where each Di could represent the pcap generated on Day i or Hour i. The entire workflow splits into two phases:
+
+- **Offline stage (*optional*):** a few epochs of *real data* is merged into one giant trace and is fed into the hyperparameter tuning process along with the fidelity specification. The fidelity spec specifies users' fidelity requirements among different hyperparameter settings and training snapshots. A typical fidelity spec could be choosing the parameters/snapshot with lowest Jensen-Shannon divergence or choosing th e setup with best performance of a particular downstream task (e.g., anomaly detection).
+
+- **Online stage:** After the *optional* hyperparameter selection process, new streaming *real data* (e.g., Di+1, ...) is fed into the model training and generation part with the hyperparameter chosen during the offline stage. Note that if you find the *synthetic data* (Di+1') and *real data* (Di+1), you may repeat the hyperparameter tuning process in the offline stage.
+
+**Note that in our [SIGCOMM paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251) version, we only include the offline stage where hyperparameter tuning is compulsory. This overview is a more complete workflow we envision in the real-world deployment.**
+
+# Datasets
+***We are adding more datasets! Feel free to add your own and contribute!***
+
+Our paper uses **six** public datasets for reproducibility. Please download the six datasets [here](https://drive.google.com/file/d/19neMv1iXjnMn5IdpPoupdyf4Yy4GvL7R/view?usp=sharing) and put them under to `traces/`.
+
+You may also refer to the [README](traces/1M/README.md) for detailed descriptions of the datasets.
+
+
+# Getting started
 ## Step 1: Install NetShare Python package (Required)
 We recommend installing NetShare in a virtual environment (e.g., Anaconda3). We test with virtual environment with Python==3.6.
 
-```
+```Bash
+# Assume Anaconda is installed
+# create virtual environment
+conda create --name NetShare python=3.6
+
+# Install NetShare package
 git clone https://github.com/netsharecmu/NetShare.git
 cd NetShare/
 pip3 install -e .
@@ -21,7 +50,7 @@ pip3 install -e .
 ## Step 2: How to start Ray? (Optional but **strongly** recommended)
 Ray is a unified framework for scaling AI and Python applications. Our framework utilizes Ray to increase parallelism and distribute workloads among the cluster automatically and efficiently.
 
-## Laptop/Single-machine (only recommended for demo/dev/fun)
+### Laptop/Single-machine (only recommended for demo/dev/fun)
 ```
 ray start --head --port=6379 --include-dashboard=True --dashboard-host=0.0.0.0 --dashboard-port=8265
 ```
@@ -35,26 +64,24 @@ Please go to [http://localhost:8265](http://localhost:8265) to view the Ray dash
   Figure 1: Example of Ray Dashboard
 </p> -->
 
-## Multi-machines (**strongly** recommended for faster training/generation)
+### Multi-machines (**strongly** recommended for faster training/generation)
 We provide a utility script and [README](util/README.md) under `util/` for setting up a Ray cluster. As a reference, we are using [Cloudlab](https://www.cloudlab.us/) which is referred as ``custom cluster'' in the Ray documentation. If you are using a different cluster (e.g., AWS, GCP, Azure), please refer to the [Ray doc](https://docs.ray.io/en/releases-2.0.0rc0/cluster/cloud.html#cluster-cloud) for full reference.
 
-# Datasets
-***We are adding more datasets! Feel free to add your own and contribute!***
+## Step 3: Quick visualization (optional)
+If you would like to have a quick idea of how the synthetic data looks like, you may preload some examples of our generated data, simply with one command:
 
-Our paper uses **six** public datasets for reproducibility. Please to refer to the [README](traces/1M/README.md) for detailed descriptions of the datasets.
+*Placeholder: we will add this part soon.*
 
-Please download the six datasets as tar.gz file [here](https://drive.google.com/file/d/19neMv1iXjnMn5IdpPoupdyf4Yy4GvL7R/view?usp=sharing) and unzip to `traces/1M`.
 
 # Example usage
 ***We are adding more examples of usage (PCAP, NetFlow, w/ and w/o DP). Please stay tuned!***
 
-Here is a minimal working example to generate synthetic PCAP files without differential privacy. Please refer to [`examples`](examples/) for scripts and config files.
+Here is a minimal working example to generate synthetic PCAP files without differential privacy. Please refer to [`examples`](examples/) for more scripts and config files.
 
 [Driver code](examples/driver.py)
 ```Python
 import netshare.ray as ray
 from netshare import Generator
-from config_io import Config
 
 if __name__ == '__main__':
     # Change to False if you would not like to use Ray
@@ -62,8 +89,9 @@ if __name__ == '__main__':
     ray.init(address="auto")
 
     # configuration file
-    generator = Generator(config="config_example_pcap_nodp.json")
+    generator = Generator(config="pcap/config_example_pcap_nodp.json")
 
+    # `work_folder` should not exist o/w an overwrite error will be thrown.
     # Please set the `worker_folder` as *absolute path*
     # if you are using Ray with multi-machine setup
     # since Ray has bugs when dealing with relative paths.
@@ -86,6 +114,31 @@ The corresponding [configuration file](examples/pcap/config_example_pcap_nodp.js
 ```
 
 Notice that we provide a bunch of [default configurations](netshare/configs/default) for different datasets/training mechanisms. In most cases you only need to write a few lines of configs.
+
+**Tip #1: if you only want to quickly verify NetShare does train and generate, you may use a much smaller number of training iterations to save time, simply modify the configuration file as follows:**
+```json
+{
+    "global_config": {
+        "original_data_file": "../traces/1M/caida/raw.pcap",
+        "dataset_type": "pcap",
+        "n_chunks": 10,
+        "dp": false
+    },
+    "model": {
+        "class": "DoppelGANgerTFModel",
+        "config": {
+            "iteration": 40,
+            "extra_checkpoint_freq": 10,
+            "epoch_checkpoint_freq": 5
+        }
+    },
+    "default": "pcap.json"
+}
+```
+
+**Tip 2: If you would like to skip the training, you may load some of our pre-trained models to generate directly.**
+
+*Placeholder: we will this part soon.*
 
 # Codebase structure
 ```
