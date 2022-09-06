@@ -79,7 +79,9 @@ If you would like to have a quick idea of how the synthetic data looks like, you
 # Example usage
 ***We are adding more examples of usage (PCAP, NetFlow, w/ and w/o DP). Please stay tuned!***
 
-Here is a minimal working example to generate synthetic PCAP files without differential privacy. Please refer to [`examples`](examples/) for more scripts and config files.
+Here is a minimal working example to generate synthetic PCAP files without differential privacy. Please change your working directory to  `examples/` by `cd examples/`. 
+
+You may refer to [`examples`](examples/) for more scripts and config files. 
 
 [Driver code](examples/driver.py)
 ```Python
