@@ -10,7 +10,7 @@
 
 # Overview
 <p align="center">
-  <img width="500" src="doc/figs/overview.png">
+  <img width="550" src="doc/figs/overview.png">
 </p>
 <p align="center">
   Figure 1: Overview of the NetShare workflow
@@ -27,7 +27,7 @@ As shown in Figure 1, we envision a common workflow for NetShare: real data (e.g
 # Datasets
 ***We are adding more datasets! Feel free to add your own and contribute!***
 
-Our paper uses **six** public datasets for reproducibility. Please download the six datasets [here](https://drive.google.com/file/d/19neMv1iXjnMn5IdpPoupdyf4Yy4GvL7R/view?usp=sharing) and put them under to `traces/`.
+Our paper uses **six** public datasets for reproducibility. Please download the six datasets [here](https://drive.google.com/drive/folders/1FOl1VMr0tXhzKEOupxnJE9YQ2GwfX2FD?usp=sharing) and put them under `traces/`.
 
 You may also refer to the [README](traces/1M/README.md) for detailed descriptions of the datasets.
 
@@ -67,7 +67,7 @@ Please go to [http://localhost:8265](http://localhost:8265) to view the Ray dash
 ### Multi-machines (**strongly** recommended for faster training/generation)
 We provide a utility script and [README](util/README.md) under `util/` for setting up a Ray cluster. As a reference, we are using [Cloudlab](https://www.cloudlab.us/) which is referred as ``custom cluster'' in the Ray documentation. If you are using a different cluster (e.g., AWS, GCP, Azure), please refer to the [Ray doc](https://docs.ray.io/en/releases-2.0.0rc0/cluster/cloud.html#cluster-cloud) for full reference.
 
-## Step 3: Quick visualization (optional)
+## Step 3: Quick visualization (Optional)
 If you would like to have a quick idea of how the synthetic data looks like, you may preload some examples of our generated data, simply with one command:
 
 *Placeholder: we will add this part soon.*
@@ -136,7 +136,7 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 }
 ```
 
-**Tip 2: If you would like to skip the training, you may load some of our pre-trained models to generate directly.**
+**Tip #2: If you would like to skip the training and check some existing datasets, you may load some of our pre-trained models to generate directly.**
 
 *Placeholder: we will this part soon.*
 
