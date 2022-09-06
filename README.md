@@ -143,7 +143,7 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 
 *Placeholder: we will this part soon.*
 
-# Codebase structure
+# Codebase structure (for *dev* purpose)
 ```
 ├── doc                       # (tentative) NetShare tutorials and APIs
 ├── examples                  # Examples of using NetShare on different datasets
