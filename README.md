@@ -139,7 +139,7 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 }
 ```
 
-**Tip #2: If you would like to skip the training for the existing datasets, you may load some of our pre-trained models to generate directly.**
+**Tip #2: If you would like to skip the training for existing datasets, you may load some of our pre-trained models to generate directly.**
 
 *Placeholder: we will this part soon.*
 
