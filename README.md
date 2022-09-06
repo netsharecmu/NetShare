@@ -18,7 +18,7 @@
 
 As shown in Figure 1, we envision a common workflow for NetShare: real data (e.g., PCAPs) stream in as different epochs, where each Di could represent the pcap generated on Day i or Hour i. The entire workflow splits into two phases:
 
-- **Offline stage (*optional*):** a few epochs of *real data* is merged into one giant trace and is fed into the hyperparameter tuning process along with the fidelity specification. The fidelity spec specifies users' fidelity requirements among different hyperparameter settings and training snapshots. A typical fidelity spec could be choosing the parameters/snapshot with lowest Jensen-Shannon divergence or choosing th e setup with best performance of a particular downstream task (e.g., anomaly detection).
+- **Offline stage (*optional*):** a few epochs of *real data* is merged into one giant trace and is fed into the hyperparameter tuning process along with the fidelity specification. The fidelity spec specifies users' fidelity requirements among different hyperparameter settings and training snapshots. A typical fidelity spec could be choosing the parameters/snapshot with lowest Jensen-Shannon divergence or choosing the setup with the best performance of a particular downstream task (e.g., anomaly detection).
 
 - **Online stage:** After the *optional* hyperparameter selection process, new streaming *real data* (e.g., Di+1, ...) is fed into the model training and generation part with the hyperparameter chosen during the offline stage. Note that if you find the *synthetic data* (Di+1') and *real data* (Di+1), you may repeat the hyperparameter tuning process in the offline stage.
 
