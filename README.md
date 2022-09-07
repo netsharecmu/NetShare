@@ -2,7 +2,7 @@
 
 **Update 8/23/2022: We are currently porting full funtionalities from the branch [`camera-ready`](https://github.com/netsharecmu/NetShare/tree/camera-ready) as a python package. Please checkout [`camera-ready`](https://github.com/netsharecmu/NetShare/tree/camera-ready) branch if you would like to replicate all the experiments in the [paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)**.
 
-[[paper (SIGCOMM 2022)](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)][[web service demo](https://drive.google.com/file/d/1vPuneEb14A2w7fKyCJ41NAHzsvpLQP5H/view)]
+[[paper (SIGCOMM 2022)](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)][[talk (SIGCOMM 2022)](https://www.youtube.com/watch?v=mWnFIncjtWg)][[web service demo](https://drive.google.com/file/d/1vPuneEb14A2w7fKyCJ41NAHzsvpLQP5H/view)]
 
 **Authors:** [[Yucheng Yin](https://sniperyyc.com/)] [[Zinan Lin](http://www.andrew.cmu.edu/user/zinanl/)] [[Minhao Jin](https://www.linkedin.com/in/minhao-jin-1328b8164/)] [[Giulia Fanti](https://www.andrew.cmu.edu/user/gfanti/)] [[Vyas Sekar](https://users.ece.cmu.edu/~vsekar/)]
 
@@ -123,7 +123,9 @@ The corresponding [configuration file](examples/pcap/config_example_pcap_nodp.js
 }
 ```
 
-After generation, you will be redirected to a dashboard where a side-to-side visual comparison between real and synthetic data will be shown.
+You may refer to [README](examples/README.md) for detailed explanations of the configuration files.
+
+<!-- After generation, you will be redirected to a dashboard where a side-to-side visual comparison between real and synthetic data will be shown. -->
 
 Notice that we provide a bunch of [default configurations](netshare/configs/default) for different datasets/training mechanisms. In most cases you only need to write a few lines of configs.
 
@@ -131,7 +133,7 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 ```json
 {
     "global_config": {
-        "original_data_file": "../traces/1M/caida/raw.pcap",
+        "original_data_file": "../traces/caida/raw.pcap",
         "dataset_type": "pcap",
         "n_chunks": 10,
         "dp": false
@@ -158,6 +160,7 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 ├── examples                  # Examples of using NetShare on different datasets
 ├── netshare                  # NetShare source code
 │   ├── configs               # Default configurations  
+│   ├── dashboard             # visualization of real v.s. synthetic data  
 │   ├── generators            # Generator class
 │   ├── model_managers        # Core of NetShare service (i.e, train/generate)
 │   ├── models                # Timeseries GAN models (e.g., DoppelGANger)
