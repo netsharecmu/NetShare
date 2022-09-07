@@ -1,10 +1,12 @@
 import os
 import copy
 import warnings
+import shutil
 
 import netshare.pre_post_processors as pre_post_processors
 import netshare.model_managers as model_managers
 import netshare.models as models
+import netshare.dashboard as dashboard
 
 from config_io import Config
 from ..configs import default as default_configs
@@ -51,6 +53,13 @@ class Generator(object):
         model_config = config['model']['config']
         self._model = model_class
         self._model_config = model_config
+
+        dashboard_class_path = os.path.dirname(dashboard.__file__)
+        self.static_folder_for_vis = os.path.join(
+            dashboard_class_path, "static")
+        self.figure_stored_relative_folder_for_vis = "tmp"
+        self.static_figure_folder_for_vis = os.path.join(
+            self.static_folder_for_vis, self.figure_stored_relative_folder_for_vis)
 
     def _get_pre_processed_data_folder(self, work_folder):
         return os.path.join(work_folder, 'pre_processed_data')
@@ -138,6 +147,12 @@ class Generator(object):
         os.makedirs(folder)
         return True
 
+    def _copy_figures_to_dashboard_static_folder(self, folder):
+
+        if os.path.exists(self.static_figure_folder_for_vis):
+            shutil.rmtree(self.static_figure_folder_for_vis)
+        shutil.copytree(folder, self.static_figure_folder_for_vis)
+
     def generate(self, work_folder):
         work_folder = os.path.expanduser(work_folder)
         if not self._generate(
@@ -189,5 +204,9 @@ class Generator(object):
 
     def visualize(self, work_folder):
         work_folder = os.path.expanduser(work_folder)
+        self._copy_figures_to_dashboard_static_folder(work_folder)
+        dashboard_class = getattr(dashboard, "Dashboard")
 
-        print(self._config["global_config"]["original_data_file"])
+        dashboard_class(
+            work_folder,
+            self.figure_stored_relative_folder_for_vis)

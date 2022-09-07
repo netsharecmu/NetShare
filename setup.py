@@ -39,7 +39,8 @@ setup(
         "ray[default]",
         "multiprocess",
         "addict",
-        "config_io"
+        "config_io",
+        "flask"
     ],  # add any additional packages that
     # needs to be installed along with your package. Eg: 'caer'
 
