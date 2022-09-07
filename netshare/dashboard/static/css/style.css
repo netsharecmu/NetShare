@@ -1,9 +1,9 @@
 figure {
-    width: 45%;
-    float: left;
+    width: 40%;
     margin: 10pt;
     text-align: center;
     padding: 0;
+    display: inline-block;
 }
 
 .tab {
