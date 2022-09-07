@@ -20,11 +20,11 @@ Here are a list of key parameters divided by different modules:
 
 |     Parameter    |                                                          Description                                                         |
 |:----------------:|:----------------------------------------------------------------------------------------------------------------------------:|
-|   `norm_option`  |                       Normalization for continuous variable.<br>0 for [0, 1] norm. 1 for [-1, 1] norm.                       |
+|   `norm_option`  |                       Normalization for continuous variable.<br/>0 for [0, 1] norm. 1 for [-1, 1] norm.                       |
 |   `split_name`   |                                         Method for adding "flow tags" for each chunk.                                        |
-|    `df2chunks`   |     How to divide a dataset.<br>"fixed_time": divide into equal-time chunk.<br>"fixed_size": divde into equal-size chunk.    |
-| `full_IP_header` |     True if all the entire IP header is generated.<br>False if only five tuples and packet size, timestamp is generated.     |
-|    `encode_IP`   | How to encode IP address.<br>"bit": encode IP into binary bit strings.<br>"word2vec": encode IP address with word2vec model. |
+|    `df2chunks`   |     How to divide a dataset.<br/>"fixed_time": divide into equal-time chunk.<br/>"fixed_size": divde into equal-size chunk.    |
+| `full_IP_header` |     True if all the entire IP header is generated.<br/>False if only five tuples and packet size, timestamp is generated.     |
+|    `encode_IP`   | How to encode IP address.<br/>"bit": encode IP into binary bit strings.<br/>"word2vec": encode IP address with word2vec model. |
 
 3. [model_manager](../model_managers/): manage training and generation of the model (e.g., how to use the first chunk as the seed chunk)
 
