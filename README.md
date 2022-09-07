@@ -123,7 +123,7 @@ The corresponding [configuration file](examples/pcap/config_example_pcap_nodp.js
 }
 ```
 
-You may refer to [README](examples/README.md) for detailed explanations of the configuration files.
+You may refer to [README](netshare/configs/README.md) for detailed explanations of the configuration files.
 
 <!-- After generation, you will be redirected to a dashboard where a side-to-side visual comparison between real and synthetic data will be shown. -->
 

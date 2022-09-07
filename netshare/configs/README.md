@@ -4,6 +4,7 @@ We provided a list of [default configuration files](./default/) following the be
 Here are a list of key parameters divided by different modules:
 
 1. global_config: configurations shared by the following modules (i.e., pre_post_processor, model_manager, model)
+
 |       Parameter      |                                    Description                                   |
 |:--------------------:|:--------------------------------------------------------------------------------:|
 |      `overwrite`     |                    True if overwritng `work_folder` is allowed                   |
