@@ -5,6 +5,8 @@ __pycache__/
 placeholder
 data
 
+netshare/dashboard/static/tmp
+
 tests/
 traces/
 results/
