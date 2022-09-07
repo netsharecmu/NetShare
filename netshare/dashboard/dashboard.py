@@ -47,17 +47,13 @@ def change_order(path, figure_stored_relative_folder_for_vis):
 
 
 class Dashboard():
-    def __init__(self, work_folder, figure_stored_relative_folder_for_vis):
-        print(work_folder)
-
+    def __init__(self, plot_folder, figure_stored_relative_folder_for_vis):
         app = Flask(__name__)
 
         @app.route("/")
         def dashboard():
-            path = work_folder
-
             sorted_static_path_files = change_order(
-                path, figure_stored_relative_folder_for_vis)
+                plot_folder, figure_stored_relative_folder_for_vis)
 
             return render_template(
                 "index.html", static_paths=sorted_static_path_files)
@@ -65,4 +61,4 @@ class Dashboard():
         # Avoid flask typical port 5000 as in MacOS 12 (Monterey)
         # port 5000 is served as the Airplay receiver
         # https://stackoverflow.com/questions/69818376/localhost5000-unavailable-in-macos-v12-monterey
-        app.run(debug=True, use_reloader=True, host='localhost', port=8000)
+        app.run(debug=True, use_reloader=False, host='localhost', port=8000)

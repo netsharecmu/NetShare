@@ -7,6 +7,7 @@ import netshare.pre_post_processors as pre_post_processors
 import netshare.model_managers as model_managers
 import netshare.models as models
 import netshare.dashboard as dashboard
+from netshare.dashboard.dist_metrics import run_netflow_qualitative_plots_dashboard
 
 from config_io import Config
 from ..configs import default as default_configs
@@ -72,6 +73,9 @@ class Generator(object):
 
     def _get_model_folder(self, work_folder):
         return os.path.join(work_folder, 'models')
+
+    def _get_visualization_folder(self, work_folder):
+        return os.path.join(work_folder, "visulization")
 
     def _get_pre_processed_data_log_folder(self, work_folder):
         return os.path.join(work_folder, 'logs', 'pre_processed_data')
@@ -204,9 +208,37 @@ class Generator(object):
 
     def visualize(self, work_folder):
         work_folder = os.path.expanduser(work_folder)
-        self._copy_figures_to_dashboard_static_folder(work_folder)
-        dashboard_class = getattr(dashboard, "Dashboard")
+        os.makedirs(self._get_visualization_folder(work_folder), exist_ok=True)
 
+        original_data_file = self._config["global_config"]["original_data_file"]
+        dataset_type = self._config["global_config"]["dataset_type"]
+        original_data_path = os.path.dirname(original_data_file)
+
+        # Check if pre-generated synthetic data exists
+        if os.path.exists(os.path.join(original_data_path, "syn.csv")):
+            print("Pre-generated synthetic data exists!")
+            syn_data_path = os.path.join(original_data_path, "syn.csv")
+        # Check if self-generated synthetic data exists
+        elif os.path.exists(os.path.join(self._get_post_processed_data_folder(work_folder), "syn.csv")):
+            print("Self-generated synthetic data exists!")
+            syn_data_path = os.path.join(
+                self._get_post_processed_data_folder(work_folder), "syn.csv")
+        else:
+            raise ValueError(
+                "Neither pre-generated OR self-generated synthetic data exists!")
+
+        if dataset_type == "netflow":
+            run_netflow_qualitative_plots_dashboard(
+                raw_data_path=original_data_file,
+                syn_data_path=syn_data_path,
+                plot_dir=self._get_visualization_folder(work_folder)
+            )
+
+        self._copy_figures_to_dashboard_static_folder(
+            self._get_visualization_folder(work_folder))
+        dashboard_class = getattr(dashboard, "Dashboard")
         dashboard_class(
-            work_folder,
+            self._get_visualization_folder(work_folder),
             self.figure_stored_relative_folder_for_vis)
+
+        return True
