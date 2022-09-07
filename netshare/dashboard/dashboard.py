@@ -62,4 +62,7 @@ class Dashboard():
             return render_template(
                 "index.html", static_paths=sorted_static_path_files)
 
-        app.run(debug=True, use_reloader=True, host='0.0.0.0', port=80)
+        # Avoid flask typical port 5000 as in MacOS 12 (Monterey)
+        # port 5000 is served as the Airplay receiver
+        # https://stackoverflow.com/questions/69818376/localhost5000-unavailable-in-macos-v12-monterey
+        app.run(debug=True, use_reloader=True, host='localhost', port=8000)
