@@ -160,6 +160,7 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 ├── examples                  # Examples of using NetShare on different datasets
 ├── netshare                  # NetShare source code
 │   ├── configs               # Default configurations  
+│   ├── dashboard             # visualization of real v.s. synthetic data  
 │   ├── generators            # Generator class
 │   ├── model_managers        # Core of NetShare service (i.e, train/generate)
 │   ├── models                # Timeseries GAN models (e.g., DoppelGANger)
