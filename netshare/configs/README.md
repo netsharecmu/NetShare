@@ -39,7 +39,7 @@ Here are a list of key parameters divided by different modules:
 
 4. [model](../models/): SOTA time-series GAN model [DoppelGANger](https://github.com/fjxmlzn/DoppelGANger)
 
-Please refer to [README of DoppelGANger](https://github.com/fjxmlzn/DoppelGANger#customize-doppelganger) for a detailed explanation of the parameters in this part.
+    Please refer to [README of DoppelGANger](https://github.com/fjxmlzn/DoppelGANger#customize-doppelganger) for a detailed explanation of the parameters in this part.
 
 
 5. default: [default configuration files](./default/) you may choose for preset datasets. Currently we support ["pcap.json"](./default/pcap.json) or ["netflow.json"](./default/netflow.json).
