@@ -71,7 +71,11 @@ Please go to [http://localhost:8265](http://localhost:8265) to view the Ray dash
 We provide a utility script and [README](util/README.md) under `util/` for setting up a Ray cluster. As a reference, we are using [Cloudlab](https://www.cloudlab.us/) which is referred as ``custom cluster'' in the Ray documentation. If you are using a different cluster (e.g., AWS, GCP, Azure), please refer to the [Ray doc](https://docs.ray.io/en/releases-2.0.0rc0/cluster/cloud.html#cluster-cloud) for full reference.
 
 ## Step 3: Quick visualization (Optional)
-If you would like to have a quick idea of how the synthetic data looks like, you may preload some examples of our generated data, simply with one command:
+If you would like to have a quick idea of how the synthetic data looks like, you may preload some examples of our generated data simply by 
+
+Please open the visualization dashboard at xxx. 
+
+
 
 *Placeholder: we will add this part soon.*
 
@@ -117,6 +121,8 @@ The corresponding [configuration file](examples/pcap/config_example_pcap_nodp.js
     "default": "pcap.json"
 }
 ```
+
+After generation, you will be redirected to a dashboard where a side-to-side visual comparison between real and synthetic data will be shown.
 
 Notice that we provide a bunch of [default configurations](netshare/configs/default) for different datasets/training mechanisms. In most cases you only need to write a few lines of configs.
 

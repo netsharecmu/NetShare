@@ -13,7 +13,7 @@ from ..configs import default as default_configs
 class Generator(object):
     def __init__(self, config):
         self._config = Config.load_from_file(
-            config, 
+            config,
             default_search_paths=default_configs.__path__)
         config = copy.deepcopy(self._config)
 
@@ -186,3 +186,8 @@ class Generator(object):
         if not self.generate(work_folder):
             return False
         return True
+
+    def visualize(self, work_folder):
+        work_folder = os.path.expanduser(work_folder)
+
+        print(self._config["global_config"]["original_data_file"])
