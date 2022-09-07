@@ -17,6 +17,7 @@ Here are a list of key parameters divided by different modules:
 |      `truncate`      | Truncate packets with timestamp out of real data's range. "per_chunk" or "none". |
 
 2. [pre_post_processor](../pre_post_processors/): preprocess data from raw format (e.g., PCAP/NetFlow) to NetShare-compatabile; and postprocess generated data to original format (e.g., PCAP/NetFlow).
+
 |     Parameter    |                                                          Description                                                         |
 |:----------------:|:----------------------------------------------------------------------------------------------------------------------------:|
 |   `norm_option`  |                       Normalization for continuous variable.<br>0 for [0, 1] norm. 1 for [-1, 1] norm.                       |
