@@ -29,7 +29,7 @@ As shown in Figure 1, we envision a common workflow for NetShare: real data (e.g
 
 Our paper uses **six** public datasets for reproducibility. Please download the six datasets [here](https://drive.google.com/drive/folders/1FOl1VMr0tXhzKEOupxnJE9YQ2GwfX2FD?usp=sharing) and put them under `traces/`.
 
-You may also refer to the [README](traces/1M/README.md) for detailed descriptions of the datasets.
+You may also refer to the [README](traces/README.md) for detailed descriptions of the datasets.
 
 
 # Getting started
