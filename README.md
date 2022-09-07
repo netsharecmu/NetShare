@@ -71,13 +71,14 @@ Please go to [http://localhost:8265](http://localhost:8265) to view the Ray dash
 We provide a utility script and [README](util/README.md) under `util/` for setting up a Ray cluster. As a reference, we are using [Cloudlab](https://www.cloudlab.us/) which is referred as ``custom cluster'' in the Ray documentation. If you are using a different cluster (e.g., AWS, GCP, Azure), please refer to the [Ray doc](https://docs.ray.io/en/releases-2.0.0rc0/cluster/cloud.html#cluster-cloud) for full reference.
 
 ## Step 3: Quick visualization (Optional)
-If you would like to have a quick idea of how the synthetic data looks like, you may preload some examples of our generated data simply by 
+If you would like to have a quick idea of how the synthetic data looks like, you may preload some examples of our generated data simply by going to [examples](examples/) folder and run [vis.py](examples/vis.py):
+```Bash
+cd examples/
+python3 vis.py
+```
 
-Please open the visualization dashboard at xxx. 
+The visualization dashboard is at http://localhost:8000/
 
-
-
-*Placeholder: we will add this part soon.*
 
 
 # Example usage
