@@ -8,4 +8,4 @@ if __name__ == '__main__':
     # Please set the `worker_folder` as *absolute path*
     # if you are using Ray with multi-machine setup
     # since Ray has bugs when dealing with relative paths.
-    generator.visualize(work_folder='./vis_sample_figures/plot/ugr16')
+    generator.visualize(work_folder='../results/vis_test')
