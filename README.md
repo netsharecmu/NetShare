@@ -123,7 +123,9 @@ The corresponding [configuration file](examples/pcap/config_example_pcap_nodp.js
 }
 ```
 
-After generation, you will be redirected to a dashboard where a side-to-side visual comparison between real and synthetic data will be shown.
+You may refer to [README](examples/README.md) for detailed explanations of the configuration files.
+
+<!-- After generation, you will be redirected to a dashboard where a side-to-side visual comparison between real and synthetic data will be shown. -->
 
 Notice that we provide a bunch of [default configurations](netshare/configs/default) for different datasets/training mechanisms. In most cases you only need to write a few lines of configs.
 
