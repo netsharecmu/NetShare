@@ -133,7 +133,7 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 ```json
 {
     "global_config": {
-        "original_data_file": "../traces/1M/caida/raw.pcap",
+        "original_data_file": "../traces/caida/raw.pcap",
         "dataset_type": "pcap",
         "n_chunks": 10,
         "dp": false
