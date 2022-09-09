@@ -4,5 +4,6 @@
         "dataset_type": "pcap",
         "n_chunks": 10,
         "dp": false
-    }
+    },
+    "default": "pcap.json"
 }

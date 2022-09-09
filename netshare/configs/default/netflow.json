@@ -36,10 +36,7 @@
             "batch_size": 100,
             "sample_len": [
                 5,
-                10,
-                25,
-                50,
-                100
+                10
             ],
             "sample_len_expand": true,
             "iteration": 200000,
