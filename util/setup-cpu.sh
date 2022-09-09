@@ -40,6 +40,6 @@ fi
 
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
-sudo chown -R $USERNAME:users /nfs
+sudo chown -R $USERNAME:CloudMigration /nfs
 cd $NETSHARE_LOCAL_REPO
 pip3 install -e .

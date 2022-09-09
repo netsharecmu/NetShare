@@ -3,13 +3,14 @@ cluster_name: test
 
 provider:
     type: local
-    head_ip: nfs.netshare-package.cloudmigration-pg0.wisc.cloudlab.us
+    head_ip: nfs.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us
     # You may need to supply a public ip for the head node if you need
     # to run `ray up` from outside of the Ray cluster's network
     # (e.g. the cluster is in an AWS VPC and you're starting ray from your laptop)
     # This is useful when debugging the local node provider with cloud VMs.
     # external_head_ip: YOUR_HEAD_PUBLIC_IP
-    worker_ips: [node1.netshare-package.cloudmigration-pg0.wisc.cloudlab.us, node2.netshare-package.cloudmigration-pg0.wisc.cloudlab.us, node3.netshare-package.cloudmigration-pg0.wisc.cloudlab.us, node4.netshare-package.cloudmigration-pg0.wisc.cloudlab.us, node5.netshare-package.cloudmigration-pg0.wisc.cloudlab.us, node6.netshare-package.cloudmigration-pg0.wisc.cloudlab.us, node7.netshare-package.cloudmigration-pg0.wisc.cloudlab.us, node8.netshare-package.cloudmigration-pg0.wisc.cloudlab.us, node9.netshare-package.cloudmigration-pg0.wisc.cloudlab.us, node10.netshare-package.cloudmigration-pg0.wisc.cloudlab.us]
+    worker_ips: [node1.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node2.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node3.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node4.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node5.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node6.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node7.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node8.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node9.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node10.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us,
+    node11.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node12.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node13.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node14.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node15.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node16.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node17.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node18.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node19.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us, node20.netshare-d430.cloudmigration-pg0.wisc.cloudlab.us,]
     # worker_ips: [10.10.1.2, 10.10.1.3, 10.10.1.4, 10.10.1.5, 10.10.1.6, 10.10.1.7, 10.10.1.8, 10.10.1.9, 10.10.1.10, 10.10.1.11]
     # worker_ips: []
     # Optional when running automatic cluster management on prem. If you use a coordinator server,
