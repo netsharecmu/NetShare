@@ -430,10 +430,14 @@ def _merge_syn_df(
         else:
             cur_max_idx += 1
 
+        # best_syndf_filename = os.path.join(
+        #     best_syndf_folder,
+        #     "syn_df,dp_noise_multiplier-{},truncate-{},id-{}.csv".format(
+        #         dp_noise_multiplier, config["truncate"], cur_max_idx)
+        # )
         best_syndf_filename = os.path.join(
             best_syndf_folder,
-            "syn_df,dp_noise_multiplier-{},truncate-{},id-{}.csv".format(
-                dp_noise_multiplier, config["truncate"], cur_max_idx)
+            "syn.csv"
         )
 
         print("best_syn_df filename:", best_syndf_filename)

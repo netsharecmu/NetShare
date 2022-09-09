@@ -426,10 +426,16 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
     def _post_process(self, input_folder, output_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
-
-        shutil.copyfile(
-            os.path.join(input_folder, "best_syn_dfs", "syn.pcap"),
-            os.path.join(output_folder, "syn.pcap")
-        )
+        
+        if self._config["dataset_type"] == "pcap":
+            shutil.copyfile(
+                os.path.join(input_folder, "best_syn_dfs", "syn.pcap"),
+                os.path.join(output_folder, "syn.pcap")
+            )
+        elif self._config["dataset_type"] == "netflow":
+            shutil.copyfile(
+                os.path.join(input_folder, "best_syn_dfs", "syn.csv"),
+                os.path.join(output_folder, "syn.csv")
+            )
 
         return True

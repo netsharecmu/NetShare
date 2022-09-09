@@ -177,7 +177,7 @@ class Generator(object):
             print('Failed to post-process data')
             return False
         print(f'Generated data is at '
-              f'{self._get_post_processed_data_log_folder(work_folder)}')
+              f'{self._get_post_processed_data_folder(work_folder)}')
         return True
 
     def train(self, work_folder):
