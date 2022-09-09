@@ -1,4 +1,3 @@
-from genericpath import exists
 import inspect
 
 import os
@@ -8,6 +7,8 @@ import copy
 import pickle
 import tensorflow as tf
 import numpy as np
+
+import netshare.ray as ray
 
 from .model import Model
 from .doppelganger_tf.doppelganger import DoppelGANger
@@ -20,6 +21,10 @@ from .doppelganger_tf.dataset import NetShareDataset
 class DoppelGANgerTFModel(Model):
     def _train(self, input_train_data_folder, output_model_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
+
+        # If Ray is disabled, reset TF graph
+        if not ray.config.enabled:
+            tf.reset_default_graph()
 
         print("Currently training with config:", self._config)
 
@@ -182,6 +187,10 @@ class DoppelGANgerTFModel(Model):
     def _generate(self, input_train_data_folder,
                   input_model_folder, output_syn_data_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
+
+        # If Ray is disabled, reset TF graph
+        if not ray.config.enabled:
+            tf.reset_default_graph()
 
         print("Currently generating with config:", self._config)
 

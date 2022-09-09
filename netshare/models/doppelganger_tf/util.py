@@ -531,8 +531,9 @@ def denormalize(data_attribute, data_feature, data_gen_flag, config):
                     for field in ['label', 'type']:
                         if field in fields:
                             field_len = len(fields[field].choices)
-                            df_per_row[field] = field[field].denormalize(
-                                data_feature[i][j][cur_idx:(cur_idx+field_len)]
+                            df_per_row[field] = fields[field].denormalize(
+                                list(data_feature[i][j]
+                                     [cur_idx:(cur_idx+field_len)])
                             )
                             cur_idx += field_len
 
