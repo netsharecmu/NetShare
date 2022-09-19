@@ -9,13 +9,13 @@ if __name__ == '__main__':
     # configuration file
     # generator = Generator(config="config_example_netflow_nodp.json")
     generator = Generator(
-        config="pcap/config_example_pcap_public.json")
+        config="pcap/config_example_pcap_private.json")
 
     # `work_folder` should not exist o/w an overwrite error will be thrown.
     # Please set the `worker_folder` as *absolute path*
     # if you are using Ray with multi-machine setup
     # since Ray has bugs when dealing with relative paths.
-    generator.train(
-        work_folder='../results/pcap/public')
+    generator.train_and_generate(
+        work_folder='../results/pcap/private')
 
     ray.shutdown()
