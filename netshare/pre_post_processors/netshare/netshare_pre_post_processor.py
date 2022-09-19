@@ -45,25 +45,32 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
         # load data as csv
         if self._config["dataset_type"] == "pcap":
-            # compile shared library for converting pcap to csv
-            cwd = os.path.dirname(os.path.abspath(__file__))
-            cmd = f"cd {cwd} && \
-                cc -fPIC -shared -o pcap2csv.so main.c -lm -lpcap"
-            exec_cmd(cmd, wait=True)
+            if input_folder.endswith(".csv"):
+                shutil.copyfile(
+                    os.path.join(input_folder),
+                    os.path.join(output_folder, "raw.csv")
+                )
+                df = pd.read_csv(input_folder)
+            else:
+                # compile shared library for converting pcap to csv
+                cwd = os.path.dirname(os.path.abspath(__file__))
+                cmd = f"cd {cwd} && \
+                    cc -fPIC -shared -o pcap2csv.so main.c -lm -lpcap"
+                exec_cmd(cmd, wait=True)
 
-            pcap2csv_func = ctypes.CDLL(
-                os.path.join(cwd, "pcap2csv.so")).pcap2csv
-            pcap2csv_func.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
-            csv_file = os.path.join(
-                output_folder,
-                os.path.splitext(os.path.basename(input_folder))[0] +
-                ".csv")
-            pcap2csv_func(
-                input_folder.encode('utf-8'),  # pcap file
-                csv_file.encode('utf-8')  # csv file
-            )
-            print(f"{input_folder} has been converted to {csv_file}")
-            df = pd.read_csv(csv_file)
+                pcap2csv_func = ctypes.CDLL(
+                    os.path.join(cwd, "pcap2csv.so")).pcap2csv
+                pcap2csv_func.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+                csv_file = os.path.join(
+                    output_folder,
+                    os.path.splitext(os.path.basename(input_folder))[0] +
+                    ".csv")
+                pcap2csv_func(
+                    input_folder.encode('utf-8'),  # pcap file
+                    csv_file.encode('utf-8')  # csv file
+                )
+                print(f"{input_folder} has been converted to {csv_file}")
+                df = pd.read_csv(csv_file)
         elif self._config["dataset_type"] == "netflow":
             df = pd.read_csv(input_folder)
             df.to_csv(os.path.join(output_folder, "raw.csv"), index=False)
@@ -73,12 +80,26 @@ class NetsharePrePostProcessor(PrePostProcessor):
         # train/load word2vec model
         if self._config["encode_IP"] not in ['bit', 'word2vec']:
             raise ValueError("IP can be only encoded as `bit` or `word2vec`!")
-        embed_model_name = word2vec_train(
-            df=df,
-            out_dir=output_folder,
-            file_type=self._config["dataset_type"],
-            encode_IP='bit'
-        )
+        # Using DP: pretrained word2vec model exists
+        if os.path.exists(os.path.join(
+            os.path.dirname(input_folder),
+            "word2vec_vecSize_{}.model".format(
+                self._config["word2vec_vecSize"])
+        )):
+            print("Loading pretrained `big` word2vec model...")
+            embed_model_name = os.path.join(
+                os.path.dirname(input_folder),
+                "word2vec_vecSize_{}.model".format(
+                    self._config["word2vec_vecSize"])
+            )
+        else:
+            print("Training word2vec model from scratch...")
+            embed_model_name = word2vec_train(
+                df=df,
+                out_dir=output_folder,
+                file_type=self._config["dataset_type"],
+                encode_IP='bit'
+            )
         embed_model = Word2Vec.load(embed_model_name)
 
         # fields
@@ -355,7 +376,10 @@ class NetsharePrePostProcessor(PrePostProcessor):
             per_chunk_flow_len_agg += list(gk_chunk.size().values)
             print("chunk_id: {}, max_flow_len: {}".format(
                 chunk_id, max(gk_chunk.size().values)))
-        global_max_flow_len = max(max_flow_lens)
+        if not self._config["max_flow_len"]:
+            global_max_flow_len = max(max_flow_lens)
+        else:
+            global_max_flow_len = self._config["max_flow_len"]
         print("global max flow len:", global_max_flow_len)
         print("Top 10 per-chunk flow length:",
               sorted(per_chunk_flow_len_agg)[-10:])
@@ -426,7 +450,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
     def _post_process(self, input_folder, output_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
-        
+
         if self._config["dataset_type"] == "pcap":
             shutil.copyfile(
                 os.path.join(input_folder, "best_syn_dfs", "syn.pcap"),

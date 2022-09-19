@@ -1,0 +1,27 @@
+{
+    "global_config": {
+        "overwrite": true,
+        "original_data_file": "../traces/public/caida/raw.csv",
+        "dataset_type": "pcap",
+        "n_chunks": 10,
+        "dp": false
+    },
+    "pre_post_processor": {
+        "class": "NetsharePrePostProcessor",
+        "config": {
+            "max_flow_len": 5000
+        }
+    },
+    "model_manager": {
+        "pretrain_non_dp": false,
+        "pretrain_non_dp_reduce_time": null
+    },
+    "model": {
+        "class": "DoppelGANgerTFModel",
+        "config": {
+            "sample_len": 10,
+            "sample_len_expand": false
+        }
+    },
+    "default": "pcap.json"
+}

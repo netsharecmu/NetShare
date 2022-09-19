@@ -38,7 +38,7 @@ def _launch_other_chunks_training(
 def _launch_all_chunks_training(
         create_new_model, configs, config_ids, input_train_data_folder, output_model_folder, log_folder):
     objs = []
-    for config_idx in config_ids[1:]:
+    for config_idx in config_ids:
         # sanity check
         if not os.path.exists(configs[config_idx]["pretrain_dir"]):
             raise ValueError("Pretrain_dir {} does not exist!")
@@ -109,8 +109,8 @@ def _train_specific_config_group(
         # Haven't been tested
         results = _launch_all_chunks_training(
             create_new_model,
-            config_ids,
             configs,
+            config_ids,
             input_train_data_folder,
             output_model_folder,
             log_folder)

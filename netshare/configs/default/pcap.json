@@ -12,6 +12,7 @@
     "pre_post_processor": {
         "class": "NetsharePrePostProcessor",
         "config": {
+            "max_flow_len": null,
             "norm_option": 0,
             "split_name": "multichunk_dep_v2",
             "df2chunks": "fixed_time",

@@ -1,0 +1,37 @@
+{
+    "global_config": {
+        "overwrite": true,
+        "original_data_file": "../traces/caida/raw.pcap",
+        "dataset_type": "pcap",
+        "n_chunks": 10,
+        "dp": true
+    },
+    "pre_post_processor": {
+        "class": "NetsharePrePostProcessor",
+        "config": {
+            "max_flow_len": 5000
+        }
+    },
+    "model_manager": {
+        "class": "NetShareManager",
+        "config": {
+            "pretrain_non_dp": false,
+            "pretrain_non_dp_reduce_time": null,
+            "pretrain_dp": true,
+            "pretrain_dir": "/nfs/NetShare/results/pcap/public/models/chunkid-0/sample_len-10/checkpoint/iteration_id-39"
+        }
+    },
+    "model": {
+        "class": "DoppelGANgerTFModel",
+        "config": {
+            "sample_len": 10,
+            "sample_len_expand": false,
+            "dp_noise_multiplier": 1.0,
+            "dp_l2_norm_clip": 1.0,
+            "iteration": 20000,
+            "extra_checkpoint_freq": 2000,
+            "epoch_checkpoint_freq": 1000
+        }
+    },
+    "default": "pcap.json"
+}
