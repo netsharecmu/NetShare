@@ -23,7 +23,7 @@ python3 driver.py
     - Specify public model location from step 1:
         ```Json
         "model_manager": {
-            "pretrain_dir": <public model location>
+            "pretrain_dir": <public model path>
         }
         ```
     - Run training and generation

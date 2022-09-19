@@ -18,7 +18,7 @@
             "pretrain_non_dp": false,
             "pretrain_non_dp_reduce_time": null,
             "pretrain_dp": true,
-            "pretrain_dir": "/nfs/NetShare/results/pcap/public/models/chunkid-0/sample_len-10/checkpoint/iteration_id-39"
+            "pretrain_dir": <public model path>
         }
     },
     "model": {
