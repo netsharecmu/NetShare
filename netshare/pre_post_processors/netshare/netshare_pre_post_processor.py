@@ -456,6 +456,26 @@ class NetsharePrePostProcessor(PrePostProcessor):
                 os.path.join(input_folder, "best_syn_dfs", "syn.pcap"),
                 os.path.join(output_folder, "syn.pcap")
             )
+            # convert generated pcap to csv for further postprocessing
+            # compile shared library for converting pcap to csv
+            cwd = os.path.dirname(os.path.abspath(__file__))
+            cmd = f"cd {cwd} && \
+                cc -fPIC -shared -o pcap2csv.so main.c -lm -lpcap"
+            exec_cmd(cmd, wait=True)
+
+            pcap2csv_func = ctypes.CDLL(
+                os.path.join(cwd, "pcap2csv.so")).pcap2csv
+            pcap2csv_func.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+            pcap_file = os.path.join(output_folder, "syn.pcap")
+            csv_file = os.path.join(
+                output_folder,
+                "syn.csv")
+            pcap2csv_func(
+                pcap_file.encode('utf-8'),  # pcap file
+                csv_file.encode('utf-8')  # csv file
+            )
+            print(f"{pcap_file} has been converted to {csv_file}")
+
         elif self._config["dataset_type"] == "netflow":
             shutil.copyfile(
                 os.path.join(input_folder, "best_syn_dfs", "syn.csv"),

@@ -1018,6 +1018,76 @@ def run_pcap_qualitative_plots():
                 x_logscale=(metric != "td")
             )
 
+# raw_data_path: csv format
+
+
+def run_pcap_qualitative_plots_dashboard(raw_data_path, syn_data_path, plot_dir):
+    raw_df = pd.read_csv(raw_data_path)
+    os.makedirs(plot_dir, exist_ok=True)
+
+    # print(raw_df.head())
+    syn_df_dict = {}
+    # for method in ["PAC-GAN", "PacketCGAN", "Flow-WGAN", "NetShare"]:
+    for method in ["NetShare"]:
+        syn_df = pd.read_csv(syn_data_path)
+        syn_df_dict[method] = syn_df
+
+    for metric, xlabel in {
+        "srcip": "Source IP popularity rank (log-scale)",
+        "dstip": "Dest. IP popularity rank (log-sacle)"
+    }.items():
+        plot_HH(
+            real_df=raw_df,
+            syn_df_dict=syn_df_dict,
+            xlabel=xlabel,
+            ylabel="Relative frequency (log-scale)",
+            plot_loc=os.path.join(
+                plot_dir,
+                "hh_{}.png".format(metric)
+            ),
+            metric=metric,
+            x_logscale=True,
+            y_logscale=True
+        )
+
+    for metric, xlabel in {
+        "srcport": "Top {} service source port number".format(N_TOPK_SERVICE_PORTS),
+        "dstport": "Top {} service destination port number".format(N_TOPK_SERVICE_PORTS),
+        "proto": "IP Protocol"
+    }.items():
+        print("metric:", metric)
+        plot_bar(
+            real_df=raw_df,
+            # syn_df_dict={k: syn_df_dict[k] for k in ["CTGAN"]},
+            syn_df_dict=syn_df_dict,
+            xlabel=xlabel,
+            ylabel="Relative frequency",
+            plot_loc=os.path.join(
+                plot_dir,
+                "bar_{}.png".format(metric)
+            ),
+            metric=metric,
+            x_logscale=False,
+            y_logscale=False,
+            data_type="pcap"
+        )
+
+    for metric, xlabel in {
+        "pkt_len": "Packet size (bytes)",
+        "flow_size": "Flow size (# of packets perflow)"
+    }.items():
+        plot_cdf(
+            raw_df=raw_df,
+            syn_df_dict=syn_df_dict,
+            xlabel=xlabel,
+            ylabel="CDF",
+            plot_loc=os.path.join(
+                plot_dir,
+                "cdf_{}.png".format(metric)),
+            metric=metric,
+            x_logscale=(metric != "td")
+        )
+
 
 def run_netflow_dist_metrics_privacy():
     for dataset in ["ugr16"]:

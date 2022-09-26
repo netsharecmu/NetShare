@@ -7,7 +7,7 @@ import netshare.pre_post_processors as pre_post_processors
 import netshare.model_managers as model_managers
 import netshare.models as models
 import netshare.dashboard as dashboard
-from netshare.dashboard.dist_metrics import run_netflow_qualitative_plots_dashboard
+from netshare.dashboard.dist_metrics import run_netflow_qualitative_plots_dashboard, run_pcap_qualitative_plots_dashboard
 
 from config_io import Config
 from ..configs import default as default_configs
@@ -230,6 +230,14 @@ class Generator(object):
         if dataset_type == "netflow":
             run_netflow_qualitative_plots_dashboard(
                 raw_data_path=original_data_file,
+                syn_data_path=syn_data_path,
+                plot_dir=self._get_visualization_folder(work_folder)
+            )
+        elif dataset_type == "pcap":
+            run_pcap_qualitative_plots_dashboard(
+                raw_data_path=os.path.join(
+                    self._get_pre_processed_data_folder(work_folder),
+                    "raw.csv"),
                 syn_data_path=syn_data_path,
                 plot_dir=self._get_visualization_folder(work_folder)
             )

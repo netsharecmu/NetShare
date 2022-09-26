@@ -24,6 +24,7 @@ def change_order(path, figure_stored_relative_folder_for_vis):
         "srcport",
         "dstip",
         "flow_size",
+        "pkt_len"
     ]
     caption_list = ["Source IP popularity rank",
                     "Destination port number distribution",
@@ -34,9 +35,10 @@ def change_order(path, figure_stored_relative_folder_for_vis):
                     "Source port number distribution",
                     "Destination IP popularity rank",
                     "Flow size distribution",
+                    "Packet size (bytes)"
                     ]
 
-    for i in range(9):
+    for i in range(10):
         suffix = suffix_list[i]
         for _, x in enumerate(static_path_files):
             if suffix in x:
