@@ -94,15 +94,15 @@ def _train_specific_config_group(
                     config_group_id
                 )
             )
-
-        results = _launch_other_chunks_training(
-            create_new_model,
-            configs,
-            config_ids,
-            input_train_data_folder,
-            output_model_folder,
-            log_folder)
-        print("Other chunks training finished")
+        if len(configs) > 1:
+            results = _launch_other_chunks_training(
+                create_new_model,
+                configs,
+                config_ids,
+                input_train_data_folder,
+                output_model_folder,
+                log_folder)
+            print("Other chunks training finished")
 
     else:
         print("Launching all chunks experiments...")
