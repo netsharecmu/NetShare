@@ -452,6 +452,10 @@ class NetsharePrePostProcessor(PrePostProcessor):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
         if self._config["dataset_type"] == "pcap":
+            # Step 1: denormalize to csv
+
+            # Step 2: pick the best among hyperparameters/tranining snapshots
+
             shutil.copyfile(
                 os.path.join(input_folder, "best_syn_dfs", "syn.pcap"),
                 os.path.join(output_folder, "syn.pcap")

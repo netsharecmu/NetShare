@@ -491,22 +491,25 @@ class DoppelGANgerTFModel(Model):
                             data_attribute=attributes[0:split],
                         )
                     else:
-                        syn_df = denormalize(
-                            attributes, features, gen_flags, self._config)
-                        print(syn_df.shape)
+                        # save attributes/features/gen_flags/self._config to files
+                        pass
 
-                        save_path = os.path.join(
-                            output_syn_data_folder,
-                            "syn_dfs",
-                            "chunk_id-{}".format(self._config["chunk_id"]))
-                        os.makedirs(save_path, exist_ok=True)
-                        syn_df.to_csv(
-                            os.path.join(
-                                save_path,
-                                "syn_df_iteration_id-{}.csv".format(iteration_id)),
-                            index=False)
+                        # syn_df = denormalize(
+                        #     attributes, features, gen_flags, self._config)
+                        # print(syn_df.shape)
 
-                        print("Number of packets this chunk:", np.sum(gen_flags))
+                        # save_path = os.path.join(
+                        #     output_syn_data_folder,
+                        #     "syn_dfs",
+                        #     "chunk_id-{}".format(self._config["chunk_id"]))
+                        # os.makedirs(save_path, exist_ok=True)
+                        # syn_df.to_csv(
+                        #     os.path.join(
+                        #         save_path,
+                        #         "syn_df_iteration_id-{}.csv".format(iteration_id)),
+                        #     index=False)
+
+                        # print("Number of packets this chunk:", np.sum(gen_flags))
 
             print("Done")
 
