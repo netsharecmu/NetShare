@@ -5,6 +5,7 @@ import copy
 import time
 import more_itertools
 import os
+import re
 import math
 import json
 import pickle
@@ -20,6 +21,7 @@ import netshare.ray as ray
 from gensim.models import Word2Vec
 from tqdm import tqdm
 
+from .util import denormalize, _merge_syn_df
 from .word2vec_embedding import word2vec_train
 from .preprocess_helper import countList2cdf, continuous_list_flag, plot_cdf
 from .preprocess_helper import df2chunks, split_per_chunk
@@ -238,9 +240,9 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
         elif self._config["dataset_type"] == "netflow":
             # log-transform
-            df["td"] = np.log(1+df["td"])
-            df["pkt"] = np.log(1+df["pkt"])
-            df["byt"] = np.log(1+df["byt"])
+            df["td"] = np.log(1 + df["td"])
+            df["pkt"] = np.log(1 + df["pkt"])
+            df["byt"] = np.log(1 + df["byt"])
 
             fields["td"] = ContinuousField(
                 name="td",
@@ -330,7 +332,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
         flowkeys_chunkidx = {}
         for chunk_id, flowkeys in flow_chunkid_keys.items():
             print("processing chunk {}/{}, # of flows: {}".format(
-                chunk_id+1, len(df_chunks), len(flowkeys)))
+                chunk_id + 1, len(df_chunks), len(flowkeys)))
             for k in flowkeys:
                 if k not in flowkeys_chunkidx:
                     flowkeys_chunkidx[k] = []
@@ -353,7 +355,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
         print("# of total flows (sanity check):", len(df.groupby(metadata)))
         print("# of flows cross chunk (of total flows): {} ({}%)".format(
             num_flows_cross_chunk,
-            float(num_flows_cross_chunk)/len(flowkeys_chunklen_list)*100))
+            float(num_flows_cross_chunk) / len(flowkeys_chunklen_list) * 100))
         print("# of non-continuous flows:", num_non_continuous_flows)
         plot_cdf(
             count_list=flowkeys_chunklen_list,
@@ -450,35 +452,70 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
     def _post_process(self, input_folder, output_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
-
+        print(self._config)
+        () + 1
         if self._config["dataset_type"] == "pcap":
             # Step 1: denormalize to csv
 
+            print("POSTPROCESSOR......")
+            print(input_folder)
+            paths = [os.path.join(input_folder, p)
+                     for p in os.listdir(input_folder)]
+
+            for path in paths:
+                feat_raw_path = os.path.join(path, "feat_raw")
+                syn_path = os.path.join(path, "syn_dfs")
+                os.makedirs(syn_path, exist_ok=True)
+
+                data_files = os.listdir(feat_raw_path)
+
+                for d in data_files:
+                    data_path = os.path.join(feat_raw_path, d)
+                    data = np.load(data_path, allow_pickle=True)
+                    attributes = data["attributes"]
+                    features = data["features"]
+                    gen_flags = data["gen_flags"]
+                    # recover dict from 0-d numpy array
+                    # https://stackoverflow.com/questions/22661764/storing-a-dict-with-np-savez-gives-unexpected-result
+                    config = data["config"][()]
+                    syn_df = denormalize(
+                        attributes, features, gen_flags, config)
+                    chunk_id, iteration_id = re.search(
+                        r"chunk_id-(\d+)_iteration_id-(\d+).npz", d).groups()
+                    print(syn_df.shape)
+
+                    save_path = os.path.join(
+                        syn_path,
+                        "chunk_id-{}".format(chunk_id))
+                    os.makedirs(save_path, exist_ok=True)
+                    syn_df.to_csv(
+                        os.path.join(
+                            save_path,
+                            "syn_df_iteration_id-{}.csv".format(iteration_id)),
+                        index=False)
+
             # Step 2: pick the best among hyperparameters/tranining snapshots
+            # _merge_syn_df()
 
-            shutil.copyfile(
-                os.path.join(input_folder, "best_syn_dfs", "syn.pcap"),
-                os.path.join(output_folder, "syn.pcap")
-            )
-            # convert generated pcap to csv for further postprocessing
-            # compile shared library for converting pcap to csv
-            cwd = os.path.dirname(os.path.abspath(__file__))
-            cmd = f"cd {cwd} && \
-                cc -fPIC -shared -o pcap2csv.so main.c -lm -lpcap"
-            exec_cmd(cmd, wait=True)
+            # # convert generated pcap to csv for further postprocessing
+            # # compile shared library for converting pcap to csv
+            # cwd = os.path.dirname(os.path.abspath(__file__))
+            # cmd = f"cd {cwd} && \
+            #     cc -fPIC -shared -o pcap2csv.so main.c -lm -lpcap"
+            # exec_cmd(cmd, wait=True)
 
-            pcap2csv_func = ctypes.CDLL(
-                os.path.join(cwd, "pcap2csv.so")).pcap2csv
-            pcap2csv_func.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
-            pcap_file = os.path.join(output_folder, "syn.pcap")
-            csv_file = os.path.join(
-                output_folder,
-                "syn.csv")
-            pcap2csv_func(
-                pcap_file.encode('utf-8'),  # pcap file
-                csv_file.encode('utf-8')  # csv file
-            )
-            print(f"{pcap_file} has been converted to {csv_file}")
+            # pcap2csv_func = ctypes.CDLL(
+            #     os.path.join(cwd, "pcap2csv.so")).pcap2csv
+            # pcap2csv_func.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+            # pcap_file = os.path.join(output_folder, "syn.pcap")
+            # csv_file = os.path.join(
+            #     output_folder,
+            #     "syn.csv")
+            # pcap2csv_func(
+            #     pcap_file.encode('utf-8'),  # pcap file
+            #     csv_file.encode('utf-8')  # csv file
+            # )
+            # print(f"{pcap_file} has been converted to {csv_file}")
 
         elif self._config["dataset_type"] == "netflow":
             shutil.copyfile(

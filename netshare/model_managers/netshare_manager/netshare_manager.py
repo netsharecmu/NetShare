@@ -2,7 +2,7 @@ import inspect
 
 from ..model_manager import ModelManager
 from .train_helper import _train_specific_config_group
-from .generate_helper import _generate_attr, _merge_attr, _generate_given_attr, _merge_syn_df
+from .generate_helper import _generate_attr, _merge_attr, _generate_given_attr
 from .netshare_util import _load_config, _configs2configsgroup
 import netshare.ray as ray
 import os
@@ -59,7 +59,6 @@ class NetShareManager(ModelManager):
             generation_flag=True,
             output_syn_data_folder=output_syn_data_folder
         )
-        print(config_group_list)
 
         print("Start generating attributes ...")
         objs = []
@@ -73,7 +72,6 @@ class NetShareManager(ModelManager):
         _ = ray.get(objs)
         time.sleep(10)
         print("Finish generating attributes")
-
         print("Start merging attributes ...")
         objs = []
         for config_group in config_group_list:

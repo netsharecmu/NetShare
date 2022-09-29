@@ -12,7 +12,7 @@ import netshare.ray as ray
 
 from .model import Model
 from .doppelganger_tf.doppelganger import DoppelGANger
-from .doppelganger_tf.util import add_gen_flag, normalize_per_sample, estimate_flowlen_dp, renormalize_per_sample, denormalize
+from .doppelganger_tf.util import add_gen_flag, normalize_per_sample, estimate_flowlen_dp, renormalize_per_sample
 from .doppelganger_tf.load_data import load_data
 from .doppelganger_tf.network import DoppelGANgerGenerator, Discriminator, AttrDiscriminator, RNNInitialStateType
 from .doppelganger_tf.dataset import NetShareDataset
@@ -200,6 +200,7 @@ class DoppelGANgerTFModel(Model):
                 output_syn_data_folder,
                 "attr_clean",
                 "chunk_id-{}.npz".format(self._config["chunk_id"]))
+
             if not os.path.exists(given_attr_npz_file):
                 raise ValueError(
                     f"Given data attribute file {given_attr_npz_file}")
@@ -253,7 +254,8 @@ class DoppelGANgerTFModel(Model):
         print("Prepare sample batch")
         dataset.sample_batch(self._config["batch_size"])
         if (dataset.data_attribute_outputs_train is None) or (
-                dataset.data_feature_outputs_train is None) or (dataset.real_attribute_mask is None):
+                dataset.data_feature_outputs_train is None) or (
+                dataset.real_attribute_mask is None):
             print(dataset.data_attribute_outputs_train)
             print(dataset.data_feature_outputs_train)
             print(dataset.real_attribute_mask)
@@ -428,7 +430,6 @@ class DoppelGANgerTFModel(Model):
                     continue
                 else:
                     last_iteration_found = True
-
                 for generated_samples_idx in range(generatedSamples_per_epoch):
                     print(
                         "generate {}-th sample from iteration_id-{}".format(
@@ -490,8 +491,31 @@ class DoppelGANgerTFModel(Model):
                             ),
                             data_attribute=attributes[0:split],
                         )
+                        print(os.path.join(
+                            save_path,
+                            "chunk_id-{}.npz".format(
+                                self._config["chunk_id"])
+                        ))
                     else:
-                        # save attributes/features/gen_flags/self._config to files
+                        # save attributes/features/gen_flags/self._config to
+                        # files
+
+                        print("GENERATOR......")
+                        print(output_syn_data_folder)
+                        save_path = os.path.join(
+                            output_syn_data_folder, "feat_raw")
+                        os.makedirs(save_path, exist_ok=True)
+                        np.savez(
+                            os.path.join(
+                                save_path,
+                                "chunk_id-{}_iteration_id-{}.npz".format(
+                                    self._config["chunk_id"], iteration_id)
+                            ),
+                            attributes=attributes,
+                            features=features,
+                            gen_flags=gen_flags,
+                            config=self._config
+                        )
                         pass
 
                         # syn_df = denormalize(
