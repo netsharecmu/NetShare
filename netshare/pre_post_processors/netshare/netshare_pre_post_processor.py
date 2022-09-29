@@ -452,8 +452,6 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
     def _post_process(self, input_folder, output_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
-        print(self._config)
-        () + 1
         if self._config["dataset_type"] == "pcap":
             # Step 1: denormalize to csv
 
