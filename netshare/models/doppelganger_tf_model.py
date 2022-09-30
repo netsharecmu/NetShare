@@ -516,7 +516,6 @@ class DoppelGANgerTFModel(Model):
                             gen_flags=gen_flags,
                             config=self._config
                         )
-                        pass
 
                         # syn_df = denormalize(
                         #     attributes, features, gen_flags, self._config)

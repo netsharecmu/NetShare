@@ -21,7 +21,7 @@ import netshare.ray as ray
 from gensim.models import Word2Vec
 from tqdm import tqdm
 
-from .util import denormalize, _merge_syn_df
+from .util import denormalize, _merge_syn_df, _recalulate_config_ids_in_each_config_group
 from .word2vec_embedding import word2vec_train
 from .preprocess_helper import countList2cdf, continuous_list_flag, plot_cdf
 from .preprocess_helper import df2chunks, split_per_chunk
@@ -452,6 +452,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
     def _post_process(self, input_folder, output_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
+        configs = []
         if self._config["dataset_type"] == "pcap":
             # Step 1: denormalize to csv
 
@@ -476,6 +477,8 @@ class NetsharePrePostProcessor(PrePostProcessor):
                     # recover dict from 0-d numpy array
                     # https://stackoverflow.com/questions/22661764/storing-a-dict-with-np-savez-gives-unexpected-result
                     config = data["config"][()]
+                    configs.append(config)
+
                     syn_df = denormalize(
                         attributes, features, gen_flags, config)
                     chunk_id, iteration_id = re.search(
@@ -493,7 +496,15 @@ class NetsharePrePostProcessor(PrePostProcessor):
                         index=False)
 
             # Step 2: pick the best among hyperparameters/tranining snapshots
-            # _merge_syn_df()
+            config_group_list = _recalulate_config_ids_in_each_config_group(
+                configs)
+            work_folder = os.path.dirname(input_folder)
+            _merge_syn_df(configs=configs,
+                          config_group_list=config_group_list,
+                          big_raw_df=pd.read_csv(os.path.join(
+                              work_folder, 'pre_processed_data', "raw.csv")),
+                          output_syn_data_folder=output_folder
+                          )
 
             # # convert generated pcap to csv for further postprocessing
             # # compile shared library for converting pcap to csv

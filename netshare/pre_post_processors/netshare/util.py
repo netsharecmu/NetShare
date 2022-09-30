@@ -1,4 +1,5 @@
 import os
+import re
 import pickle
 import math
 import socket
@@ -19,6 +20,7 @@ from .dist_metrics import (
     compute_metrics_netflow_v3,
     compute_metrics_pcap_v3
 )
+from ...model_managers.netshare_manager.netshare_util import get_configid_from_kv
 
 
 def denormalize(data_attribute, data_feature, data_gen_flag, config):
@@ -440,3 +442,28 @@ def _merge_syn_df(
                 "syn.pcap"
             )
             csv2pcap_single(best_syndf, best_synpcap_filename)
+
+
+def _recalulate_config_ids_in_each_config_group(configs):
+    config_id_list_victim = [i for i in range(len(configs))]
+    config_group_list = []
+    for config_id, config in enumerate(configs):
+        if config_id in config_id_list_victim:
+            config_group = {}
+            config_group["dp_noise_multiplier"] = config["dp_noise_multiplier"]
+            config_group["config_ids"] = []
+
+            num_chunks = config["n_chunks"]
+            for chunk_idx in range(num_chunks):
+                config_id_ = get_configid_from_kv(
+                    configs=configs,
+                    k="result_folder",
+                    v=re.sub(
+                        'chunkid-[0-9]+',
+                        'chunkid-{}'.format(chunk_idx),
+                        config["result_folder"]))
+                config_group["config_ids"].append(config_id_)
+                config_id_list_victim.remove(config_id_)
+
+            config_group_list.append(config_group)
+    return config_group_list
