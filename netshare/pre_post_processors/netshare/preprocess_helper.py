@@ -89,6 +89,10 @@ def df2chunks(big_raw_df, file_type,
         time_col_name = "time"
     elif file_type == "netflow":
         time_col_name = "ts"
+    elif file_type == "zeeklog":
+        time_col_name = "ts"
+    else:
+        raise ValueError("Unknown file type")
 
     # sanity sort
     big_raw_df = big_raw_df.sort_values(time_col_name)
@@ -98,14 +102,14 @@ def df2chunks(big_raw_df, file_type,
         chunk_size = math.ceil(big_raw_df.shape[0] / n_chunks)
         for chunk_id in range(n_chunks):
             df_chunk = big_raw_df.iloc[chunk_id *
-                                       chunk_size:((chunk_id+1)*chunk_size)]
+                                       chunk_size:((chunk_id + 1) * chunk_size)]
             dfs.append(df_chunk)
         return dfs, chunk_size
 
     elif split_type == "fixed_time":
         time_evenly_spaced = np.linspace(big_raw_df[time_col_name].min(
-        ), big_raw_df[time_col_name].max(), num=n_chunks+1)
-        time_evenly_spaced[-1] *= (1+eps)
+        ), big_raw_df[time_col_name].max(), num=n_chunks + 1)
+        time_evenly_spaced[-1] *= (1 + eps)
 
         chunk_time = (big_raw_df[time_col_name].max() -
                       big_raw_df[time_col_name].min()) / n_chunks
@@ -113,7 +117,7 @@ def df2chunks(big_raw_df, file_type,
         for chunk_id in range(n_chunks):
             df_chunk = big_raw_df[
                 (big_raw_df[time_col_name] >= time_evenly_spaced[chunk_id]) &
-                (big_raw_df[time_col_name] < time_evenly_spaced[chunk_id+1])]
+                (big_raw_df[time_col_name] < time_evenly_spaced[chunk_id + 1])]
             if len(df_chunk) == 0:
                 print("Raw chunk_id: {}, empty df_chunk!".format(chunk_id))
                 continue
@@ -138,6 +142,11 @@ def split_per_chunk(
         time_col = "time"
     elif config["dataset_type"] == "netflow":
         time_col = "ts"
+    elif config["dataset_type"] == "zeeklog":
+        time_col = "ts"
+    else:
+        raise ValueError("Unknown dataset type")
+
     split_name = config["split_name"]
     word2vec_vecSize = config["word2vec_vecSize"]
     file_type = config["dataset_type"]
@@ -203,8 +212,11 @@ def split_per_chunk(
                              str(group_name[3]), norm_option=True))
         attr_per_row += list(get_vector(embed_model,
                              str(group_name[4]), norm_option=True))
-        attr_per_row.append(
-            fields["flow_start"].normalize(df_group.iloc[0][time_col]))
+
+        # TODO: timestamp = raw doesn't have key called flow_start
+        if config["timestamp"] == "interarrival":
+            attr_per_row.append(
+                fields["flow_start"].normalize(df_group.iloc[0][time_col]))
 
         # cross-chunk generation
         if "multichunk_dep" in split_name:
@@ -271,6 +283,16 @@ def split_per_chunk(
                     if field in df_per_chunk.columns:
                         timeseries_per_step += fields[field].normalize(
                             row[field])
+            elif file_type == "zeeklog":
+
+                # continuous fields
+                for field in ["duration", "orig_bytes", "resp_bytes", "missed_bytes",
+                              "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes"]:
+                    timeseries_per_step.append(row[field])
+
+                # discrete fields
+                for field in ["service", "conn_state"]:
+                    timeseries_per_step += fields[field].normalize(row[field])
 
             feature_per_row.append(timeseries_per_step)
             data_gen_flag_per_row.append(1.0)
@@ -284,13 +306,13 @@ def split_per_chunk(
 
     print("data_attribute: {}, {}GB in memory".format(
         np.shape(data_attribute),
-        data_attribute.size*data_attribute.itemsize/1024/1024/1024))
+        data_attribute.size * data_attribute.itemsize / 1024 / 1024 / 1024))
     print("data_feature: {}, {}GB in memory".format(
         np.shape(data_feature),
-        data_feature.size*data_feature.itemsize/1024/1024/1024))
+        data_feature.size * data_feature.itemsize / 1024 / 1024 / 1024))
     print("data_gen_flag: {}, {}GB in memory".format(
         np.shape(data_gen_flag),
-        data_gen_flag.size*data_gen_flag.itemsize/1024/1024/1024))
+        data_gen_flag.size * data_gen_flag.itemsize / 1024 / 1024 / 1024))
 
     data_attribute_output = []
     data_feature_output = []
@@ -334,6 +356,11 @@ def split_per_chunk(
         for field in ['label', 'type']:
             if field in df_per_chunk.columns:
                 field_list.append(field)
+
+    elif file_type == "zeeklog":
+        field_list += ["duration", "orig_bytes", "resp_bytes", "missed_bytes",
+                       "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes",
+                       "service", "conn_state"]
 
     for field in field_list:
         field_output = fields[field].getOutputType()

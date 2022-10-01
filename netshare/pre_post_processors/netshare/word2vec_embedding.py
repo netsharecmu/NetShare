@@ -13,7 +13,7 @@ from sklearn.neighbors import NearestNeighbors
 
 def preprocess(csv, file_type="pcap", encode_IP='bit'):
     '''
-    file_type: pcap, netflow
+    file_type: pcap, netflow, zeeklog
     encode_IP: bit, word2vec
     '''
     sentences = []
