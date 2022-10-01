@@ -18,7 +18,8 @@ from .embedding_helper import (
 )
 from .dist_metrics import (
     compute_metrics_netflow_v3,
-    compute_metrics_pcap_v3
+    compute_metrics_pcap_v3,
+    compute_metrics_zeeklog_v3
 )
 from ...model_managers.netshare_manager.netshare_util import get_configid_from_kv
 
@@ -75,10 +76,12 @@ def denormalize(data_attribute, data_feature, data_gen_flag, config):
                 attr_per_row[128 + WORD2VEC_SIZE * 3])
             cur_pkt_time = flow_start_time
 
-        # remove duplicated attributes (five tuples)
-        if (srcip, dstip, srcport, dstport, proto) in attr_set:
-            continue
-        attr_set.add((srcip, dstip, srcport, dstport, proto))
+        # TODO: Doesn't zeeklog require this?
+        if file_type != "zeeklog":
+            # remove duplicated attributes (five tuples)
+            if (srcip, dstip, srcport, dstport, proto) in attr_set:
+                continue
+            attr_set.add((srcip, dstip, srcport, dstport, proto))
 
         for j in range(np.shape(data_feature)[1]):
             if data_gen_flag[i][j] == 1.0:
@@ -94,9 +97,11 @@ def denormalize(data_attribute, data_feature, data_gen_flag, config):
                     time_col = "ts"
                 elif file_type == "pcap":
                     time_col = "time"
+                elif file_type == "zeeklog":
+                    time_col = "ts"
                 else:
                     raise ValueError(
-                        "Unknown file type! Currently support PCAP and NetFlow...")
+                        "Unknown file type! Currently support PCAP, NetFlow and Zeeklog...")
                 if interarrival_flag == False:
                     df_per_row[time_col] = fields[time_col].denormalize(
                         data_feature[i][j][0])
@@ -140,6 +145,24 @@ def denormalize(data_attribute, data_feature, data_gen_flag, config):
                         data_feature[i][j][7])
                     df_per_row["ttl"] = fields["ttl"].denormalize(
                         data_feature[i][j][8])
+
+                elif file_type == "zeeklog":
+                    idx = 1
+                    # continuous fields
+                    for field in ["duration", "orig_bytes", "resp_bytes", "missed_bytes",
+                                  "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes"]:
+                        df_per_row[field] = math.exp(
+                            fields[field].denormalize(
+                                data_feature[i][j][idx])) - 1
+
+                        idx += 1
+
+                    # categorical fields
+                    for field in ["service", "conn_state"]:
+                        num_class = len(fields[field].choices)
+                        df_per_row[field] = fields[field].denormalize(
+                            data_feature[i][j][idx:idx + num_class])
+                        idx += num_class
 
                 else:
                     raise ValueError(
@@ -220,8 +243,18 @@ def compare_rawdf_syndfs(raw_df, syn_dfs, data_type):
             syn_df["pkt"] = np.round(syn_df["pkt"])
             syn_df["byt"] = np.round(syn_df["byt"])
             metrics_dict = compute_metrics_netflow_v3(raw_df, syn_df)
+        elif data_type == "zeeklog":
+            syn_df["orig_bytes"] = np.round(syn_df["orig_bytes"])
+            syn_df["resp_bytes"] = np.round(syn_df["resp_bytes"])
+            syn_df["missed_bytes"] = np.round(syn_df["missed_bytes"])
+            syn_df["orig_pkts"] = np.round(syn_df["orig_pkts"])
+            syn_df["orig_ip_bytes"] = np.round(syn_df["orig_ip_bytes"])
+            syn_df["resp_pkts"] = np.round(syn_df["resp_pkts"])
+            syn_df["resp_ip_bytes"] = np.round(syn_df["resp_ip_bytes"])
+            metrics_dict = compute_metrics_zeeklog_v3(raw_df, syn_df)
         else:
-            raise ValueError("Unknown data type! Must be netflow or pcap...")
+            raise ValueError(
+                "Unknown data type! Must be netflow or pcap or zeeklog...")
         metrics_dict_list.append(metrics_dict)
 
 #     print(metrics_dict_list)
@@ -337,6 +370,9 @@ def _merge_syn_df(
             elif config["dataset_type"] == "netflow":
                 data_type = "netflow"
                 time_col_name = "ts"
+            elif config["dataset_type"] == "zeeklog":
+                data_type = "zeeklog"
+                time_col_name = "ts"
             else:
                 raise ValueError(
                     "Unknown data type! Must be netflow or pcap...")
@@ -430,8 +466,11 @@ def _merge_syn_df(
             time_col_name = "time"
         elif configs[0]["dataset_type"] == "netflow":
             time_col_name = "ts"
+        elif configs[0]["dataset_type"] == "zeeklog":
+            time_col_name = "ts"
         else:
-            raise ValueError("Unknown data type! Must be netflow or pcap...")
+            raise ValueError(
+                "Unknown data type! Must be netflow or pcap or zeeklog...")
 
         best_syndf = best_syndf.sort_values(time_col_name)
         best_syndf.to_csv(best_syndf_filename, index=False)
@@ -467,3 +506,7 @@ def _recalulate_config_ids_in_each_config_group(configs):
 
             config_group_list.append(config_group)
     return config_group_list
+
+
+def last_lvl_folder(folder):
+    return str(Path(folder).parents[0])

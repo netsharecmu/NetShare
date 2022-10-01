@@ -68,8 +68,8 @@ def jsd(p, q, type):
     if type == "discrete":
         # append 0 to shorter arrays: only for IP
         pq_max_len = max(len(p), len(q))
-        p += [0.0]*(pq_max_len - len(p))
-        q += [0.0]*(pq_max_len - len(q))
+        p += [0.0] * (pq_max_len - len(p))
+        q += [0.0] * (pq_max_len - len(q))
         assert (len(p) == len(q))
         return distance.jensenshannon(p, q)**2
 
@@ -112,26 +112,28 @@ def compute_IP_rank_distance(real_list, syn_list, type="EMD"):
     real_rank_list = []
     idx = 1
     for k, v in real_HH_count.items():
-        real_rank_list += [idx]*v
+        real_rank_list += [idx] * v
         idx += 1
 
     syn_rank_list = []
     idx = 1
     for k, v in syn_HH_count.items():
-        syn_rank_list += [idx]*v
+        syn_rank_list += [idx] * v
         idx += 1
 
     if type == "EMD":
         return wasserstein_distance(real_rank_list, syn_rank_list)
     elif type == "JSD":
-        return jsd(real_HH_count.values(), syn_HH_count.values(), type="discrete")
+        return jsd(real_HH_count.values(),
+                   syn_HH_count.values(), type="discrete")
     else:
         raise ValueError("Unknown distance metric!")
 
 # type == "freq": return the freq dict
 
 
-def compute_port_proto_distance(real_list, syn_list, opt, prstr_raw=True, prstr_syn=True, type="TV"):
+def compute_port_proto_distance(
+        real_list, syn_list, opt, prstr_raw=True, prstr_syn=True, type="TV"):
     real_list = list(real_list)
     syn_list = list(syn_list)
 
@@ -144,14 +146,14 @@ def compute_port_proto_distance(real_list, syn_list, opt, prstr_raw=True, prstr_
             real_list_numeric = []
             for i in real_list:
                 i = i.strip()
-                real_list_numeric.append(dict_pr_str2int[i])
+                real_list_numeric.append(dict_pr_str2int[i.upper()])
             real_list = real_list_numeric
 
         if isinstance(syn_list[0], str):
             syn_list_numeric = []
             for i in syn_list:
                 i = i.strip()
-                syn_list_numeric.append(dict_pr_str2int[i])
+                syn_list_numeric.append(dict_pr_str2int[i.upper()])
             syn_list = syn_list_numeric
 
     if opt == "srcport" or opt == "dstport":
@@ -161,13 +163,13 @@ def compute_port_proto_distance(real_list, syn_list, opt, prstr_raw=True, prstr_
             real_dict[i] = 0
             syn_dict[i] = 0
         for i in real_list:
-            real_dict[int(i)] += float(1/len(real_list))
+            real_dict[int(i)] += float(1 / len(real_list))
         for i in syn_list:
             if i < 0:
                 i = 0
             elif i > 65535:
                 i = 65535
-            syn_dict[int(i)] += float(1/len(syn_list))
+            syn_dict[int(i)] += float(1 / len(syn_list))
 
         if type == "TV":
             tv_distance = 0
@@ -188,9 +190,9 @@ def compute_port_proto_distance(real_list, syn_list, opt, prstr_raw=True, prstr_
             real_dict[i] = 0
             syn_dict[i] = 0
         for i in real_list:
-            real_dict[int(i)] += float(1/len(real_list))
+            real_dict[int(i)] += float(1 / len(real_list))
         for i in syn_list:
-            syn_dict[int(i)] += float(1/len(syn_list))
+            syn_dict[int(i)] += float(1 / len(syn_list))
 
         if type == "TV":
             tv_distance = 0
@@ -245,6 +247,39 @@ def compute_metrics_netflow_v3(raw_df, syn_df):
         else:
             metrics_dict[metric] = wasserstein_distance(
                 list(raw_df[metric]), list(syn_df[metric]))
+
+    return metrics_dict
+
+
+def compute_metrics_zeeklog_v3(raw_df, syn_df):
+    '''JSD + EMD + ranking'''
+    metrics_dict = {}
+
+    # IP popularity rank
+    for metric in ["srcip", "dstip"]:
+        metrics_dict[metric] = compute_IP_rank_distance(
+            raw_df[metric], syn_df[metric], type="JSD")
+
+    # TV distance for port/protocol
+    for metric in ["srcport", "dstport", "proto"]:
+        metrics_dict[metric] = compute_port_proto_distance(
+            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=True, type="JSD")
+
+    # ts,duration,orig_bytes,resp_bytes,missed_bytes,orig_pkts,
+    # orig_ip_bytes,resp_pkts,resp_ip_bytes
+    for metric in ["ts", "duration", "orig_bytes", "resp_bytes", "missed_bytes",
+                   "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes"]:
+        if metric == "ts":
+            raw_df = raw_df.sort_values("ts").reset_index()
+            syn_df = syn_df.sort_values("ts").reset_index()
+            raw_list = list(raw_df["ts"] - raw_df["ts"][0])
+            syn_list = list(syn_df["ts"] - syn_df["ts"][0])
+            metrics_dict[metric] = wasserstein_distance(raw_list, syn_list)
+        else:
+            metrics_dict[metric] = wasserstein_distance(
+                list(raw_df[metric]), list(syn_df[metric]))
+
+    # TODO: Important!! How to define the JSD of service and conn_state?
 
     return metrics_dict
 

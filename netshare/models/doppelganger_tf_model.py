@@ -238,6 +238,10 @@ class DoppelGANgerTFModel(Model):
         elif self._config["dataset_type"] == "pcap":
             self._config["generate_num_train_sample"] = num_real_samples
             self._config["generate_num_test_sample"] = 0
+        elif self._config["dataset_type"] == "zeeklog":
+            self._config["generate_num_train_sample"] = int(
+                1.25 * num_real_samples)
+            self._config["generate_num_test_sample"] = 0
 
         if self._config["given_data_attribute_flag"]:
             self._config["generate_num_train_sample"] = \

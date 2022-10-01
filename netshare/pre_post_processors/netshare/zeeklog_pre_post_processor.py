@@ -8,6 +8,7 @@ import os
 import math
 import json
 import sys
+import re
 from attr import attr
 
 import pandas as pd
@@ -19,6 +20,7 @@ import netshare.ray as ray
 from tqdm import tqdm
 from gensim.models import Word2Vec, word2vec
 from sklearn import preprocessing
+from .util import denormalize, _recalulate_config_ids_in_each_config_group, _merge_syn_df
 from .word2vec_embedding import word2vec_train
 from .preprocess_helper import df2chunks, continuous_list_flag, split_per_chunk
 from ..pre_post_processor import PrePostProcessor
@@ -329,7 +331,61 @@ class ZeeklogPrePostProcessor(PrePostProcessor):
         return True
 
     def _post_process(self, input_folder, output_folder, log_folder):
-        pass
+        print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
+        configs = []
+
+        # Step 1: denormalize to csv
+
+        print("POSTPROCESSOR......")
+        print(input_folder)
+        paths = [os.path.join(input_folder, p)
+                 for p in os.listdir(input_folder)]
+
+        for path in paths:
+            feat_raw_path = os.path.join(path, "feat_raw")
+            syn_path = os.path.join(path, "syn_dfs")
+            os.makedirs(syn_path, exist_ok=True)
+
+            data_files = os.listdir(feat_raw_path)
+
+            for d in data_files:
+                data_path = os.path.join(feat_raw_path, d)
+                data = np.load(data_path, allow_pickle=True)
+                attributes = data["attributes"]
+                features = data["features"]
+                gen_flags = data["gen_flags"]
+                # recover dict from 0-d numpy array
+                # https://stackoverflow.com/questions/22661764/storing-a-dict-with-np-savez-gives-unexpected-result
+                config = data["config"][()]
+                configs.append(config)
+
+                syn_df = denormalize(
+                    attributes, features, gen_flags, config)
+                chunk_id, iteration_id = re.search(
+                    r"chunk_id-(\d+)_iteration_id-(\d+).npz", d).groups()
+                print(syn_df.shape)
+
+                save_path = os.path.join(
+                    syn_path,
+                    "chunk_id-{}".format(chunk_id))
+                os.makedirs(save_path, exist_ok=True)
+                syn_df.to_csv(
+                    os.path.join(
+                        save_path,
+                        "syn_df_iteration_id-{}.csv".format(iteration_id)),
+                    index=False)
+
+            # Step 2: pick the best among hyperparameters/tranining snapshots
+            config_group_list = _recalulate_config_ids_in_each_config_group(
+                configs)
+            work_folder = os.path.dirname(input_folder)
+            _merge_syn_df(configs=configs,
+                          config_group_list=config_group_list,
+                          big_raw_df=pd.read_csv(os.path.join(
+                              work_folder, 'pre_processed_data', "raw.csv")),
+                          output_syn_data_folder=output_folder
+                          )
+        return True
 
 
 def main(args):
