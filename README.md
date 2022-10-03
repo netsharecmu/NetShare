@@ -31,6 +31,8 @@ Our paper uses **six** public datasets for reproducibility. Please download the 
 
 You may also refer to the [README](traces/README.md) for detailed descriptions of the datasets.
 
+You may also refer to [a quick guide](netshare/pre_post_processors/README.md) to add your own datasets and [an example on pre-/post-processing zeek logs](netshare/pre_post_processors/netshare/zeeklog_pre_post_processor.py).
+
 
 # Getting started
 ## Step 1: Install NetShare Python package (Required)
