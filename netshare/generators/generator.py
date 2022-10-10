@@ -101,7 +101,8 @@ class Generator(object):
             output_folder=output_folder,
             log_folder=log_folder)
 
-    def _post_process(self, input_folder, output_folder, log_folder):
+    def _post_process(self, input_folder, output_folder,
+                      pre_processed_data_folder, log_folder):
         if not self._check_folder(output_folder):
             return False
         if not self._check_folder(log_folder):
@@ -109,6 +110,7 @@ class Generator(object):
         return self._pre_post_processor.post_process(
             input_folder=input_folder,
             output_folder=output_folder,
+            pre_processed_data_folder=pre_processed_data_folder,
             log_folder=log_folder)
 
     def _train(self, input_train_data_folder, output_model_folder, log_folder):
@@ -175,6 +177,8 @@ class Generator(object):
                 output_folder=self._get_post_processed_data_folder(
                     work_folder),
                 log_folder=self._get_post_processed_data_log_folder(
+                    work_folder),
+                pre_processed_data_folder=self._get_pre_processed_data_folder(
                     work_folder)):
             print('Failed to post-process data')
             return False

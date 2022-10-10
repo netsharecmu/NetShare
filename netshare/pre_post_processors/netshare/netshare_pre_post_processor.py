@@ -450,7 +450,8 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
         return True
 
-    def _post_process(self, input_folder, output_folder, log_folder):
+    def _post_process(self, input_folder, output_folder,
+                      pre_processed_data_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
         configs = []
         if self._config["dataset_type"] == "pcap":
