@@ -5,9 +5,8 @@ from netshare.utils import Tee
 
 
 class ModelManager(ABC):
-    def __init__(self, config, global_config):
+    def __init__(self, config):
         self._config = config
-        self._global_config = global_config
 
     @abstractmethod
     def _train(self, input_train_data_folder, output_model_folder,

@@ -48,9 +48,9 @@ class Generator(object):
 
         model_manager_class = getattr(
             model_managers, config['model_manager']['class'])
-        model_manager_config = config['model_manager']['config']
-        self._model_manager = model_manager_class(
-            config=model_manager_config, global_config=global_config)
+        model_manager_config = Config(global_config)
+        model_manager_config.update(config['model_manager']['config'])
+        self._model_manager = model_manager_class(config=model_manager_config)
 
         model_class = getattr(models, config['model']['class'])
         model_config = config['model']['config']
