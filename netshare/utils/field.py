@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from .output import Normalization, OutputType, Output
 
 
@@ -70,17 +71,22 @@ class DiscreteField(Field):
         self.choices = choices
 
     def normalize(self, x):
-        index = self.choices.index(x)
+        if not isinstance(x, (list, np.ndarray)):
+            norm_x = [x]
+        else:
+            norm_x = x
+        norm_x = pd.DataFrame(norm_x).astype(
+            pd.CategoricalDtype(categories=self.choices))
+        norm_x = pd.get_dummies(norm_x).to_numpy()
+        if not isinstance(x, (list, np.ndarray)):
+            norm_x = norm_x[0]
 
-        norm_x = np.zeros_like(self.choices, dtype=float)
-        norm_x[index] = 1.0
-
-        return list(norm_x)
+        return norm_x
 
     def denormalize(self, norm_x):
-        index = np.argmax(norm_x)
+        index = np.argmax(norm_x, axis=-1)
 
-        return self.choices[index]
+        return np.asarray(self.choices)[index]
 
     def getOutputType(self):
         return Output(
