@@ -29,6 +29,9 @@ class ContinuousField(Field):
 
     # Normalize x in [a, b]: x' = (b-a)(x-min x)/(max x - minx) + a
     def normalize(self, x):
+        if x.shape[-1] != self.dim_x:
+            raise ValueError(f"Dimension is {x.shape[-1]}. "
+                             f"Expected dimension is {self.dim_x}")
         # [0, 1] normalization
         if self.norm_option == Normalization.ZERO_ONE:
             return np.asarray((x - self.min_x) / (self.max_x - self.min_x))
@@ -37,11 +40,13 @@ class ContinuousField(Field):
         elif self.norm_option == Normalization.MINUSONE_ONE:
             return np.asarray(2 * (x - self.min_x)
                               / (self.max_x - self.min_x) - 1)
-
         else:
             raise Exception("Not valid normalization option!")
 
     def denormalize(self, norm_x):
+        if norm_x.shape[-1] != self.dim_x:
+            raise ValueError(f"Dimension is {norm_x.shape[-1]}. "
+                             f"Expected dimension is {self.dim_x}")
         # [0, 1] normalization
         if self.norm_option == Normalization.ZERO_ONE:
             return norm_x * float(self.max_x - self.min_x) + self.min_x
