@@ -40,9 +40,11 @@ class Generator(object):
 
         pre_post_processor_class = getattr(
             pre_post_processors, config['pre_post_processor']['class'])
-        pre_post_processor_config = config['pre_post_processor']['config']
+        pre_post_processor_config = Config(global_config)
+        pre_post_processor_config.update(
+            config['pre_post_processor']['config'])
         self._pre_post_processor = pre_post_processor_class(
-            config=pre_post_processor_config, global_config=global_config)
+            config=pre_post_processor_config)
 
         model_manager_class = getattr(
             model_managers, config['model_manager']['class'])

@@ -5,11 +5,8 @@ from netshare.utils import Tee
 
 
 class PrePostProcessor(ABC):
-    def __init__(self, config, global_config):
-        self._config = {
-            **config,
-            **global_config,
-        }
+    def __init__(self, config):
+        self._config = config
 
     @abstractmethod
     def _pre_process(self, input_folder, output_folder, log_folder):
