@@ -2,8 +2,21 @@
     "global_config": {
         "original_data_file": "../traces/zeek_conn_log/raw.csv",
         "dataset_type": "zeeklog",
-        "n_chunks": 1,
+        "n_chunks": 2,
         "dp": false
+    },
+    "model": {
+        "class": "DoppelGANgerTFModel",
+        "config": {
+            "batch_size": 100,
+            "sample_len": [
+                1
+            ],
+            "sample_len_expand": true,
+            "iteration": 40,
+            "extra_checkpoint_freq": 10,
+            "epoch_checkpoint_freq": 5
+        }
     },
     "default": "zeeklog.json"
 }
