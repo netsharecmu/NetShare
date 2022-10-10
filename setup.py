@@ -35,7 +35,7 @@ setup(
         "annoy",
         "pyshark",
         "scapy",
-        "ray",
+        "ray==1.13.0",
         "ray[default]",
         "multiprocess",
         "addict",
