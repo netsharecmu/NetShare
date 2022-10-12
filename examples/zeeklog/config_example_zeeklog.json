@@ -2,7 +2,7 @@
     "global_config": {
         "original_data_file": "../traces/zeek_conn_log/raw.csv",
         "dataset_type": "zeeklog",
-        "n_chunks": 2,
+        "n_chunks": 1,
         "dp": false
     },
     "model": {
@@ -12,10 +12,7 @@
             "sample_len": [
                 1
             ],
-            "sample_len_expand": true,
-            "iteration": 40,
-            "extra_checkpoint_freq": 10,
-            "epoch_checkpoint_freq": 5
+            "sample_len_expand": true
         }
     },
     "default": "zeeklog.json"

@@ -24,7 +24,16 @@ def change_order(path, figure_stored_relative_folder_for_vis):
         "srcport",
         "dstip",
         "flow_size",
-        "pkt_len"
+        "pkt_len",
+        "service",
+        "conn_state",
+        "duration",
+        "ts",
+        "orig_bytes",
+        "resp_bytes",
+        "missed_bytes",
+        "orig_ip_bytes",
+        "resp_ip_bytes"
     ]
     caption_list = ["Source IP popularity rank",
                     "Destination port number distribution",
@@ -35,10 +44,19 @@ def change_order(path, figure_stored_relative_folder_for_vis):
                     "Source port number distribution",
                     "Destination IP popularity rank",
                     "Flow size distribution",
-                    "Packet size (bytes)"
+                    "Packet size (bytes)",
+                    "Application protocol ID sent over connection",
+                    "Connection state",
+                    "How long connetion lasted (seconds)",
+                    "timestamp of first packet",
+                    "Number of payload bytes originator sent",
+                    "Number of payload bytes responder sent",
+                    "Number of bytes missed (packet loss)",
+                    "Number of originator IP bytes",
+                    "Number of responder IP bytes"
                     ]
 
-    for i in range(10):
+    for i in range(len(suffix_list)):
         suffix = suffix_list[i]
         for _, x in enumerate(static_path_files):
             if suffix in x:
