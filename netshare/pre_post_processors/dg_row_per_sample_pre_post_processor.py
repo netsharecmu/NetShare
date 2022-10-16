@@ -160,11 +160,12 @@ class DGRowPerSamplePrePostProcessor(PrePostProcessor):
             timeseries = []
             metadata = []
             dim = 0
-            for field in metadata_fields:
+            for field_i, field in enumerate(metadata_fields):
                 sub_metadata = field.denormalize(
                     unnormalized_metadata[
                         :, dim: dim + field.getOutputType().dim])
-                if getattr(field, 'log1p_norm', False):
+                if getattr(self._config.metadata[field_i], 'log1p_norm',
+                           False):
                     sub_metadata = np.exp(sub_metadata) - 1
                 if isinstance(field, ContinuousField):
                     sub_metadata = sub_metadata[:, 0]
@@ -174,11 +175,12 @@ class DGRowPerSamplePrePostProcessor(PrePostProcessor):
 
             timeseries = []
             dim = 0
-            for field in timeseries_fields:
+            for field_i, field in enumerate(timeseries_fields):
                 sub_timeseries = field.denormalize(
                     unnormalized_timeseries[
                         :, :, dim: dim + field.getOutputType().dim])
-                if getattr(field, 'log1p_norm', False):
+                if getattr(self._config.timeseries[field_i], 'log1p_norm',
+                           False):
                     sub_timeseries = np.exp(sub_timeseries) - 1
                 if isinstance(field, ContinuousField):
                     sub_timeseries = sub_timeseries[:, :, 0]
@@ -198,5 +200,7 @@ class DGRowPerSamplePrePostProcessor(PrePostProcessor):
                 for i in tqdm(range(unnormalized_timeseries.shape[0])):
                     writer.writerow(
                         [d[i] for d in metadata] +
-                        [sd for d in timeseries for sd in d[i][:int(np.sum(data_gen_flag[i]))]])
+                        [sd
+                         for d in timeseries
+                         for sd in d[i][:int(np.sum(data_gen_flag[i]))]])
         return True
