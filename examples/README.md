@@ -4,7 +4,7 @@ We support multiple common data schemas and here are a few examples with corresp
 Single-event schema contains one timeseries per row.
 
 ## Data schema
-| Timestamp (optional) | Metadata 1 | Metadata 2 | ... | Measurement 1 | Measurement 2 | ... |
+| Timestamp (optional) | Metadata 1 | Metadata 2 | ... | Timeseries 1 | Timeseries 2 | ... |
 |:--------------------:|:----------:|:----------:|:---:|:-------------:|:-------------:|:---:|
 |          t1          |            |            |     |               |               |     |
 |          t2          |            |            |     |               |               |     |
