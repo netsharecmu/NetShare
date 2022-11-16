@@ -1,6 +1,5 @@
-from base64 import encode
 import os
-import argparse
+import random
 
 from gensim.models import Word2Vec
 import pandas as pd
@@ -11,30 +10,8 @@ from .embedding_helper import get_original_obj, get_vector
 from sklearn.neighbors import NearestNeighbors
 
 
-def preprocess(csv, file_type="pcap", encode_IP='bit'):
-    '''
-    file_type: pcap, netflow, zeeklog
-    encode_IP: bit, word2vec
-    '''
-    sentences = []
-    for row in range(0, len(csv)):
-        if encode_IP == 'word2vec':
-            sentence = [csv.at[row, 'srcip'], csv.at[row, 'dstip'],
-                        csv.at[row, 'srcport'], csv.at[row, 'dstport'],
-                        csv.at[row, 'proto']]
-        elif encode_IP == 'bit':
-            sentence = [csv.at[row, 'srcport'],
-                        csv.at[row, 'dstport'],
-                        csv.at[row, 'proto']]
-
-        sentence = list(map(str, sentence))
-        sentences.append(sentence)
-
-    return sentences
-
-
-def test_embed_bidirectional(model_file, ann, dic, word):
-    model = Word2Vec.load(model_file)
+def test_embed_bidirectional(model_path, ann, dic, word):
+    model = Word2Vec.load(model_path)
 
     raw_vec = get_vector(model, word, False)
     normed_vec = get_vector(model, word, True)
@@ -49,74 +26,73 @@ def test_embed_bidirectional(model_file, ann, dic, word):
     print()
 
 
-def test_model(df, model, vec_len, file_type, n_trees, encode_IP):
-    if encode_IP == 'word2vec':
-        ann_ip, ip_dic, ann_port, port_dic, ann_proto, proto_dic = \
-            build_annoy_dictionary_word2vec(
-                csv=df,
-                model=model,
-                length=vec_len,
-                file_type=file_type,
-                n_trees=n_trees,
-                encode_IP=encode_IP)
-    elif encode_IP == 'bit':
-        ann_port, port_dic, ann_proto, proto_dic = \
-            build_annoy_dictionary_word2vec(
-                csv=df,
-                model=model,
-                length=vec_len,
-                file_type=file_type,
-                n_trees=n_trees,
-                encode_IP=encode_IP)
+def test_model(
+    df,
+    model_path,
+    word2vec_cols,
+    word2vec_size,
+    annoy_n_trees
+):
+    dict_type_annDictPair = build_annoy_dictionary_word2vec(
+        df=df,
+        model_path=model_path,
+        word2vec_cols=word2vec_cols,
+        word2vec_size=word2vec_size,
+        n_trees=annoy_n_trees
+    )
 
-    if encode_IP == 'word2vec':
-        ip_word = str(df.at[10, 'srcip'])
-    port_word = "443"
-    proto_word = str(df.at[10, 'proto'])
-
-    if encode_IP == 'word2vec':
-        test_embed_bidirectional(model, ann_ip, ip_dic, ip_word)
-    test_embed_bidirectional(model, ann_port, port_dic, port_word)
-    test_embed_bidirectional(model, ann_proto, proto_dic, proto_word)
+    for col in word2vec_cols:
+        type = col.method.split("_")[1]
+        word = random.choice(df[col.column])
+        print("Testing {col.column}...")
+        test_embed_bidirectional(
+            model_path=model_path,
+            ann=dict_type_annDictPair[type][0],
+            dic=dict_type_annDictPair[type][1],
+            word=word)
 
 
 def word2vec_train(
     df,
     out_dir,
-    file_type,
-    word_vec_size=10,
-    n_trees=100,
-    encode_IP='bit',
+    model_name,
+    word2vec_cols,
+    word2vec_size,
+    annoy_n_trees,
+    force_retrain=False,  # retrain from scratch
     model_test=False
 ):
-    model_name = os.path.join(
-        out_dir, "word2vec_vecSize_{}.model".format(word_vec_size))
+    model_path = os.path.join(
+        out_dir,
+        "{}_{}.model".format(model_name, word2vec_size))
 
-    if os.path.exists(model_name):
+    if os.path.exists(model_path) and not force_retrain:
         print("Loading Word2Vec pre-trained model...")
-        model = Word2Vec.load(model_name)
+        model = Word2Vec.load(model_path)
     else:
         print("Training Word2Vec model from scratch...")
-        sentences = preprocess(
-            csv=df,
-            file_type=file_type,
-            encode_IP=encode_IP)
+        sentences = []
+        for row in range(0, len(df)):
+            sentence = [str(df.at[row, col])
+                        for col in [c.column for c in word2vec_cols]]
+            sentences.append(sentence)
+
         model = Word2Vec(
             sentences=sentences,
-            size=word_vec_size,
+            size=word2vec_size,
             window=5,
             min_count=1,
             workers=10)
-        model.save(model_name)
-    print(f"Word2Vec model is saved at {model_name}")
+        model.save(model_path)
+    print(f"Word2Vec model is saved at {model_path}")
 
     if model_test:
         test_model(
             df=df,
-            model=model_name,
-            vec_len=word_vec_size,
-            file_type=file_type,
-            n_trees=n_trees,
-            encode_IP=encode_IP)
+            model_path=model_path,
+            word2vec_cols=word2vec_cols,
+            word2vec_size=word2vec_size,
+            annoy_n_trees=annoy_n_trees
+        )
 
-    return model_name
+    return model_path

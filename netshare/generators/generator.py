@@ -195,21 +195,21 @@ class Generator(object):
                     work_folder)):
             print('Failed to pre-process data')
             return False
-        if not self._train(
-                input_train_data_folder=self._get_pre_processed_data_folder(
-                    work_folder),
-                output_model_folder=self._get_model_folder(work_folder),
-                log_folder=self._get_model_log_folder(work_folder)):
-            print('Failed to train the model')
-            return False
+        # if not self._train(
+        #         input_train_data_folder=self._get_pre_processed_data_folder(
+        #             work_folder),
+        #         output_model_folder=self._get_model_folder(work_folder),
+        #         log_folder=self._get_model_log_folder(work_folder)):
+        #     print('Failed to train the model')
+        #     return False
         return True
 
     def train_and_generate(self, work_folder):
         work_folder = os.path.expanduser(work_folder)
         if not self.train(work_folder):
             return False
-        if not self.generate(work_folder):
-            return False
+        # if not self.generate(work_folder):
+        #     return False
         return True
 
     def visualize(self, work_folder):

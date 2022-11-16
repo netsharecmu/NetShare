@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 
 from annoy import AnnoyIndex
@@ -7,69 +8,48 @@ from tqdm import tqdm
 
 
 def build_annoy_dictionary_word2vec(
-        csv, model, length,
-        file_type="pcap", n_trees=100, encode_IP='bit'):
-    print("n_trees:", n_trees)
+        df,
+        model_path,
+        word2vec_cols,
+        word2vec_size,
+        n_trees):
 
-    if encode_IP == 'word2vec':
-        ip_set = set(list(set(csv["srcip"])) + list(set(csv["dstip"])))
-    port_set = set(list(set(csv["srcport"])) + list(set(csv["dstport"])))
-    proto_set = set(csv["proto"])
-
-    print("Finish building field set...")
-
-    if encode_IP == 'word2vec':
-        ann_ip = AnnoyIndex(length, 'angular')
-    ann_port = AnnoyIndex(length, 'angular')
-    ann_proto = AnnoyIndex(length, 'angular')
-
-    model = Word2Vec.load(model)
+    model = Word2Vec.load(model_path)
     wv = model.wv
 
-    if encode_IP == 'word2vec':
-        ip_dic = {}
-        ip_index = 0
+    # type : [cols]
+    # ("ip": ["srcip", "dstip"])
+    # "port": ["srcport", "dstport"]
+    # "proto": ["proto"]
+    dict_type_cols = {}
+    for col in word2vec_cols:
+        type = col.method.split("_")[1]
+        if type not in dict_type_cols:
+            dict_type_cols[type] = []
+        dict_type_cols[type].append(col.column)
+    print(dict_type_cols)
 
-    port_dic = {}
-    port_index = 0
-    proto_dic = {}
-    proto_index = 0
+    sets = []
+    dict_type_annDictPair = {}
+    for type, cols in dict_type_cols.items():
+        type_set = set(list(itertools.chain.from_iterable(
+            [list(df[col]) for col in cols])))
+        type_ann = AnnoyIndex(word2vec_size, 'angular')
+        type_dict = {}
+        index = 0
 
-    if encode_IP == 'word2vec':
-        for ip in ip_set:
-            ann_ip.add_item(ip_index, get_vector(
-                model, str(ip), norm_option=True))
-            # ann_ip.add_item(ip_index, wv[str(ip)])
-            ip_dic[ip_index] = ip
-            ip_index += 1
+        for ele in type_set:
+            type_ann.add_item(index, get_vector(
+                model, str(ele), norm_option=True))
+            type_dict[index] = ele
+            index += 1
+        type_ann.build(n_trees)
 
-    for port in port_set:
-        ann_port.add_item(port_index, get_vector(
-            model, str(port), norm_option=True))
-        # ann_port.add_item(port_index, wv[str(port)])
-        # # every ip/port/proto should be in the ``wv''
-        # as this is used to construct the model.
-        port_dic[port_index] = port
-        port_index += 1
-
-    for proto in proto_set:
-        ann_proto.add_item(proto_index, get_vector(
-            model, str(proto), norm_option=True))
-        # ann_proto.add_item(proto_index, wv[str(proto)])
-        proto_dic[proto_index] = proto
-        proto_index += 1
-
-    if encode_IP == 'word2vec':
-        ann_ip.build(n_trees)
-    ann_port.build(n_trees)
-    ann_proto.build(n_trees)
+        dict_type_annDictPair[type] = (type_ann, type_dict)
 
     print("Finish building Angular trees...")
 
-    if encode_IP == 'word2vec':
-        return (ann_ip, ip_dic, ann_port, port_dic, ann_proto, proto_dic)
-    elif encode_IP == 'bit':
-        return (ann_port, port_dic, ann_proto, proto_dic)
+    return dict_type_annDictPair
 
 
 def get_original_obj(ann, vector, dic):
