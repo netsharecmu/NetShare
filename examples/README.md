@@ -182,3 +182,42 @@ Multi-event data schema contains multiple timeseries per row.
 |:------:|:-----------:|:-----:|:-------------------:|:-------------------:|:---:|
 |        |             |       |                     |                     |     |
 |        |             |       |                     |                     |     |
+
+### Configuration file (tentative)
+```Json
+"metadata": [
+    {
+        "column": "Page",
+        "regex": ".*_([^_]*)_[^_]*_[^_]*$",
+        "type": "string",
+        "name": "Domain"
+    },
+    {
+        "column": "Page",
+        "regex": ".*_[^_]*_([^_]*)_[^_]*$",
+        "type": "string",
+        "name": "Access type"
+    },
+    {
+        "column": "Page",
+        "regex": ".*_[^_]*_[^_]*_([^_]*)$",
+        "type": "string",
+        "name": "Agent"
+    }
+],
+"timeseries": [
+    {
+        "columns": [
+            "2015-07-01",
+            "2015-07-02",
+            "2015-07-03",
+            "2015-07-04",
+            "2015-07-05",
+            ...
+        ],
+        "type": "float",
+        "normalization": "MINUSONE_ONE",
+        "log1p_norm": true
+    }
+]
+```
