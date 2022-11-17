@@ -13,7 +13,7 @@
         "config": {
             "num_train_samples": 50000,
             "num_test_samples": 50000,
-            "EPS": 1e-8,
+            "max_flow_len": null,
             "timestamp": {
                 "column": "ts",
                 "generation": true,

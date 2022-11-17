@@ -83,19 +83,25 @@ def IPs_str2int(IPs_str):
     return [IP_str2int(i) for i in IPs_str]
 
 
-def df2chunks(big_raw_df, file_type,
-              split_type="fixed_size", n_chunks=10, eps=1e-5):
-    if file_type == "pcap":
-        time_col_name = "time"
-    elif file_type == "netflow":
-        time_col_name = "ts"
-    elif file_type == "zeeklog":
-        time_col_name = "ts"
-    else:
-        raise ValueError("Unknown file type")
+def df2chunks(big_raw_df,
+              config_timestamp,
+              split_type="fixed_size",
+              n_chunks=10,
+              eps=1e-5):
+
+    if n_chunks == 1:
+        return [big_raw_df]
+
+    if n_chunks > 1 and \
+            ((not config_timestamp["column"]) or (not config_timestamp["generation"])):
+        raise ValueError(
+            "Trying to split into multiple chunks by timestamp but no timestamp is provided!")
 
     # sanity sort
-    big_raw_df = big_raw_df.sort_values(time_col_name)
+    if config_timestamp["generation"] and \
+            config_timestamp["column"]:
+        time_col_name = config_timestamp["column"]
+        big_raw_df = big_raw_df.sort_values(time_col_name)
 
     dfs = []
     if split_type == "fixed_size":
