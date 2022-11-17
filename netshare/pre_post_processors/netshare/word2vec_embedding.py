@@ -42,7 +42,7 @@ def test_model(
     )
 
     for col in word2vec_cols:
-        type = col.method.split("_")[1]
+        type = col.encoding.split("_")[1]
         word = random.choice(df[col.column])
         print("Testing {col.column}...")
         test_embed_bidirectional(

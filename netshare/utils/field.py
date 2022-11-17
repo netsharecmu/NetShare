@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 from .output import Normalization, OutputType, Output
 
+EPS = 1e-8
+
 
 class Field(object):
     def __init__(self, name):

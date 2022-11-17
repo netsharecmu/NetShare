@@ -23,7 +23,7 @@ def build_annoy_dictionary_word2vec(
     # "proto": ["proto"]
     dict_type_cols = {}
     for col in word2vec_cols:
-        type = col.method.split("_")[1]
+        type = col.encoding.split("_")[1]
         if type not in dict_type_cols:
             dict_type_cols[type] = []
         dict_type_cols[type].append(col.column)

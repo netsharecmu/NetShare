@@ -13,9 +13,12 @@
         "config": {
             "num_train_samples": 50000,
             "num_test_samples": 50000,
+            "EPS": 1e-8,
             "timestamp": {
                 "column": "ts",
-                "generation": true
+                "generation": true,
+                "encoding": "interarrival",
+                "normalization": "ZERO_ONE"
             },
             "word2vec": {
                 "vec_size": 10,
@@ -27,30 +30,55 @@
                 {
                     "column": "srcip",
                     "type": "integer",
-                    "method": "bit"
+                    "encoding": "bit",
+                    "n_bits": 32
                 },
                 {
                     "column": "dstip",
                     "type": "integer",
-                    "method": "bit"
+                    "encoding": "bit",
+                    "n_bits": 32
                 },
                 {
                     "column": "srcport",
                     "type": "integer",
-                    "method": "word2vec_port"
+                    "encoding": "word2vec_port"
                 },
                 {
                     "column": "dstport",
                     "type": "integer",
-                    "method": "word2vec_port"
+                    "encoding": "word2vec_port"
                 },
                 {
                     "column": "proto",
                     "type": "string",
-                    "method": "word2vec_proto"
+                    "encoding": "word2vec_proto"
                 }
             ],
-            "timeseries": []
+            "timeseries": [
+                {
+                    "column": "td",
+                    "type": "float",
+                    "normalization": "ZERO_ONE",
+                    "log1p_norm": true
+                },
+                {
+                    "column": "pkt",
+                    "type": "float",
+                    "normalization": "ZERO_ONE",
+                    "log1p_norm": true
+                },
+                {
+                    "column": "byt",
+                    "type": "float",
+                    "normalization": "ZERO_ONE",
+                    "log1p_norm": true
+                },
+                {
+                    "column": "type",
+                    "type": "string"
+                }
+            ]
         }
     }
 }

@@ -90,9 +90,9 @@ class NetsharePrePostProcessor(PrePostProcessor):
         metadata_cols = [m for m in self._config["metadata"]]
         word2vec_cols = \
             [m for m in self._config["metadata"]
-                if "word2vec" in m.method] + \
+                if "word2vec" in getattr(m, 'encoding', '')] + \
             [t for t in self._config["timeseries"]
-                if "word2vec" in t.method]
+                if "word2vec" in getattr(t, 'encoding', '')]
         print("metadata cols:", [m.column for m in metadata_cols])
         print("word2vec cols:", [w.column for w in word2vec_cols])
 
@@ -111,11 +111,96 @@ class NetsharePrePostProcessor(PrePostProcessor):
                     model_name=self._config["word2vec"]["model_name"],
                     word2vec_cols=word2vec_cols,
                     word2vec_size=self._config["word2vec"]["vec_size"],
-                    annoy_n_trees=self._config["word2vec"]["annoy_n_trees"],
-                    force_retrain=True,
-                    model_test=True
+                    annoy_n_trees=self._config["word2vec"]["annoy_n_trees"]
                 )
                 word2vec_model = Word2Vec.load(word2vec_model_path)
+
+        # Create field instances
+        fields = {}  # Python 3.6+ supports order-preserving dictionary
+        for field in self._config["metadata"] + self._config["timeseries"]:
+            if not isinstance(field.column, str):
+                raise ValueError('"column" should be a string')
+            field_name = getattr(field, 'name', field.column)
+
+            # BitField
+            if 'bit' in getattr(field, 'encoding', ''):
+                if not getattr(field, 'n_bits', False):
+                    raise ValueError(
+                        "`n_bits` needs to be specified for bit fields")
+                field_instance = BitField(
+                    name=field_name,
+                    num_bits=field.n_bits
+                )
+
+            # word2vec field
+            if 'word2vec' in getattr(field, 'encoding', ''):
+                field_instance = ContinuousField(
+                    name=field_name,
+                    norm_option=Normalization.MINUSONE_ONE,  # l2-norm
+                    dim_x=self._config["word2vec"]["vec_size"]
+                )
+
+            # float - Continuous Field
+            if field.type == "float":
+                field_instance = ContinuousField(
+                    name=field_name,
+                    norm_option=getattr(Normalization, field.normalization),
+                    min_x=min(df[field.column])-self._config["EPS"],
+                    max_x=max(df[field.column])+self._config["EPS"],
+                    dim_x=1
+                )
+                if getattr(field, 'log1p_norm', False):
+                    df[field.column] = np.log1p(df[field.column])
+
+            # string - Categorical Field
+            if field.type == "string" and 'encoding' not in field:
+                field_instance = DiscreteField(
+                    choices=list(set(df[field.column])),
+                    name=getattr(field, 'name', field.column))
+
+            fields[field_name] = field_instance
+
+        # Multi-chunk related field instances
+        # n_chunk=1 reduces to plain DoppelGANger
+        if self._config["n_chunks"] > 1:
+            fields["startFromThisChunk"] = DiscreteField(
+                name="startFromThisChunk",
+                choices=[0.0, 1.0]
+            )
+
+            for chunk_id in range(self._config["n_chunks"]):
+                fields["chunk_{}".format(chunk_id)] = DiscreteField(
+                    name="chunk_{}".format(chunk_id),
+                    choices=[0.0, 1.0]
+                )
+
+        # Timestamp
+        if self._config["timestamp"]["generation"] and \
+                self._config["timestamp"]["column"]:
+            if self._config["timestamp"]["encoding"] == "interarrival":
+                fields["flow_start"] = ContinuousField(
+                    name="flow_start",
+                    norm_option=getattr(
+                        Normalization, self._config["timestamp"].normalization)
+                )
+                fields["interarrival_within_flow"] = ContinuousField(
+                    name="interarrival_within_flow",
+                    norm_option=getattr(
+                        Normalization, self._config["timestamp"].normalization)
+                )
+            elif self._config["timestamp"]["encoding"] == "raw":
+                field_name = getattr(
+                    self._config["timestamp"], "name", self._config["timestamp"]["column"])
+                fields[field_name] = ContinuousField(
+                    name=field_name,
+                    norm_option=getattr(
+                        Normalization, self._config["timestamp"].normalization)
+                )
+            else:
+                raise ValueError("Timestamp encoding can be only \
+                `interarrival` or 'raw")
+
+        print("Fields:", fields)
 
         return True
 
