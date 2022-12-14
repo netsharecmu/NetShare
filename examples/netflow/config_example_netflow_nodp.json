@@ -5,7 +5,19 @@
         "dataset_meta_type": "single_event_per_row",
         "dataset_type": null,
         "n_chunks": 10,
-        "dp": false
+        "dp": false,
+        "allowed_data_types": [
+            "ip_string",
+            "integer",
+            "float",
+            "string"
+        ],
+        "allowed_data_encodings": [
+            "categorical",
+            "bit",
+            "word2vec_port",
+            "word2vec_proto"
+        ]
     },
     "default": "netflow.json",
     "pre_post_processor": {
@@ -76,7 +88,8 @@
                 },
                 {
                     "column": "type",
-                    "type": "string"
+                    "type": "string",
+                    "encoding": "categorical"
                 }
             ]
         }

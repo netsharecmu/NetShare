@@ -117,38 +117,24 @@ class NetsharePrePostProcessor(PrePostProcessor):
                 )
                 word2vec_model = Word2Vec.load(word2vec_model_path)
 
-        # Create field instances.
-        metadata_fields = []
-        timeseries_fields = []
-
-        for i, field in enumerate(
-                self._config.metadata + self._config.timeseries):
+        # Create field instances
+        fields = {}  # Python 3.6+ supports order-preserving dictionary
+        for field in self._config["metadata"] + self._config["timeseries"]:
             if not isinstance(field.column, str):
                 raise ValueError('"column" should be a string')
-            if 'type' not in field or \
-                    field.type not in self._config["allowed_data_types"]:
-                raise ValueError(
-                    '"type" must be specified as ({})'.format(" | ".join(self._config["allowed_data_types"])))
-
             field_name = getattr(field, 'name', field.column)
 
-            # Bit Field: (integer)
+            # BitField
             if 'bit' in getattr(field, 'encoding', ''):
-                if field.type != "integer":
-                    raise ValueError(
-                        '"encoding=bit" can be only used for "type=integer"')
-                if 'n_bits' not in field:
+                if not getattr(field, 'n_bits', False):
                     raise ValueError(
                         "`n_bits` needs to be specified for bit fields")
                 field_instance = BitField(
-                    name=getattr(field, 'name', field.column),
+                    name=field_name,
                     num_bits=field.n_bits
                 )
-                # applied_df = df.apply(lambda row: field_instance.normalize(
-                # row[field_name]), axis='columns', result_type='expand')
-                # print("applied_df:", applied_df.shape)
 
-            # word2vec field: (any)
+            # word2vec field
             if 'word2vec' in getattr(field, 'encoding', ''):
                 field_instance = ContinuousField(
                     name=field_name,
@@ -156,16 +142,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
                     dim_x=self._config["word2vec"]["vec_size"]
                 )
 
-            # Categorical field: (string | integer)
-            if 'categorical' in getattr(field, 'encoding', ''):
-                if field.type not in ["string", "integer"]:
-                    raise ValueError(
-                        '"encoding=cateogrical" can be only used for "type=(string | integer)"')
-                field_instance = DiscreteField(
-                    choices=list(set(df[field.column])),
-                    name=getattr(field, 'name', field.column))
-
-            # Continuous Field: (float)
+            # float - Continuous Field
             if field.type == "float":
                 field_instance = ContinuousField(
                     name=field_name,
@@ -174,58 +151,58 @@ class NetsharePrePostProcessor(PrePostProcessor):
                     max_x=max(df[field.column])+EPS,
                     dim_x=1
                 )
-                # Other normalizations (that generate more columns)
-                # happen at each chunk
                 if getattr(field, 'log1p_norm', False):
                     df[field.column] = np.log1p(df[field.column])
 
-            if field in self._config.metadata:
-                metadata_fields.append(field_instance)
-            if field in self._config.timeseries:
-                timeseries_fields.append(field_instance)
+            # string - Categorical Field
+            if field.type == "string" and 'encoding' not in field:
+                field_instance = DiscreteField(
+                    choices=list(set(df[field.column])),
+                    name=getattr(field, 'name', field.column))
+
+            fields[field_name] = field_instance
 
         # Multi-chunk related field instances
         # n_chunk=1 reduces to plain DoppelGANger
         if self._config["n_chunks"] > 1:
-            metadata_fields.append(DiscreteField(
+            fields["startFromThisChunk"] = DiscreteField(
                 name="startFromThisChunk",
                 choices=[0.0, 1.0]
-            ))
+            )
 
             for chunk_id in range(self._config["n_chunks"]):
-                metadata_fields.append(DiscreteField(
+                fields["chunk_{}".format(chunk_id)] = DiscreteField(
                     name="chunk_{}".format(chunk_id),
                     choices=[0.0, 1.0]
-                ))
+                )
 
         # Timestamp
         if self._config["timestamp"]["generation"] and \
                 self._config["timestamp"]["column"]:
             if self._config["timestamp"]["encoding"] == "interarrival":
-                metadata_fields.append(ContinuousField(
+                fields["flow_start"] = ContinuousField(
                     name="flow_start",
                     norm_option=getattr(
                         Normalization, self._config["timestamp"].normalization)
-                ))
-                timeseries_fields.insert(0, ContinuousField(
+                )
+                fields["interarrival_within_flow"] = ContinuousField(
                     name="interarrival_within_flow",
                     norm_option=getattr(
                         Normalization, self._config["timestamp"].normalization)
-                ))
+                )
             elif self._config["timestamp"]["encoding"] == "raw":
                 field_name = getattr(
                     self._config["timestamp"], "name", self._config["timestamp"]["column"])
-                timeseries_fields.insert(0, ContinuousField(
+                fields[field_name] = ContinuousField(
                     name=field_name,
                     norm_option=getattr(
                         Normalization, self._config["timestamp"].normalization)
-                ))
+                )
             else:
                 raise ValueError("Timestamp encoding can be only \
                 `interarrival` or 'raw")
 
-        print("metadata fields:", [f.name for f in metadata_fields]),
-        print("timeseries fields:", [f.name for f in timeseries_fields])
+        print("Fields:", fields)
 
         # Group data by metadata and measurement
         gk = df.groupby(by=[m.column for m in self._config["metadata"]])
