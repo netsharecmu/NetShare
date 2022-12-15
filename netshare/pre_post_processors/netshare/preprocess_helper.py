@@ -332,8 +332,12 @@ def split_per_chunk(
                             else:
                                 attr_per_row += list(
                                     fields_dict["chunk_{}".format(i)].normalize(0.0))
-            flow_tags.append(attr_per_row)
-    data_attribute = np.concatenate((data_attribute, flow_tags), axis=1)
+                flow_tags.append(attr_per_row)
+            else:
+                raise ValueError(
+                    f"{ori_group_name} not found in the raw file!")
+    data_attribute = np.concatenate(
+        (data_attribute, np.array(flow_tags)), axis=1)
     if config["timestamp"]["generation"] and \
             config["timestamp"]["encoding"] == "interarrival":
         data_attribute = np.concatenate(

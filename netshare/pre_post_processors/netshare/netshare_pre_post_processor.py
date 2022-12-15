@@ -327,7 +327,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
         # global_max_flow_len for consistency between chunks
         per_chunk_flow_len_agg = []
         max_flow_lens = []
-        for chunk_id, df_chunk in enumerate(df_chunks):
+        for chunk_id, df_chunk in enumerate(df_chunks[1:]):
             # corner case: skip for empty df_chunk
             if len(df_chunk) == 0:
                 continue
@@ -347,7 +347,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
         '''prepare NetShare training data for each chunk'''
         objs = []
-        for chunk_id, df_chunk in tqdm(enumerate(df_chunks[:1])):
+        for chunk_id, df_chunk in tqdm(enumerate(df_chunks)):
             # skip empty df_chunk: corner case
             if len(df_chunk) == 0:
                 print("Chunk_id {} empty! Skipping ...".format(chunk_id))
