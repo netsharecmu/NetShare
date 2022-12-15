@@ -101,6 +101,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
         # Word2Vec embedding
         if len(word2vec_cols) == 0:
             print("No word2vec columns... Skipping word2vec embedding...")
+            word2vec_model = None
         else:
             if self._config["word2vec"]["pretrain_model_path"]:
                 print("Loading pretrained `big` Word2Vec model...")
@@ -199,8 +200,10 @@ class NetsharePrePostProcessor(PrePostProcessor):
                 ))
 
         # Timestamp
-        if self._config["timestamp"]["generation"] and \
-                self._config["timestamp"]["column"]:
+        if self._config["timestamp"]["generation"]:
+            if "column" not in self._config["timestamp"]:
+                raise ValueError(
+                    'Timestamp generation is enabled! "column" must be set...')
             if self._config["timestamp"]["encoding"] == "interarrival":
                 metadata_fields.append(ContinuousField(
                     name="flow_start",
@@ -269,53 +272,59 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
         flowkeys_chunkidx_file = os.path.join(
             output_folder, "flowkeys_idxlist.json")
-        print("compute flowkey-chunk list from scratch...")
-        flow_chunkid_keys = {}
-        for chunk_id, df_chunk in enumerate(df_chunks):
-            gk = df_chunk.groupby([m.column for m in self._config["metadata"]])
-            flow_keys = list(gk.groups.keys())
-            flow_keys = list(map(str, flow_keys))
-            flow_chunkid_keys[chunk_id] = flow_keys
+        if os.path.exists(flowkeys_chunkidx_file):
+            print("Reading pre-computed flowkey-chunk list...")
+            with open(flowkeys_chunkidx_file) as f:
+                flowkeys_chunkidx = json.load(f)
+        else:
+            print("compute flowkey-chunk list from scratch...")
+            flow_chunkid_keys = {}
+            for chunk_id, df_chunk in enumerate(df_chunks):
+                gk = df_chunk.groupby(
+                    [m.column for m in self._config["metadata"]])
+                flow_keys = list(gk.groups.keys())
+                flow_keys = list(map(str, flow_keys))
+                flow_chunkid_keys[chunk_id] = flow_keys
 
-        # key: flow key
-        # value: [a list of appeared chunk idx]
-        flowkeys_chunkidx = {}
-        for chunk_id, flowkeys in flow_chunkid_keys.items():
-            print("processing chunk {}/{}, # of flows: {}".format(
-                chunk_id + 1, len(df_chunks), len(flowkeys)))
-            for k in flowkeys:
-                if k not in flowkeys_chunkidx:
-                    flowkeys_chunkidx[k] = []
-                flowkeys_chunkidx[k].append(chunk_id)
+            # key: flow key
+            # value: [a list of appeared chunk idx]
+            flowkeys_chunkidx = {}
+            for chunk_id, flowkeys in flow_chunkid_keys.items():
+                print("processing chunk {}/{}, # of flows: {}".format(
+                    chunk_id + 1, len(df_chunks), len(flowkeys)))
+                for k in flowkeys:
+                    if k not in flowkeys_chunkidx:
+                        flowkeys_chunkidx[k] = []
+                    flowkeys_chunkidx[k].append(chunk_id)
 
-        with open(flowkeys_chunkidx_file, 'w') as f:
-            json.dump(flowkeys_chunkidx, f)
+            with open(flowkeys_chunkidx_file, 'w') as f:
+                json.dump(flowkeys_chunkidx, f)
 
-        num_non_continuous_flows = 0
-        num_flows_cross_chunk = 0
-        flowkeys_chunklen_list = []
-        for flowkey, chunkidx in flowkeys_chunkidx.items():
-            flowkeys_chunklen_list.append(len(chunkidx))
-            if not continuous_list_flag(chunkidx):
-                num_non_continuous_flows += 1
-            if len(chunkidx) > 1:
-                num_flows_cross_chunk += 1
+        # num_non_continuous_flows = 0
+        # num_flows_cross_chunk = 0
+        # flowkeys_chunklen_list = []
+        # for flowkey, chunkidx in flowkeys_chunkidx.items():
+        #     flowkeys_chunklen_list.append(len(chunkidx))
+        #     if not continuous_list_flag(chunkidx):
+        #         num_non_continuous_flows += 1
+        #     if len(chunkidx) > 1:
+        #         num_flows_cross_chunk += 1
 
-        print("# of total flows:", len(flowkeys_chunklen_list))
-        print("# of total flows (sanity check):", len(
-            df.groupby([m.column for m in self._config["metadata"]])))
-        print("# of flows cross chunk (of total flows): {} ({}%)".format(
-            num_flows_cross_chunk,
-            float(num_flows_cross_chunk) / len(flowkeys_chunklen_list) * 100))
-        print("# of non-continuous flows:", num_non_continuous_flows)
-        plot_cdf(
-            count_list=flowkeys_chunklen_list,
-            xlabel="# of chunks per flow",
-            ylabel="CDF",
-            title="",
-            filename="raw_flow_numchunks.png",
-            base_dir=output_folder
-        )
+        # print("# of total flows:", len(flowkeys_chunklen_list))
+        # print("# of total flows (sanity check):", len(
+        #     df.groupby([m.column for m in self._config["metadata"]])))
+        # print("# of flows cross chunk (of total flows): {} ({}%)".format(
+        #     num_flows_cross_chunk,
+        #     float(num_flows_cross_chunk) / len(flowkeys_chunklen_list) * 100))
+        # print("# of non-continuous flows:", num_non_continuous_flows)
+        # plot_cdf(
+        #     count_list=flowkeys_chunklen_list,
+        #     xlabel="# of chunks per flow",
+        #     ylabel="CDF",
+        #     title="",
+        #     filename="raw_flow_numchunks.png",
+        #     base_dir=output_folder
+        # )
 
         # global_max_flow_len for consistency between chunks
         per_chunk_flow_len_agg = []
@@ -337,6 +346,29 @@ class NetsharePrePostProcessor(PrePostProcessor):
         print("global max flow len:", global_max_flow_len)
         print("Top 10 per-chunk flow length:",
               sorted(per_chunk_flow_len_agg)[-10:])
+
+        '''prepare NetShare training data for each chunk'''
+        objs = []
+        for chunk_id, df_chunk in tqdm(enumerate(df_chunks[:1])):
+            # skip empty df_chunk: corner case
+            if len(df_chunk) == 0:
+                print("Chunk_id {} empty! Skipping ...".format(chunk_id))
+                continue
+
+            print("\nChunk_id:", chunk_id)
+            objs.append(split_per_chunk.remote(
+                config=self._config,
+                metadata_fields=copy.deepcopy(metadata_fields),
+                timeseries_fields=copy.deepcopy(timeseries_fields),
+                df_per_chunk=df_chunk.copy(),
+                embed_model=word2vec_model,
+                global_max_flow_len=global_max_flow_len,
+                chunk_id=chunk_id,
+                flowkeys_chunkidx=flowkeys_chunkidx,
+                multi_chunk_flag=bool(self._config["n_chunks"] > 1)
+            ))
+
+        objs_output = ray.get(objs)
 
         return True
 
