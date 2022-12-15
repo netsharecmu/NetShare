@@ -298,31 +298,31 @@ class NetsharePrePostProcessor(PrePostProcessor):
             with open(flowkeys_chunkidx_file, 'w') as f:
                 json.dump(flowkeys_chunkidx, f)
 
-        # num_non_continuous_flows = 0
-        # num_flows_cross_chunk = 0
-        # flowkeys_chunklen_list = []
-        # for flowkey, chunkidx in flowkeys_chunkidx.items():
-        #     flowkeys_chunklen_list.append(len(chunkidx))
-        #     if not continuous_list_flag(chunkidx):
-        #         num_non_continuous_flows += 1
-        #     if len(chunkidx) > 1:
-        #         num_flows_cross_chunk += 1
+        num_non_continuous_flows = 0
+        num_flows_cross_chunk = 0
+        flowkeys_chunklen_list = []
+        for flowkey, chunkidx in flowkeys_chunkidx.items():
+            flowkeys_chunklen_list.append(len(chunkidx))
+            if not continuous_list_flag(chunkidx):
+                num_non_continuous_flows += 1
+            if len(chunkidx) > 1:
+                num_flows_cross_chunk += 1
 
-        # print("# of total flows:", len(flowkeys_chunklen_list))
-        # print("# of total flows (sanity check):", len(
-        #     df.groupby([m.column for m in self._config["metadata"]])))
-        # print("# of flows cross chunk (of total flows): {} ({}%)".format(
-        #     num_flows_cross_chunk,
-        #     float(num_flows_cross_chunk) / len(flowkeys_chunklen_list) * 100))
-        # print("# of non-continuous flows:", num_non_continuous_flows)
-        # plot_cdf(
-        #     count_list=flowkeys_chunklen_list,
-        #     xlabel="# of chunks per flow",
-        #     ylabel="CDF",
-        #     title="",
-        #     filename="raw_flow_numchunks.png",
-        #     base_dir=output_folder
-        # )
+        print("# of total flows:", len(flowkeys_chunklen_list))
+        print("# of total flows (sanity check):", len(
+            df.groupby([m.column for m in self._config["metadata"]])))
+        print("# of flows cross chunk (of total flows): {} ({}%)".format(
+            num_flows_cross_chunk,
+            float(num_flows_cross_chunk) / len(flowkeys_chunklen_list) * 100))
+        print("# of non-continuous flows:", num_non_continuous_flows)
+        plot_cdf(
+            count_list=flowkeys_chunklen_list,
+            xlabel="# of chunks per flow",
+            ylabel="CDF",
+            title="",
+            filename="raw_flow_numchunks.png",
+            base_dir=output_folder
+        )
 
         # global_max_flow_len for consistency between chunks
         per_chunk_flow_len_agg = []
