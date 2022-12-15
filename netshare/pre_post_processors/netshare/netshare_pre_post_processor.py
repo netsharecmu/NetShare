@@ -175,8 +175,6 @@ class NetsharePrePostProcessor(PrePostProcessor):
                     max_x=max(df[field.column])+EPS,
                     dim_x=1
                 )
-                # Other normalizations (that generate more columns)
-                # happen at each chunk
                 if getattr(field, 'log1p_norm', False):
                     df[field.column] = np.log1p(df[field.column])
 
@@ -185,47 +183,47 @@ class NetsharePrePostProcessor(PrePostProcessor):
             if field in self._config.timeseries:
                 timeseries_fields.append(field_instance)
 
-        # Multi-chunk related field instances
-        # n_chunk=1 reduces to plain DoppelGANger
-        if self._config["n_chunks"] > 1:
-            metadata_fields.append(DiscreteField(
-                name="startFromThisChunk",
-                choices=[0.0, 1.0]
-            ))
+        # # Multi-chunk related field instances
+        # # n_chunk=1 reduces to plain DoppelGANger
+        # if self._config["n_chunks"] > 1:
+        #     metadata_fields.append(DiscreteField(
+        #         name="startFromThisChunk",
+        #         choices=[0.0, 1.0]
+        #     ))
 
-            for chunk_id in range(self._config["n_chunks"]):
-                metadata_fields.append(DiscreteField(
-                    name="chunk_{}".format(chunk_id),
-                    choices=[0.0, 1.0]
-                ))
+        #     for chunk_id in range(self._config["n_chunks"]):
+        #         metadata_fields.append(DiscreteField(
+        #             name="chunk_{}".format(chunk_id),
+        #             choices=[0.0, 1.0]
+        #         ))
 
-        # Timestamp
-        if self._config["timestamp"]["generation"]:
-            if "column" not in self._config["timestamp"]:
-                raise ValueError(
-                    'Timestamp generation is enabled! "column" must be set...')
-            if self._config["timestamp"]["encoding"] == "interarrival":
-                metadata_fields.append(ContinuousField(
-                    name="flow_start",
-                    norm_option=getattr(
-                        Normalization, self._config["timestamp"].normalization)
-                ))
-                timeseries_fields.insert(0, ContinuousField(
-                    name="interarrival_within_flow",
-                    norm_option=getattr(
-                        Normalization, self._config["timestamp"].normalization)
-                ))
-            elif self._config["timestamp"]["encoding"] == "raw":
-                field_name = getattr(
-                    self._config["timestamp"], "name", self._config["timestamp"]["column"])
-                timeseries_fields.insert(0, ContinuousField(
-                    name=field_name,
-                    norm_option=getattr(
-                        Normalization, self._config["timestamp"].normalization)
-                ))
-            else:
-                raise ValueError("Timestamp encoding can be only \
-                `interarrival` or 'raw")
+        # # Timestamp
+        # if self._config["timestamp"]["generation"]:
+        #     if "column" not in self._config["timestamp"]:
+        #         raise ValueError(
+        #             'Timestamp generation is enabled! "column" must be set...')
+        #     if self._config["timestamp"]["encoding"] == "interarrival":
+        #         metadata_fields.append(ContinuousField(
+        #             name="flow_start",
+        #             norm_option=getattr(
+        #                 Normalization, self._config["timestamp"].normalization)
+        #         ))
+        #         timeseries_fields.insert(0, ContinuousField(
+        #             name="interarrival_within_flow",
+        #             norm_option=getattr(
+        #                 Normalization, self._config["timestamp"].normalization)
+        #         ))
+        #     elif self._config["timestamp"]["encoding"] == "raw":
+        #         field_name = getattr(
+        #             self._config["timestamp"], "name", self._config["timestamp"]["column"])
+        #         timeseries_fields.insert(0, ContinuousField(
+        #             name=field_name,
+        #             norm_option=getattr(
+        #                 Normalization, self._config["timestamp"].normalization)
+        #         ))
+        #     else:
+        #         raise ValueError("Timestamp encoding can be only \
+        #         `interarrival` or 'raw")
 
         print("metadata fields:", [f.name for f in metadata_fields]),
         print("timeseries fields:", [f.name for f in timeseries_fields])
@@ -364,8 +362,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
                 embed_model=word2vec_model,
                 global_max_flow_len=global_max_flow_len,
                 chunk_id=chunk_id,
-                flowkeys_chunkidx=flowkeys_chunkidx,
-                multi_chunk_flag=bool(self._config["n_chunks"] > 1)
+                flowkeys_chunkidx=flowkeys_chunkidx
             ))
 
         objs_output = ray.get(objs)

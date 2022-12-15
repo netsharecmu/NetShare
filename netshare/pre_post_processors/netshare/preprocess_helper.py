@@ -1,5 +1,6 @@
 import os
 import math
+import copy
 import ipaddress
 
 import pandas as pd
@@ -135,33 +136,48 @@ def df2chunks(big_raw_df,
 
 
 def apply_per_field(
-        df,
+        original_df,
         config_fields,
         field_instances,
         embed_model=None):
-    numpys = []
+    new_df = copy.deepcopy(original_df)
+    new_field_list = []
     for i, field in enumerate(config_fields):
         field_instance = field_instances[i]
         # Bit Field: (integer)
         if 'bit' in getattr(field, 'encoding', ''):
-            this_numpy = df.apply(
-                lambda row: field_instance.normalize(row[field.column]), axis='columns', result_type='expand').to_numpy()
+            this_df = original_df.apply(
+                lambda row: field_instance.normalize(row[field.column]), axis='columns', result_type='expand')
+            this_df.columns = [
+                f'{field.column}_{i}' for i in range(this_df.shape[1])]
+            new_field_list += list(this_df.columns)
+            new_df = pd.concat([new_df, this_df], axis=1)
         # word2vec field: (any)
         if 'word2vec' in getattr(field, 'encoding', ''):
-            this_numpy = df.apply(
+            this_df = original_df.apply(
                 lambda row: get_vector(embed_model, str(
                     row[field.column]), norm_option=True),
-                axis='columns', result_type='expand').to_numpy()
-        # Categorical field: (string | integer) OR Continuous Field (float)
-        if 'categorical' in getattr(field, 'encoding', '') \
-                or field.type == "float":
-            this_numpy = field_instance.normalize(
-                df[field.column].to_numpy())
-        # print(field.column, this_numpy.shape)
-        numpys.append(this_numpy)
-    numpy_ = np.concatenate(numpys, axis=1).astype(np.float64)
+                axis='columns', result_type='expand')
+            this_df.columns = [
+                f'{field.column}_{i}' for i in range(this_df.shape[1])]
+            new_field_list += list(this_df.columns)
+            new_df = pd.concat([new_df, this_df], axis=1)
+        # Categorical field: (string | integer)
+        if 'categorical' in getattr(field, 'encoding', ''):
+            this_df = pd.DataFrame(field_instance.normalize(
+                original_df[field.column].to_numpy()))
+            this_df.columns = [
+                f'{field.column}_{i}' for i in range(this_df.shape[1])]
+            new_field_list += list(this_df.columns)
+            new_df = pd.concat([new_df, this_df], axis=1)
 
-    return numpys, numpy_
+        # Continuous Field: (float)
+        if field.type == "float":
+            new_df[field.column] = field_instance.normalize(
+                original_df[field.column].to_numpy().reshape(-1, 1))
+            new_field_list.append(field.column)
+
+    return new_df, new_field_list
 
 
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
@@ -174,60 +190,147 @@ def split_per_chunk(
     global_max_flow_len,
     chunk_id,
     flowkeys_chunkidx=None,
-    multi_chunk_flag=True
 ):
+    split_name = config["split_name"]
     metadata_cols = [m for m in config["metadata"]]
+
+    df_per_chunk, new_metadata_list = apply_per_field(
+        original_df=df_per_chunk,
+        config_fields=config["metadata"],
+        field_instances=metadata_fields,
+        embed_model=embed_model
+    )
+    df_per_chunk, new_timeseries_list = apply_per_field(
+        original_df=df_per_chunk,
+        config_fields=config["timeseries"],
+        field_instances=timeseries_fields,
+        embed_model=embed_model
+    )
+    print("df_per_chunk:", df_per_chunk.shape)
+
+    # Multi-chunk related field instances
+    # n_chunk=1 reduces to plain DoppelGANger
+    if config["n_chunks"] > 1:
+        metadata_fields.append(DiscreteField(
+            name="startFromThisChunk",
+            choices=[0.0, 1.0]
+        ))
+
+        for chunk_id in range(config["n_chunks"]):
+            metadata_fields.append(DiscreteField(
+                name="chunk_{}".format(chunk_id),
+                choices=[0.0, 1.0]
+            ))
 
     # w/o DP: normalize time by per-chunk min/max
     if config["timestamp"]["generation"]:
+        if "column" not in config["timestamp"]:
+            raise ValueError(
+                'Timestamp generation is enabled! "column" must be set...')
         time_col = config["timestamp"]["column"]
 
         if config["timestamp"]["encoding"] == "interarrival":
             gk = df_per_chunk.groupby([m.column for m in metadata_cols])
             flow_start_list = list(gk.first()[time_col])
-            assert metadata_fields[-1].name == "flow_start"
-            metadata_fields[-1].min_x = float(min(flow_start_list))
-            metadata_fields[-1].max_x = float(max(flow_start_list))
+            metadata_fields.append(ContinuousField(
+                name="flow_start",
+                norm_option=getattr(
+                    Normalization, config["timestamp"].normalization),
+                min_x=min(flow_start_list),
+                max_x=max(flow_start_list)
+            ))
 
             interarrival_within_flow_list = list(
                 gk[time_col].diff().fillna(0.0))
-            assert timeseries_fields[0].name == "interarrival_within_flow"
-            timeseries_fields[0].min_x = float(
-                min(interarrival_within_flow_list))
-            timeseries_fields[0].max_x = float(
-                max(interarrival_within_flow_list))
+            df_per_chunk["interarrival_within_flow"] = interarrival_within_flow_list
+            timeseries_fields.insert(0, ContinuousField(
+                name="interarrival_within_flow",
+                norm_option=getattr(
+                    Normalization, config["timestamp"].normalization),
+                min_x=min(interarrival_within_flow_list),
+                max_x=max(interarrival_within_flow_list)
+            ))
+            df_per_chunk["interarrival_within_flow"] = timeseries_fields[0].normalize(
+                df_per_chunk["interarrival_within_flow"].to_numpy().reshape(-1, 1))
+            new_timeseries_list.insert(0, "interarrival_within_flow")
 
         elif config["timestamp"]["encoding"] == "raw":
-            assert timeseries_fields[0].name == time_col
-            timeseries_fields[0].min_x = float(df_per_chunk[time_col].min())
-            timeseries_fields[0].max_x = float(df_per_chunk[time_col].max())
+            timeseries_fields.insert(0, ContinuousField(
+                name=getattr(
+                    config["timestamp"], "name", config["timestamp"]["column"]),
+                norm_option=getattr(
+                    Normalization, config["timestamp"].normalization),
+                min_x=min(df_per_chunk[time_col]),
+                max_x=max(df_per_chunk[time_col])
+            ))
+            df_per_chunk[time_col] = timeseries_fields[0].normalize(
+                df_per_chunk[time_col].to_numpy().reshape(-1, 1)
+            )
+            new_timeseries_list.insert(0, time_col)
+        else:
+            raise ValueError("Timestamp encoding can be only \
+            `interarrival` or 'raw")
 
-    if multi_chunk_flag and flowkeys_chunkidx is None:
-        raise ValueError(
-            "Cross-chunk mechanism enabled, \
-                cross-chunk flow stats not provided!")
+    print("new_metadata_list:", new_metadata_list)
+    print("new_timeseries_list:", new_timeseries_list)
 
-    # Parse data.
-    gk = df_per_chunk.groupby([m.column for m in metadata_cols])
+    gk = df_per_chunk.groupby(new_metadata_list)
+    data_attribute = np.array(list(gk.groups.keys()))
+    data_feature = []
+    flow_tags = []
+    fields_dict = {f.name: f for f in metadata_fields+timeseries_fields}
+    for group_name, df_group in tqdm(gk):
+        # RESET INDEX TO MAKE IT START FROM ZERO
+        df_group = df_group.reset_index(drop=True)
+        data_feature.append(df_group[new_timeseries_list].to_numpy())
 
-    metadata_df = pd.DataFrame(
-        list(gk.groups.keys()),
-        columns=[m.column for m in metadata_cols])
-    print("metadata_df:", metadata_df.shape)
-    metadata_numpys, metadata_numpy = apply_per_field(
-        df=metadata_df,
-        config_fields=config["metadata"],
-        field_instances=metadata_fields,
-        embed_model=embed_model
-    )
-    print(f'List of metadata: '
-          f'{list((k.dtype, k.shape) for k in metadata_numpys)}')
-    print(f'Metadata type: {metadata_numpy.dtype}, '
-          f'shape: {metadata_numpy.shape}')
+        attr_per_row = []
+        if config["n_chunks"] > 1:
+            if flowkeys_chunkidx is None:
+                raise ValueError(
+                    "Cross-chunk mechanism enabled, \
+                    cross-chunk flow stats not provided!")
+            ori_group_name = tuple(
+                df_group.iloc[0][[m.column for m in config["metadata"]]])
 
-    # timeseries_numpys, timeseries_numpy = apply_per_field(
-    #     df=df_per_chunk,
-    #     config_fields=config["timeseries"],
-    #     field_instances=timeseries_fields,
-    #     embed_model=embed_model
-    # )
+            # SLOW PART; TO BE OPTIMIZED
+            if str(ori_group_name) in flowkeys_chunkidx:  # sanity check
+                # flow starts from this chunk
+                if flowkeys_chunkidx[str(ori_group_name)][0] == chunk_id:
+                    attr_per_row += list(
+                        fields_dict["startFromThisChunk"].normalize(1.0))
+                    num_flows_startFromThisChunk += 1
+
+                    for i in range(config["n_chunks"]):
+                        if i in flowkeys_chunkidx[str(ori_group_name)]:
+                            attr_per_row += list(fields_dict["chunk_{}".format(
+                                i)].normalize(1.0))
+                        else:
+                            attr_per_row += list(fields_dict["chunk_{}".format(
+                                i)].normalize(0.0))
+
+                # flow does not start from this chunk
+                else:
+                    attr_per_row += list(
+                        fields_dict["startFromThisChunk"].normalize(0.0))
+                    if split_name == "multichunk_dep_v1":
+                        for i in range(config["n_chunks"]):
+                            attr_per_row += list(fields_dict["chunk_{}".format(
+                                i)].normalize(0.0))
+
+                    elif split_name == "multichunk_dep_v2":
+                        for i in range(config["n_chunks"]):
+                            if i in flowkeys_chunkidx[str(ori_group_name)]:
+                                attr_per_row += list(
+                                    fields_dict["chunk_{}".format(i)].normalize(1.0))
+                            else:
+                                attr_per_row += list(
+                                    fields_dict["chunk_{}".format(i)].normalize(0.0))
+            flow_tags.append(attr_per_row)
+    data_attribute = np.concatenate((data_attribute, flow_tags), axis=1)
+    if config["timestamp"]["generation"] and \
+            config["timestamp"]["encoding"] == "interarrival":
+        data_attribute = np.concatenate(
+            (data_attribute, np.array(flow_start_list).reshape(-1, 1)), axis=1)
+
+    print("data_attribute:", data_attribute.shape)
