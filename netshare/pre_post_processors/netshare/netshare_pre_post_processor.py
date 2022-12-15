@@ -362,6 +362,8 @@ class NetsharePrePostProcessor(PrePostProcessor):
                 embed_model=word2vec_model,
                 global_max_flow_len=global_max_flow_len,
                 chunk_id=chunk_id,
+                data_out_dir=os.path.join(
+                    output_folder, f"chunkid-{chunk_id}"),
                 flowkeys_chunkidx=flowkeys_chunkidx
             ))
 

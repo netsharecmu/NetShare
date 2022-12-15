@@ -1,6 +1,7 @@
 import os
 import math
 import copy
+import pickle
 import ipaddress
 
 import pandas as pd
@@ -189,6 +190,7 @@ def split_per_chunk(
     embed_model,
     global_max_flow_len,
     chunk_id,
+    data_out_dir,
     flowkeys_chunkidx=None,
 ):
     split_name = config["split_name"]
@@ -239,6 +241,8 @@ def split_per_chunk(
                 min_x=min(flow_start_list),
                 max_x=max(flow_start_list)
             ))
+            flow_start_list = metadata_fields[-1].normalize(
+                np.array(flow_start_list).reshape(-1, 1))
 
             interarrival_within_flow_list = list(
                 gk[time_col].diff().fillna(0.0))
@@ -277,12 +281,14 @@ def split_per_chunk(
     gk = df_per_chunk.groupby(new_metadata_list)
     data_attribute = np.array(list(gk.groups.keys()))
     data_feature = []
+    data_gen_flag = []
     flow_tags = []
     fields_dict = {f.name: f for f in metadata_fields+timeseries_fields}
     for group_name, df_group in tqdm(gk):
         # RESET INDEX TO MAKE IT START FROM ZERO
         df_group = df_group.reset_index(drop=True)
         data_feature.append(df_group[new_timeseries_list].to_numpy())
+        data_gen_flag.append([1.0]*len(df_group))
 
         attr_per_row = []
         if config["n_chunks"] > 1:
@@ -333,4 +339,48 @@ def split_per_chunk(
         data_attribute = np.concatenate(
             (data_attribute, np.array(flow_start_list).reshape(-1, 1)), axis=1)
 
-    print("data_attribute:", data_attribute.shape)
+    data_attribute = np.asarray(data_attribute)
+    data_feature = np.asarray(data_feature)
+    data_gen_flag = np.asarray(data_gen_flag)
+    print("data_attribute: {}, {}GB in memory".format(
+        np.shape(data_attribute),
+        data_attribute.size * data_attribute.itemsize / (10**9)))
+    print("data_feature: {}, {}GB in memory".format(
+        np.shape(data_feature),
+        data_feature.size * data_feature.itemsize / (10**9)))
+    print("data_gen_flag: {}, {}GB in memory".format(
+        np.shape(data_gen_flag),
+        data_gen_flag.size * data_gen_flag.itemsize / (10**9)))
+
+    # Write files
+    os.makedirs(data_out_dir, exist_ok=True)
+    df_per_chunk.to_csv(os.path.join(data_out_dir, "raw.csv"), index=False)
+
+    num_rows = data_attribute.shape[0]
+    os.makedirs(os.path.join(
+        data_out_dir, "data_train_npz"), exist_ok=True)
+    gt_lengths = []
+    for row_id in range(num_rows):
+        gt_lengths.append(sum(data_gen_flag[row_id]))
+        np.savez(os.path.join(
+            data_out_dir,
+            "data_train_npz", f"data_train_{row_id}.npz"),
+            data_feature=data_feature[row_id],
+            data_attribute=data_attribute[row_id],
+            data_gen_flag=data_gen_flag[row_id],
+            global_max_flow_len=[global_max_flow_len],
+        )
+    np.save(os.path.join(data_out_dir, "gt_lengths"), gt_lengths)
+
+    with open(os.path.join(
+            data_out_dir, 'data_attribute_output.pkl'), 'wb') as f:
+        pickle.dump([v.getOutputType() for v in metadata_fields], f)
+    with open(os.path.join(
+            data_out_dir, 'data_feature_output.pkl'), 'wb') as f:
+        pickle.dump([v.getOutputType() for v in timeseries_fields], f)
+    with open(os.path.join(
+            data_out_dir, 'data_attribute_fields.pkl'), 'wb') as f:
+        pickle.dump(metadata_fields, f)
+    with open(os.path.join(
+            data_out_dir, 'data_feature_fields.pkl'), 'wb') as f:
+        pickle.dump(timeseries_fields, f)

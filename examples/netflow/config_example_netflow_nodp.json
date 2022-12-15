@@ -1,10 +1,10 @@
 {
     "global_config": {
-        "original_data_file": "../traces/ugr16/raw.csv",
+        "original_data_file": "../traces/ugr16-small/raw.csv",
         "overwrite": true,
         "dataset_meta_type": "single_event_per_row",
         "dataset_type": null,
-        "n_chunks": 10,
+        "n_chunks": 3,
         "dp": false,
         "allowed_data_types": [
             "ip_string",
