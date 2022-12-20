@@ -299,39 +299,46 @@ def split_per_chunk(
             ori_group_name = tuple(
                 df_group.iloc[0][[m.column for m in config["metadata"]]])
 
-            # SLOW PART; TO BE OPTIMIZED
+            # MULTI-CHUNK TAGS: TO BE OPTIMIZED FOR PERFORMANCE
             if str(ori_group_name) in flowkeys_chunkidx:  # sanity check
                 # flow starts from this chunk
                 if flowkeys_chunkidx[str(ori_group_name)][0] == chunk_id:
-                    attr_per_row += list(
-                        fields_dict["startFromThisChunk"].normalize(1.0))
+                    # attr_per_row += list(
+                    # fields_dict["startFromThisChunk"].normalize(1.0))
+                    attr_per_row += [0.0, 1.0]
                     num_flows_startFromThisChunk += 1
 
                     for i in range(config["n_chunks"]):
                         if i in flowkeys_chunkidx[str(ori_group_name)]:
-                            attr_per_row += list(fields_dict["chunk_{}".format(
-                                i)].normalize(1.0))
+                            # attr_per_row += list(fields_dict["chunk_{}".format(
+                            #     i)].normalize(1.0))
+                            attr_per_row += [0.0, 1.0]
                         else:
-                            attr_per_row += list(fields_dict["chunk_{}".format(
-                                i)].normalize(0.0))
+                            # attr_per_row += list(fields_dict["chunk_{}".format(
+                            #     i)].normalize(0.0))
+                            attr_per_row += [1.0, 0.0]
 
                 # flow does not start from this chunk
                 else:
-                    attr_per_row += list(
-                        fields_dict["startFromThisChunk"].normalize(0.0))
+                    # attr_per_row += list(
+                    #     fields_dict["startFromThisChunk"].normalize(0.0))
+                    attr_per_row += [1.0, 0.0]
                     if split_name == "multichunk_dep_v1":
                         for i in range(config["n_chunks"]):
-                            attr_per_row += list(fields_dict["chunk_{}".format(
-                                i)].normalize(0.0))
+                            # attr_per_row += list(fields_dict["chunk_{}".format(
+                            #     i)].normalize(0.0))
+                            attr_per_row += [1.0, 0.0]
 
                     elif split_name == "multichunk_dep_v2":
                         for i in range(config["n_chunks"]):
                             if i in flowkeys_chunkidx[str(ori_group_name)]:
-                                attr_per_row += list(
-                                    fields_dict["chunk_{}".format(i)].normalize(1.0))
+                                # attr_per_row += list(
+                                #     fields_dict["chunk_{}".format(i)].normalize(1.0))
+                                attr_per_row += [0.0, 1.0]
                             else:
-                                attr_per_row += list(
-                                    fields_dict["chunk_{}".format(i)].normalize(0.0))
+                                # attr_per_row += list(
+                                #     fields_dict["chunk_{}".format(i)].normalize(0.0))
+                                attr_per_row += [1.0, 0.0]
                 flow_tags.append(attr_per_row)
             else:
                 raise ValueError(
