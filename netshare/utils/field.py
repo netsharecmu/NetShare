@@ -55,7 +55,7 @@ class ContinuousField(Field):
 
         # [-1, 1] normalization
         elif self.norm_option == Normalization.MINUSONE_ONE:
-            return (norm_x+1) / 2.0 * \
+            return (norm_x + 1) / 2.0 * \
                 float(self.max_x - self.min_x) + self.min_x
 
         else:
@@ -129,11 +129,11 @@ class BitField(Field):
         if not isinstance(bin_x, list):
             raise Exception("Bit array should be a list")
 
-        assert len(bin_x) == 2*self.num_bits, "length of bit array is wrong!"
+        assert len(bin_x) == 2 * self.num_bits, "length of bit array is wrong!"
 
         bits = "0b"
         for i in range(self.num_bits):
-            index = np.argmax(bin_x[2*i:2*(i+1)])
+            index = np.argmax(bin_x[2 * i:2 * (i + 1)])
 
             if index == 0:
                 bits += "0"

@@ -172,18 +172,18 @@ class Generator(object):
                 log_folder=self._get_generated_data_log_folder(work_folder)):
             print('Failed to generate synthetic data')
             return False
-        # if not self._post_process(
-        #         input_folder=self._get_generated_data_folder(work_folder),
-        #         output_folder=self._get_post_processed_data_folder(
-        #             work_folder),
-        #         log_folder=self._get_post_processed_data_log_folder(
-        #             work_folder),
-        #         pre_processed_data_folder=self._get_pre_processed_data_folder(
-        #             work_folder)):
-        #     print('Failed to post-process data')
-        #     return False
-        # print(f'Generated data is at '
-        #       f'{self._get_post_processed_data_folder(work_folder)}')
+        if not self._post_process(
+                input_folder=self._get_generated_data_folder(work_folder),
+                output_folder=self._get_post_processed_data_folder(
+                    work_folder),
+                log_folder=self._get_post_processed_data_log_folder(
+                    work_folder),
+                pre_processed_data_folder=self._get_pre_processed_data_folder(
+                    work_folder)):
+            print('Failed to post-process data')
+            return False
+        print(f'Generated data is at '
+              f'{self._get_post_processed_data_folder(work_folder)}')
         return True
 
     def train(self, work_folder):
