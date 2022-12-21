@@ -241,7 +241,8 @@ class DoppelGANgerTFModel(Model):
             num_real_samples += int(estimate_flowlen_dp([num_real_samples])[0])
 
         print("num_real_samples:", num_real_samples)
-        self._config["dataset_type"] = getattr(self._config, "dataset_type", None)
+        self._config["dataset_type"] = getattr(
+            self._config, "dataset_type", None)
         if self._config["dataset_type"] == "netflow":
             self._config["generate_num_train_sample"] = int(
                 1.25 * num_real_samples)
@@ -403,6 +404,8 @@ class DoppelGANgerTFModel(Model):
                 self._config["generate_num_train_sample"] +
                 self._config["generate_num_test_sample"]
             )
+            print("self._config[generate_num_train_sample]",
+                  self._config["generate_num_train_sample"])
             print("total generated sample:", total_generate_num_sample)
 
             (

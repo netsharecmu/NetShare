@@ -91,9 +91,6 @@ def df2chunks(big_raw_df,
               n_chunks=10,
               eps=1e-5):
 
-    if n_chunks == 1:
-        return [big_raw_df]
-
     if n_chunks > 1 and \
             ((not config_timestamp["column"]) or (not config_timestamp["generation"])):
         raise ValueError(
@@ -104,6 +101,12 @@ def df2chunks(big_raw_df,
             config_timestamp["column"]:
         time_col_name = config_timestamp["column"]
         big_raw_df = big_raw_df.sort_values(time_col_name)
+
+    if n_chunks == 1:
+
+        chunk_time = (big_raw_df[time_col_name].max() -
+                      big_raw_df[time_col_name].min()) / n_chunks
+        return [big_raw_df], chunk_time
 
     dfs = []
     if split_type == "fixed_size":
@@ -141,6 +144,7 @@ def apply_per_field(
         config_fields,
         field_instances,
         embed_model=None):
+    original_df.reset_index(drop=True, inplace=True)
     new_df = copy.deepcopy(original_df)
     new_field_list = []
     for i, field in enumerate(config_fields):
@@ -153,6 +157,7 @@ def apply_per_field(
                 f'{field.column}_{i}' for i in range(this_df.shape[1])]
             new_field_list += list(this_df.columns)
             new_df = pd.concat([new_df, this_df], axis=1)
+
         # word2vec field: (any)
         if 'word2vec' in getattr(field, 'encoding', ''):
             this_df = original_df.apply(
@@ -163,6 +168,7 @@ def apply_per_field(
                 f'{field.column}_{i}' for i in range(this_df.shape[1])]
             new_field_list += list(this_df.columns)
             new_df = pd.concat([new_df, this_df], axis=1)
+
         # Categorical field: (string | integer)
         if 'categorical' in getattr(field, 'encoding', ''):
             this_df = pd.DataFrame(field_instance.normalize(
@@ -202,6 +208,7 @@ def split_per_chunk(
         field_instances=metadata_fields,
         embed_model=embed_model
     )
+
     df_per_chunk, new_timeseries_list = apply_per_field(
         original_df=df_per_chunk,
         config_fields=config["timeseries"],
@@ -209,7 +216,7 @@ def split_per_chunk(
         embed_model=embed_model
     )
     print("df_per_chunk:", df_per_chunk.shape)
-
+    print(df_per_chunk.loc[df_per_chunk['proto'] == 'GRE'])
     # Multi-chunk related field instances
     # n_chunk=1 reduces to plain DoppelGANger
     if config["n_chunks"] > 1:
@@ -283,12 +290,12 @@ def split_per_chunk(
     data_feature = []
     data_gen_flag = []
     flow_tags = []
-    fields_dict = {f.name: f for f in metadata_fields+timeseries_fields}
+    fields_dict = {f.name: f for f in metadata_fields + timeseries_fields}
     for group_name, df_group in tqdm(gk):
         # RESET INDEX TO MAKE IT START FROM ZERO
         df_group = df_group.reset_index(drop=True)
         data_feature.append(df_group[new_timeseries_list].to_numpy())
-        data_gen_flag.append([1.0]*len(df_group))
+        data_gen_flag.append([1.0] * len(df_group))
 
         attr_per_row = []
         if config["n_chunks"] > 1:
@@ -306,7 +313,7 @@ def split_per_chunk(
                     # attr_per_row += list(
                     # fields_dict["startFromThisChunk"].normalize(1.0))
                     attr_per_row += [0.0, 1.0]
-                    num_flows_startFromThisChunk += 1
+                    # num_flows_startFromThisChunk += 1
 
                     for i in range(config["n_chunks"]):
                         if i in flowkeys_chunkidx[str(ori_group_name)]:
@@ -343,8 +350,9 @@ def split_per_chunk(
             else:
                 raise ValueError(
                     f"{ori_group_name} not found in the raw file!")
-    data_attribute = np.concatenate(
-        (data_attribute, np.array(flow_tags)), axis=1)
+    if config["n_chunks"] > 1:
+        data_attribute = np.concatenate(
+            (data_attribute, np.array(flow_tags)), axis=1)
     if config["timestamp"]["generation"] and \
             config["timestamp"]["encoding"] == "interarrival":
         data_attribute = np.concatenate(
@@ -385,10 +393,22 @@ def split_per_chunk(
 
     with open(os.path.join(
             data_out_dir, 'data_attribute_output.pkl'), 'wb') as f:
-        pickle.dump([v.getOutputType() for v in metadata_fields], f)
+        data_attribute_output = []
+        for v in metadata_fields:
+            if "BitField" in str(type(v)):
+                data_attribute_output += v.getOutputType()
+            else:
+                data_attribute_output.append(v.getOutputType())
+        pickle.dump(data_attribute_output, f)
     with open(os.path.join(
             data_out_dir, 'data_feature_output.pkl'), 'wb') as f:
-        pickle.dump([v.getOutputType() for v in timeseries_fields], f)
+        data_feature_output = []
+        for v in timeseries_fields:
+            if "BitField" in str(type(v)):
+                data_feature_output += v.getOutputType()
+            else:
+                data_feature_output.append(v.getOutputType())
+        pickle.dump(data_feature_output, f)
     with open(os.path.join(
             data_out_dir, 'data_attribute_fields.pkl'), 'wb') as f:
         pickle.dump(metadata_fields, f)
