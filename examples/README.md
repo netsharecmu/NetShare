@@ -66,7 +66,7 @@ Single-event schema contains one timeseries per row.
 
 
 
-# [Type 2: multi-event](./dg_table_row_per_sample/config_example_wiki.json)
+# [Type 2: multi-event](./dg_table_row_per_sample/README.md)
 Multi-event data schema contains multiple timeseries per row.
 
 ## Data Schema
