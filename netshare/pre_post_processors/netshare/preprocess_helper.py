@@ -216,7 +216,7 @@ def split_per_chunk(
         embed_model=embed_model
     )
     print("df_per_chunk:", df_per_chunk.shape)
-    print(df_per_chunk.loc[df_per_chunk['proto'] == 'GRE'])
+
     # Multi-chunk related field instances
     # n_chunk=1 reduces to plain DoppelGANger
     if config["n_chunks"] > 1:
@@ -395,7 +395,7 @@ def split_per_chunk(
             data_out_dir, 'data_attribute_output.pkl'), 'wb') as f:
         data_attribute_output = []
         for v in metadata_fields:
-            if "BitField" in str(type(v)):
+            if isinstance(v, BitField):
                 data_attribute_output += v.getOutputType()
             else:
                 data_attribute_output.append(v.getOutputType())
@@ -404,7 +404,7 @@ def split_per_chunk(
             data_out_dir, 'data_feature_output.pkl'), 'wb') as f:
         data_feature_output = []
         for v in timeseries_fields:
-            if "BitField" in str(type(v)):
+            if isinstance(v, BitField):
                 data_feature_output += v.getOutputType()
             else:
                 data_feature_output.append(v.getOutputType())
