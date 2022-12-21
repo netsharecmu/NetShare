@@ -1,7 +1,7 @@
 import subprocess
 
 
-def exec_cmd(cmd, wait=False):
+def exec_cmd(cmd: str, wait: bool = False) -> None:
     p = subprocess.Popen(cmd, shell=True)
     if wait:
-        p.wait()
+        assert p.wait() == 0

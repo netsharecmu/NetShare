@@ -34,7 +34,7 @@ You may also refer to the [README](traces/README.md) for detailed descriptions o
 
 # Getting started
 ## Step 1: Install NetShare Python package (Required)
-We recommend installing NetShare in a virtual environment (e.g., Anaconda3). We test with virtual environment with Python==3.6.
+We recommend installing NetShare in a virtual environment (e.g., Anaconda3 or virtualenv). We test with virtual environment with Python==3.7.
 
 ```Bash
 # Assume Anaconda is installed
@@ -49,6 +49,9 @@ git clone https://github.com/netsharecmu/NetShare.git
 cd NetShare/
 pip3 install -e .
 ```
+Two alternatives for installing NetShare:
+* If you use AWS adapters (e.g. to read data from an S3 bucket), install with `pip3 install -e .[aws]`
+* If you want to contribute and run tests, install with `pip3 install -e .[dev]`
 
 ## Step 2: How to start Ray? (Optional but **strongly** recommended)
 Ray is a unified framework for scaling AI and Python applications. Our framework utilizes Ray to increase parallelism and distribute workloads among the cluster automatically and efficiently.
@@ -203,3 +206,8 @@ Part of the source code is adapated from the following open-source projects:
 - [BSN](https://github.com/fjxmlzn/BSN)
 - [Ray](https://github.com/ray-project/ray)
 - [config_io](https://github.com/fjxmlzn/config_io)
+
+
+# Troubleshoot
+- If you encounter a python crush over `may have been in progress in another thread when fork() was called`, and you are using macOS in a new version, please refer to: https://stackoverflow.com/questions/50168647/multiprocessing-causes-python-to-crash-and-gives-an-error-may-have-been-in-progr
+- If you encounter a crush over `NotImplementedError: Cannot convert a symbolic Tensor`, please make sure that you use python3.6 and the pinned versions from setup.py.

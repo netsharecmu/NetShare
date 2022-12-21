@@ -157,13 +157,15 @@ void pcapParser(char *fileName)
 
     if (descr == NULL)
     {
-        printf("[FILE ERROR] pcap_open_live() failed: \n");
+        printf("[FILE ERROR] pcap_open_live() failed: %s\n", errbuf);
+        exit(1);
     }
 
     // start packet processing loop, just like live capture
     if (pcap_loop(descr, 0, packetHandler, NULL) < 0)
     {
         printf("pcap_loop() failed: %s\n", pcap_geterr(descr));
+        exit(1);
     }
 
     printf("This pcap chunk reading is done... total %d packets \n", trace_count);
