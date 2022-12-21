@@ -4,7 +4,7 @@
         "overwrite": true,
         "dataset_meta_type": "single_event_per_row",
         "dataset_type": null,
-        "n_chunks": 3,
+        "n_chunks": 2,
         "dp": false,
         "allowed_data_types": [
             "ip_string",
@@ -92,6 +92,19 @@
                     "encoding": "categorical"
                 }
             ]
+        }
+    },
+    "model": {
+        "class": "DoppelGANgerTFModel",
+        "config": {
+            "batch_size": 100,
+            "sample_len": [
+                10
+            ],
+            "sample_len_expand": true,
+            "iteration": 4,
+            "extra_checkpoint_freq": 1,
+            "epoch_checkpoint_freq": 1
         }
     }
 }
