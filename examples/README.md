@@ -1,5 +1,42 @@
 We support multiple common data schemas and here are a few examples with corresponding configuration files. You may find the "nearest match" to start with.
 
+# Prerequiste
+We support four different fields:
+1. Bit field (encoded as bit strings) e.g., 
+    ```JSON
+    {
+        "column": "srcip",
+        "type": "integer",
+        "encoding": "bit",
+        "n_bits": 32
+    }
+    ```
+2. Word2Vec field (encoded as Word2Vec vectors), e.g.,
+    ```JSON
+    {
+        "column": "srcport",
+        "type": "integer",
+        "encoding": "word2vec_port"
+    }
+    ```
+3. Categorical field (encoded as one-hot encoding), e.g., 
+    ```JSON
+    {
+        "column": "type",
+        "type": "string",
+        "encoding": "categorical"
+    }
+    ```
+4. Continuous field, e.g.,
+    ```JSON
+    {
+        "column": "pkt",
+        "type": "float",
+        "normalization": "ZERO_ONE",
+        "log1p_norm": true
+    }
+    ```
+
 # Type 1: single-event
 Single-event schema contains one timeseries per row.
 
@@ -11,213 +48,37 @@ Single-event schema contains one timeseries per row.
 |          ...         |            |            |     |               |               |     |
 
 ## Examples
-### PCAP
-| Timestamp | Srcip | Dstip | Srcport | Dstport | Proto | Pkt_size | ... |
-|:---------:|:-----:|:-----:|:-------:|:-------:|:-----:|:--------:|:---:|
-|     t1    |       |       |         |         |       |          |     |
-|     t2    |       |       |         |         |       |          |     |
-|    ...    |       |       |         |         |       |          |     |
+1. PCAP
+    | Timestamp | Srcip | Dstip | Srcport | Dstport | Proto | Pkt_size | ... |
+    |:---------:|:-----:|:-----:|:-------:|:-------:|:-----:|:--------:|:---:|
+    |     t1    |       |       |         |         |       |          |     |
+    |     t2    |       |       |         |         |       |          |     |
+    |    ...    |       |       |         |         |       |          |     |
 
-### Configuration file (tentative)
-```Json
-"timestamp": {
-    "column": "ts",
-    "generation": true,
-    "encoding": "interarrival",
-    "normalization": "ZERO_ONE"
-},
-"word2vec": {
-    "vec_size": 10,
-    "model_name": "word2vec_vecSize",
-    "annoy_n_trees": 100,
-    "pretrain_model_path": null
-},
-"metadata": [
-    {
-        "column": "srcip",
-        "type": "integer",
-        "encoding": "bit",
-        "n_bits": 32
-    },
-    {
-        "column": "dstip",
-        "type": "integer",
-        "encoding": "bit",
-        "n_bits": 32
-    },
-    {
-        "column": "srcport",
-        "type": "integer",
-        "encoding": "word2vec_port"
-    },
-    {
-        "column": "dstport",
-        "type": "integer",
-        "encoding": "word2vec_port"
-    },
-    {
-        "column": "proto",
-        "type": "string",
-        "encoding": "word2vec_proto"
-    }
-],
-"timeseries": [
-    {
-        "column": "td",
-        "type": "float",
-        "normalization": "ZERO_ONE",
-        "log1p_norm": true
-    },
-    {
-        "column": "pkt",
-        "type": "float",
-        "normalization": "ZERO_ONE",
-        "log1p_norm": true
-    },
-    {
-        "column": "byt",
-        "type": "float",
-        "normalization": "ZERO_ONE",
-        "log1p_norm": true
-    },
-    {
-        "column": "type",
-        "type": "string"
-    }
-]
-```
+2. NetFlow ([configuration_file](netflow/config_example_netflow_nodp.json))
 
-### [HAR dataset](https://www.kaggle.com/datasets/malekzadeh/motionsense-dataset)
-|   | attitude.roll | attitude.pitch | attitude.yaw | userAcceleration.x | userAcceleration.y | userAcceleration.z | act | id  | weight | height | age  | gender | trial |
-|---|---------------|----------------|--------------|--------------------|--------------------|--------------------|-----|-----|--------|--------|------|--------|-------|
-| 0 | 1.528132      | -0.733896      | 0.696372     | 0.294894           | -0.184493          | 0.377542           | 0.0 | 0.0 | 102.0  | 188.0  | 46.0 | 1.0    | 1.0   |
-| 1 | 1.527992      | -0.716987      | 0.677762     | 0.219405           | 0.035846           | 0.114866           | 0.0 | 0.0 | 102.0  | 188.0  | 46.0 | 1.0    | 1.0   |
-| 2 | 1.527765      | -0.706999      | 0.670951     | 0.010714           | 0.134701           | -0.167808          | 0.0 | 0.0 | 102.0  | 188.0  | 46.0 | 1.0    | 1.0   |
-| 3 | 1.516768      | -0.704678      | 0.675735     | -0.008389          | 0.136788           | 0.094958           | 0.0 | 0.0 | 102.0  | 188.0  | 46.0 | 1.0    | 1.0   |
-| 4 | 1.493941      | -0.703918      | 0.672994     | 0.199441           | 0.353996           | -0.044299          | 0.0 | 0.0 | 102.0  | 188.0  | 46.0 | 1.0    | 1.0   |
+3. [HAR dataset](https://www.kaggle.com/datasets/malekzadeh/motionsense-dataset) ([configuration_file]())
+    |   | attitude.roll | attitude.pitch | attitude.yaw | userAcceleration.x | userAcceleration.y | userAcceleration.z | act | id  | weight | height | age  | gender | trial |
+    |---|---------------|----------------|--------------|--------------------|--------------------|--------------------|-----|-----|--------|--------|------|--------|-------|
+    | 0 | 1.528132      | -0.733896      | 0.696372     | 0.294894           | -0.184493          | 0.377542           | 0.0 | 0.0 | 102.0  | 188.0  | 46.0 | 1.0    | 1.0   |
+    | 1 | 1.527992      | -0.716987      | 0.677762     | 0.219405           | 0.035846           | 0.114866           | 0.0 | 0.0 | 102.0  | 188.0  | 46.0 | 1.0    | 1.0   |
+    | 2 | 1.527765      | -0.706999      | 0.670951     | 0.010714           | 0.134701           | -0.167808          | 0.0 | 0.0 | 102.0  | 188.0  | 46.0 | 1.0    | 1.0   |
 
-### Configuration file (tentative)
-```Json
-"timestamp": {
-    "column": null,
-    "generation": null,
-    "encoding": null,
-    "normalization": null
-},
-"metadata": [
-    {
-        "column": "weight",
-        "type": "float",
-        "normalization": "ZERO_ONE"
-    },
-    {
-        "column": "height",
-        "type": "float",
-        "normalization": "ZERO_ONE"
-    },
-    {
-        "column": "age",
-        "type": "float",
-        "normalization": "ZERO_ONE"
-    },
-    {
-        "column": "gender",
-        "type": "float",
-        "normalization": "ZERO_ONE"
-    },
-    {
-        "column": "trial",
-        "type": "string"
-    }
-],
-"timeseries": [
-    {
-        "column": "attitude.roll",
-        "type": "float",
-        "normalization": "ZERO_ONE",
-    },
-    {
-        "column": "attitude.yaw",
-        "type": "float",
-        "normalization": "ZERO_ONE",
-    },
-    {
-        "column": "attitude.pitch",
-        "type": "float",
-        "normalization": "ZERO_ONE",
-    },
-    {
-        "column": "userAcceleration.x",
-        "type": "float",
-        "normalization": "ZERO_ONE",
-    },
-    {
-        "column": "userAcceleration.y",
-        "type": "float",
-        "normalization": "ZERO_ONE",
-    },
-    {
-        "column": "userAcceleration.z",
-        "type": "float",
-        "normalization": "ZERO_ONE",
-    },
-    {
-        "column": "act",
-        "type": "string"
-    }
-]
-```
 
-# Type 2: multi-event
+
+# [Type 2: multi-event](./dg_table_row_per_sample/README.md)
 Multi-event data schema contains multiple timeseries per row.
 
+## Data Schema
 | Metadata 1 | Metadata 2 | ... | {Timestamp (optional), Timeseries 1, Timeseries 2, ...} | {Timestamp (optional), Timeseries 1, Timeseries 2, ...} | ... |
 |:----------:|:----------:|:---:|:-------------------------------------------------------:|:-------------------------------------------------------:|:---:|
 |            |            |     |                                                         |                                                         |     |
 |            |            |     |                                                         |                                                         |     |
 
 ## Examples
-### Wikipedia dataset
-| Domain | Access type | Agent | {Date 1, page view} | {Date 2, page view} | ... |
-|:------:|:-----------:|:-----:|:-------------------:|:-------------------:|:---:|
-|        |             |       |                     |                     |     |
-|        |             |       |                     |                     |     |
+1. Wikipedia dataset ([configuration_file](./dg_table_row_per_sample/config_example_wiki.json))
+    | Domain | Access type | Agent | {Date 1, page view} | {Date 2, page view} | ... |
+    |:------:|:-----------:|:-----:|:-------------------:|:-------------------:|:---:|
+    |        |             |       |                     |                     |     |
+    |        |             |       |                     |                     |     |
 
-### Configuration file (tentative)
-```Json
-"metadata": [
-    {
-        "column": "Page",
-        "regex": ".*_([^_]*)_[^_]*_[^_]*$",
-        "type": "string",
-        "name": "Domain"
-    },
-    {
-        "column": "Page",
-        "regex": ".*_[^_]*_([^_]*)_[^_]*$",
-        "type": "string",
-        "name": "Access type"
-    },
-    {
-        "column": "Page",
-        "regex": ".*_[^_]*_[^_]*_([^_]*)$",
-        "type": "string",
-        "name": "Agent"
-    }
-],
-"timeseries": [
-    {
-        "columns": [
-            "2015-07-01",
-            "2015-07-02",
-            "2015-07-03",
-            "2015-07-04",
-            "2015-07-05",
-            ...
-        ],
-        "type": "float",
-        "normalization": "MINUSONE_ONE",
-        "log1p_norm": true
-    }
-]
-```
