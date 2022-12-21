@@ -171,8 +171,8 @@ class NetsharePrePostProcessor(PrePostProcessor):
                 field_instance = ContinuousField(
                     name=field_name,
                     norm_option=getattr(Normalization, field.normalization),
-                    min_x=min(df[field.column])-EPS,
-                    max_x=max(df[field.column])+EPS,
+                    min_x=min(df[field.column]) - EPS,
+                    max_x=max(df[field.column]) + EPS,
                     dim_x=1
                 )
                 if getattr(field, 'log1p_norm', False):
@@ -244,6 +244,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
         '''generating cross-chunk flow stats'''
         # split big df to chunks
         print("Using {}".format(self._config["df2chunks"]))
+        print(self._config["n_chunks"])
         df_chunks, _tmp_sizeortime = df2chunks(
             big_raw_df=df,
             config_timestamp=self._config["timestamp"],
@@ -327,7 +328,7 @@ class NetsharePrePostProcessor(PrePostProcessor):
         # global_max_flow_len for consistency between chunks
         per_chunk_flow_len_agg = []
         max_flow_lens = []
-        for chunk_id, df_chunk in enumerate(df_chunks[1:]):
+        for chunk_id, df_chunk in enumerate(df_chunks):
             # corner case: skip for empty df_chunk
             if len(df_chunk) == 0:
                 continue
