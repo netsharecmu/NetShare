@@ -80,8 +80,6 @@ def apply_per_field(
 
 
 def write_chunk_data(
-    metadata_fields: Dict[FieldKey, Field],
-    timeseries_fields: Dict[FieldKey, Field],
     df_per_chunk: pd.DataFrame,
     cross_chunks_data: CrossChunksData,
     target_dir: str,
@@ -110,7 +108,7 @@ def write_chunk_data(
 
     with open(os.path.join(data_out_dir, "data_attribute_output.pkl"), "wb") as f:
         data_attribute_output = []
-        for v in metadata_fields.values():
+        for v in cross_chunks_data.metadata_fields.values():
             if isinstance(v, BitField):
                 data_attribute_output += v.getOutputType()
             else:
@@ -118,16 +116,16 @@ def write_chunk_data(
         pickle.dump(data_attribute_output, f)
     with open(os.path.join(data_out_dir, "data_feature_output.pkl"), "wb") as f:
         data_feature_output = []
-        for v in timeseries_fields.values():
+        for v in cross_chunks_data.timeseries_fields.values():
             if isinstance(v, BitField):
                 data_feature_output += v.getOutputType()
             else:
                 data_feature_output.append(v.getOutputType())
         pickle.dump(data_feature_output, f)
     with open(os.path.join(data_out_dir, "data_attribute_fields.pkl"), "wb") as f:
-        pickle.dump(metadata_fields, f)
+        pickle.dump(cross_chunks_data.metadata_fields, f)
     with open(os.path.join(data_out_dir, "data_feature_fields.pkl"), "wb") as f:
-        pickle.dump(timeseries_fields, f)
+        pickle.dump(cross_chunks_data.timeseries_fields, f)
 
 
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
@@ -144,20 +142,18 @@ def preprocess_per_chunk(
     timestamp_config = config["pre_post_processor"]["config"]["timestamp"]
 
     metadata_cols = [m for m in metadata_config]
-    metadata_fields: Dict[FieldKey, Field] = cross_chunks_data.metadata_fields
-    timeseries_fields: Dict[FieldKey, Field] = cross_chunks_data.timeseries_fields
 
     df_per_chunk, new_metadata_list = apply_per_field(
         original_df=df_per_chunk,
         config_fields=metadata_config,
-        field_instances=metadata_fields,
+        field_instances=cross_chunks_data.metadata_fields,
         embed_model=cross_chunks_data.embed_model,
     )
 
     df_per_chunk, new_timeseries_list = apply_per_field(
         original_df=df_per_chunk,
         config_fields=timeseries_config,
-        field_instances=timeseries_fields,
+        field_instances=cross_chunks_data.timeseries_fields,
         embed_model=cross_chunks_data.embed_model,
     )
 
@@ -177,7 +173,7 @@ def preprocess_per_chunk(
                 max_x=max(flow_start_list),
             )
 
-            metadata_fields[
+            cross_chunks_data.metadata_fields[
                 key_from_field(flow_start_metadata_field)
             ] = flow_start_metadata_field
             flow_start_list = flow_start_metadata_field.normalize(
@@ -192,7 +188,7 @@ def preprocess_per_chunk(
                 min_x=min(interarrival_within_flow_list),
                 max_x=max(interarrival_within_flow_list),
             )
-            timeseries_fields[
+            cross_chunks_data.timeseries_fields[
                 key_from_field(interarrival_within_flow_timeseries_field)
             ] = interarrival_within_flow_timeseries_field
             df_per_chunk[
@@ -209,7 +205,9 @@ def preprocess_per_chunk(
                 min_x=min(df_per_chunk[time_col]),
                 max_x=max(df_per_chunk[time_col]),
             )
-            timeseries_fields[key_from_field(timestamp_field)] = timestamp_field
+            cross_chunks_data.timeseries_fields[
+                key_from_field(timestamp_field)
+            ] = timestamp_field
             df_per_chunk[time_col] = timestamp_field.normalize(
                 df_per_chunk[time_col].to_numpy().reshape(-1, 1)
             )
@@ -295,8 +293,6 @@ def preprocess_per_chunk(
     data_gen_flag = np.asarray(data_gen_flag)
 
     write_chunk_data(
-        metadata_fields=metadata_fields,
-        timeseries_fields=timeseries_fields,
         df_per_chunk=df_per_chunk,
         cross_chunks_data=cross_chunks_data,
         target_dir=target_dir,
