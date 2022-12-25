@@ -43,7 +43,7 @@ class GeneratorV2(object):
             create_new_model=self._model,
             model_config=self._model_config,
         )
-        post_process()
+        post_process(get_generated_data_folder())
 
     def train(self, work_folder: Optional[str] = None) -> None:
         change_work_folder(work_folder)

@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from netshare.configs import get_config
 from netshare.logger import logger
@@ -56,3 +57,11 @@ def _check_folder(folder: str) -> None:
             )
     else:
         os.makedirs(folder, exist_ok=True)
+
+
+def copy_files(source_dir: str, target_dir: str) -> None:
+    """
+    This function copies all files from source_dir to target_dir.
+    """
+    for file_name in os.listdir(source_dir):
+        shutil.copy(os.path.join(source_dir, file_name), target_dir)

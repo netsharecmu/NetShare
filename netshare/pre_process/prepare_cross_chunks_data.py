@@ -30,7 +30,7 @@ class CrossChunksData(NamedTuple):
 
 def get_flowkeys_chunkidx(df_chunks: List[pd.DataFrame]) -> Dict[str, List[int]]:
     prepost_config = get_config().get("pre_post_processor", {}).get("config", {})
-    print("compute flowkey-chunk list from scratch...")
+    logger.info("compute flowkey-chunk list from scratch")
     flow_chunkid_keys = {}
     for chunk_id, df_chunk in enumerate(df_chunks):
         gk = df_chunk.groupby([m.column for m in prepost_config["metadata"]])
@@ -42,7 +42,7 @@ def get_flowkeys_chunkidx(df_chunks: List[pd.DataFrame]) -> Dict[str, List[int]]
     # value: [a list of appeared chunk idx]
     flowkeys_chunkidx: Dict[str, List[int]] = {}
     for chunk_id, flowkeys in flow_chunkid_keys.items():
-        print(
+        logger.debug(
             "processing chunk {}/{}, # of flows: {}".format(
                 chunk_id + 1, len(df_chunks), len(flowkeys)
             )

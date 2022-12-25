@@ -4,6 +4,7 @@ import shutil
 from netshare.pre_process.normalize_format_to_csv.base_format_normalizer import (
     DataFormatNormalizer,
 )
+from netshare.utils.working_directories import copy_files
 
 
 class CsvNormalizer(DataFormatNormalizer):
@@ -13,5 +14,4 @@ class CsvNormalizer(DataFormatNormalizer):
     """
 
     def normalize_data(self, input_dir: str, target_dir: str) -> None:
-        for file_name in os.listdir(input_dir):
-            shutil.copy(os.path.join(input_dir, file_name), target_dir)
+        copy_files(input_dir, target_dir)

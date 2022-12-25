@@ -8,6 +8,7 @@ from netshare.dashboard.dist_metrics import (
     run_netflow_qualitative_plots_dashboard,
     run_pcap_qualitative_plots_dashboard,
 )
+from netshare.logger import logger
 
 VISUALIZE_DIR = "tmp"
 
@@ -29,11 +30,11 @@ def visualize(generated_data_dir: str, target_dir: str, original_data_dir: str) 
 
     # Check if pre-generated synthetic data exists
     if os.path.exists(os.path.join(original_data_path, "syn.csv")):
-        print("Pre-generated synthetic data exists!")
+        logger.debug("Pre-generated synthetic data exists!")
         syn_data_path = os.path.join(original_data_path, "syn.csv")
     # Check if self-generated synthetic data exists
     elif os.path.exists(os.path.join(generated_data_dir, "syn.csv")):
-        print("Self-generated synthetic data exists!")
+        logger.debug("Self-generated synthetic data exists!")
         syn_data_path = os.path.join(generated_data_dir, "syn.csv")
     else:
         raise ValueError(
