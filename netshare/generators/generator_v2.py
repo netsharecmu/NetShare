@@ -5,7 +5,6 @@ import shutil
 
 from config_io import Config
 
-import netshare.pre_post_processors as pre_post_processors
 import netshare.model_managers as model_managers
 import netshare.models as models
 import netshare.dashboard as dashboard
@@ -28,7 +27,6 @@ class GeneratorV2(object):
         global_config = self._config["global_config"]
 
         self._overwrite = global_config["overwrite"]
-
 
         model_manager_class = getattr(model_managers, config["model_manager"]["class"])
         model_manager_config = Config(global_config)
@@ -74,13 +72,7 @@ class GeneratorV2(object):
     def _get_model_log_folder(self, work_folder):
         return os.path.join(work_folder, "logs", "models")
 
-    def _post_process(
-        self, input_folder, output_folder, pre_processed_data_folder, log_folder
-    ):
-        if not self._check_folder(output_folder):
-            return False
-        if not self._check_folder(log_folder):
-            return False
+    def _post_process(self):
         return post_process(config=self._config)
 
     def _train(self, input_train_data_folder, output_model_folder, log_folder):
@@ -149,25 +141,14 @@ class GeneratorV2(object):
         ):
             print("Failed to generate synthetic data")
             return False
-        if not self._post_process(
-            input_folder=self._get_generated_data_folder(work_folder),
-            output_folder=self._get_post_processed_data_folder(work_folder),
-            log_folder=self._get_post_processed_data_log_folder(work_folder),
-            pre_processed_data_folder=self._get_pre_processed_data_folder(work_folder),
-        ):
-            print("Failed to post-process data")
-            return False
-        print(
-            f"Generated data is at "
-            f"{self._get_post_processed_data_folder(work_folder)}"
-        )
+        self._post_process()
         return True
 
     def train(self, work_folder):
-        work_folder = os.path.expanduser(work_folder)
         self._check_folder(self._get_pre_processed_data_folder(work_folder))
         pre_process(
-            config=self._config, target_dir=self._get_pre_processed_data_folder(work_folder)
+            config=self._config,
+            target_dir=self._get_pre_processed_data_folder(work_folder),
         )
         if not self._train(
             input_train_data_folder=self._get_pre_processed_data_folder(work_folder),
@@ -180,11 +161,8 @@ class GeneratorV2(object):
 
     def train_and_generate(self, work_folder):
         work_folder = os.path.expanduser(work_folder)
-        if not self.train(work_folder):
-            return False
-        if not self.generate(work_folder):
-            return False
-        return True
+        self.train(work_folder)
+        return self.generate(work_folder)
 
     def visualize(self, work_folder):
         work_folder = os.path.expanduser(work_folder)

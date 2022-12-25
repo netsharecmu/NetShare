@@ -1,6 +1,8 @@
 import ctypes
 import os
 
+from config_io import Config
+
 from netshare.pre_process.normalize_format_to_csv.base_format_normalizer import (
     DataFormatNormalizer,
 )
@@ -13,7 +15,7 @@ class PcapNormalizer(DataFormatNormalizer):
     This normalizer build CSV files out of pcap files.
     """
 
-    def normalize_data(self, input_dir: str, target_dir: str, config: dict) -> None:
+    def normalize_data(self, input_dir: str, target_dir: str, config: Config) -> None:
         cwd = os.path.dirname(
             os.path.abspath(netshare.pre_post_processors.netshare.__file__)
         )

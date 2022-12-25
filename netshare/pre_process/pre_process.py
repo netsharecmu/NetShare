@@ -1,26 +1,24 @@
-import copy
 import os
+import copy
 import tempfile
-from typing import List
+from typing import List, Tuple
 
+from config_io import Config
 import pandas as pd
 
 from netshare import ray
 from netshare.logger import logger
-from netshare.pre_post_processors.netshare.preprocess_helper import (
-    df2chunks,
-    split_per_chunk,
-)
 from netshare.pre_process.data_source import fetch_data
+from netshare.pre_process.preprocess_per_chunk import preprocess_per_chunk
 from netshare.pre_process.normalize_format_to_csv import normalize_files_format
-
 from netshare.pre_process.prepare_cross_chunks_data import (
+    CrossChunksData,
     prepare_cross_chunks_data,
-    CrossChunkData,
 )
+from netshare.pre_post_processors.netshare.preprocess_helper import df2chunks
 
 
-def pre_process(config: dict, target_dir: str) -> None:
+def pre_process(config: Config, target_dir: str) -> None:
     """
     This is the main function of the preprocess phase.
     We get the configuration, and prepare everything for the training phase.
@@ -41,12 +39,14 @@ def pre_process(config: dict, target_dir: str) -> None:
 
     fetch_data(config, raw_data_dir)
     normalize_files_format(raw_data_dir, normalized_csv_dir, config)
-    df_chunks = load_dataframe_chunks(normalized_csv_dir, config)
-    cross_chunks_data = prepare_cross_chunks_data(df_chunks, config, target_dir)
+    df, df_chunks = load_dataframe_chunks(normalized_csv_dir, config)
+    cross_chunks_data = prepare_cross_chunks_data(df, df_chunks, config, target_dir)
     apply_distributed_chunk_logic(df_chunks, cross_chunks_data, config, target_dir)
 
 
-def load_dataframe_chunks(csv_dir: str, config: dict) -> List[pd.DataFrame]:
+def load_dataframe_chunks(
+    csv_dir: str, config: Config
+) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """
     This function load the CSV files into a pandas dataframe.
     """
@@ -60,41 +60,30 @@ def load_dataframe_chunks(csv_dir: str, config: dict) -> List[pd.DataFrame]:
     )
     df_chunks, _ = df2chunks(
         big_raw_df=df,
-        config_timestamp=config['pre_post_processor']['config']["timestamp"],
-        split_type=config['pre_post_processor']['config']["df2chunks"],
-        n_chunks=config['global_config']["n_chunks"],
+        config_timestamp=config["pre_post_processor"]["config"]["timestamp"],
+        split_type=config["pre_post_processor"]["config"]["df2chunks"],
+        n_chunks=config["global_config"]["n_chunks"],
     )
-    return df_chunks  # type: ignore
+    return df, df_chunks
 
 
 def apply_distributed_chunk_logic(
     df_chunks: List[pd.DataFrame],
-    cross_chunks_data: CrossChunkData,
-    config: dict,
+    cross_chunks_data: CrossChunksData,
+    config: Config,
     target_dir: str,
 ) -> None:
-    objs = []
-    for chunk_id, df_chunk in enumerate(df_chunks):
-        # skip empty df_chunk: corner case
-        if len(df_chunk) == 0:
-            print("Chunk_id {} empty! Skipping ...".format(chunk_id))
-            continue
-
-        print("\nChunk_id:", chunk_id)
-        merged_config = {**config['global_config'], **config['pre_post_processor']['config']}
-        objs.append(
-            split_per_chunk.remote(
-                config=merged_config,
-                metadata_fields=copy.deepcopy(cross_chunks_data.metadata_fields),
-                timeseries_fields=copy.deepcopy(cross_chunks_data.timeseries_fields),
-                df_per_chunk=df_chunk.copy(),
-                embed_model=cross_chunks_data.embed_model,
-                global_max_flow_len=cross_chunks_data.global_max_flow_len,
-                chunk_id=chunk_id,
-                data_out_dir=os.path.join(target_dir, f"chunkid-{chunk_id}"),
-                flowkeys_chunkidx=cross_chunks_data.flowkeys_chunkidx,
-            )
-        )
-
     logger.info("Waiting for all chunks to be processed...")
-    ray.get(objs)
+    ray.get(
+        [
+            preprocess_per_chunk.remote(
+                config=config,
+                cross_chunks_data=cross_chunks_data,
+                df_per_chunk=df_chunk.copy(),
+                chunk_id=chunk_id,
+                target_dir=target_dir,
+            )
+            for chunk_id, df_chunk in enumerate(df_chunks)
+            if len(df_chunk) != 0
+        ]
+    )

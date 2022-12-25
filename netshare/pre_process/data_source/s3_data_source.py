@@ -1,6 +1,6 @@
-import abc
 import os
-import shutil
+
+from config_io import Config
 
 from netshare.pre_process.data_source.base_data_source import DataSource
 
@@ -14,7 +14,7 @@ class S3DataSource(DataSource):
     * bucket_name: The name of the bucket to download from.
     """
 
-    def fetch_data(self, config: dict, target_dir: str) -> None:
+    def fetch_data(self, config: Config, target_dir: str) -> None:
         # We import boto3 here, because it is a requirement only if you use s3 as a data source.
         import boto3
 

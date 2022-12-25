@@ -9,10 +9,10 @@ class Field(object):
     def __init__(self, name):
         self.name = name
 
-    def normalize(self):
+    def normalize(self, x):
         raise NotImplementedError
 
-    def denormalize(self):
+    def denormalize(self, x):
         raise NotImplementedError
 
     def getOutputType(self):

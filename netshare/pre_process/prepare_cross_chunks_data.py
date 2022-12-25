@@ -1,29 +1,30 @@
-from typing import List, Dict, NamedTuple, Optional, Tuple
+from typing import Dict, List, Tuple, Optional, NamedTuple
 
 import numpy as np
 import pandas as pd
+from config_io import Config
 from gensim.models import Word2Vec
 
+from netshare.pre_process.field import FieldKey, field_config_to_key, key_from_field
+from netshare.utils import (
+    Field,
+    BitField,
+    DiscreteField,
+    Normalization,
+    ContinuousField,
+)
 from netshare.logger import logger
 from netshare.pre_post_processors.netshare.word2vec_embedding import word2vec_train
-from netshare.utils import (
-    BitField,
-    ContinuousField,
-    Normalization,
-    DiscreteField,
-    Field,
-)
-
 
 EPS = 1e-8
 
 
-class CrossChunkData(NamedTuple):
+class CrossChunksData(NamedTuple):
     embed_model: Optional[Word2Vec]
-    flowkeys_chunkidx: dict
+    flowkeys_chunkidx: Optional[dict]
     global_max_flow_len: int
-    metadata_fields: List[Field]
-    timeseries_fields: List[Field]
+    metadata_fields: Dict[FieldKey, Field]
+    timeseries_fields: Dict[FieldKey, Field]
 
 
 def get_flowkeys_chunkidx(
@@ -100,90 +101,109 @@ def get_word2vec_model(
     return Word2Vec.load(word2vec_model_path)
 
 
-def build_fields(config: dict, df: pd.DataFrame) -> Tuple[List[Field], List[Field]]:
+def build_field_from_config(field: Config, df: pd.DataFrame, config: Config) -> Field:
     prepost_config = config.get("pre_post_processor", {}).get("config", {})
 
-    metadata_fields: List[Field] = []
-    timeseries_fields: List[Field] = []
+    if not isinstance(field.column, str):
+        raise ValueError('"column" should be a string')
+    if (
+        "type" not in field
+        or field.type not in config["global_config"]["allowed_data_types"]
+    ):
+        raise ValueError(
+            '"type" must be specified as ({})'.format(
+                " | ".join(config["global_config"]["allowed_data_types"])
+            )
+        )
 
-    for i, field in enumerate(prepost_config["metadata"] + prepost_config["timeseries"]):
-        if not isinstance(field.column, str):
-            raise ValueError('"column" should be a string')
-        if "type" not in field or field.type not in config["global_config"]["allowed_data_types"]:
+    field_name = getattr(field, "name", field.column)
+
+    # Bit Field: (integer)
+    field_instance: Field
+    if "bit" in getattr(field, "encoding", ""):
+        if field.type != "integer":
+            raise ValueError('"encoding=bit" can be only used for "type=integer"')
+        if "n_bits" not in field:
+            raise ValueError("`n_bits` needs to be specified for bit fields")
+        field_instance = BitField(
+            name=getattr(field, "name", field.column), num_bits=field.n_bits
+        )
+
+    # word2vec field: (any)
+    elif "word2vec" in getattr(field, "encoding", ""):
+        field_instance = ContinuousField(
+            name=field_name,
+            norm_option=Normalization.MINUSONE_ONE,  # l2-norm
+            dim_x=prepost_config["word2vec"]["vec_size"],
+        )
+
+    # Categorical field: (string | integer)
+    elif "categorical" in getattr(field, "encoding", ""):
+        if field.type not in ["string", "integer"]:
             raise ValueError(
-                '"type" must be specified as ({})'.format(
-                    " | ".join(config["global_config"]["allowed_data_types"])
-                )
+                '"encoding=cateogrical" can be only used for "type=(string | integer)"'
             )
+        field_instance = DiscreteField(
+            choices=list(set(df[field.column])),
+            name=getattr(field, "name", field.column),
+        )
 
-        field_name = getattr(field, "name", field.column)
+    # Continuous Field: (float)
+    elif field.type == "float":
+        field_instance = ContinuousField(
+            name=field_name,
+            norm_option=getattr(Normalization, field.normalization),
+            min_x=min(df[field.column]) - EPS,
+            max_x=max(df[field.column]) + EPS,
+            dim_x=1,
+        )
+        if getattr(field, "log1p_norm", False):
+            df[field.column] = np.log1p(df[field.column])
+    else:
+        raise ValueError("Unable to build field from config: {}".format(field))
+    return field_instance
 
-        # Bit Field: (integer)
-        field_instance: Field
-        if "bit" in getattr(field, "encoding", ""):
-            if field.type != "integer":
-                raise ValueError('"encoding=bit" can be only used for "type=integer"')
-            if "n_bits" not in field:
-                raise ValueError("`n_bits` needs to be specified for bit fields")
-            field_instance = BitField(
-                name=getattr(field, "name", field.column), num_bits=field.n_bits
+
+def build_fields(
+    config: Config, df: pd.DataFrame
+) -> Tuple[Dict[FieldKey, Field], Dict[FieldKey, Field]]:
+
+    metadata_fields: Dict[FieldKey, Field] = {
+        field_config_to_key(field): build_field_from_config(field, df, config)
+        for field in config["pre_post_processor"]["config"]["metadata"]
+    }
+    timeseries_fields: Dict[FieldKey, Field] = {
+        field_config_to_key(field): build_field_from_config(field, df, config)
+        for field in config["pre_post_processor"]["config"]["timeseries"]
+    }
+
+    # Multi-chunk related field instances
+    # n_chunk=1 reduces to plain DoppelGANger
+    if config["global_config"]["n_chunks"] > 1:
+        new_field = DiscreteField(name="startFromThisChunk", choices=[0.0, 1.0])
+        metadata_fields[key_from_field(new_field)] = new_field
+
+        for chunk_id in range(config["global_config"]["n_chunks"]):
+            new_field = DiscreteField(
+                name="chunk_{}".format(chunk_id), choices=[0.0, 1.0]
             )
-            # applied_df = df.apply(lambda row: field_instance.normalize(
-            # row[field_name]), axis='columns', result_type='expand')
-            # print("applied_df:", applied_df.shape)
-
-        # word2vec field: (any)
-        if "word2vec" in getattr(field, "encoding", ""):
-            field_instance = ContinuousField(
-                name=field_name,
-                norm_option=Normalization.MINUSONE_ONE,  # l2-norm
-                dim_x=prepost_config["word2vec"]["vec_size"],
-            )
-
-        # Categorical field: (string | integer)
-        if "categorical" in getattr(field, "encoding", ""):
-            if field.type not in ["string", "integer"]:
-                raise ValueError(
-                    '"encoding=cateogrical" can be only used for "type=(string | integer)"'
-                )
-            field_instance = DiscreteField(
-                choices=list(set(df[field.column])),
-                name=getattr(field, "name", field.column),
-            )
-
-        # Continuous Field: (float)
-        if field.type == "float":
-            field_instance = ContinuousField(
-                name=field_name,
-                norm_option=getattr(Normalization, field.normalization),
-                min_x=min(df[field.column]) - EPS,
-                max_x=max(df[field.column]) + EPS,
-                dim_x=1,
-            )
-            if getattr(field, "log1p_norm", False):
-                df[field.column] = np.log1p(df[field.column])
-
-        if field in prepost_config["metadata"]:
-            metadata_fields.append(field_instance)
-        if field in prepost_config["timeseries"]:
-            timeseries_fields.append(field_instance)
+            metadata_fields[key_from_field(new_field)] = new_field
 
     return metadata_fields, timeseries_fields
 
 
 def prepare_cross_chunks_data(
-    df_chunks: List[pd.DataFrame], config: dict, target_dir: str
-) -> CrossChunkData:
+    big_df: pd.DataFrame, df_chunks: List[pd.DataFrame], config: Config, target_dir: str
+) -> CrossChunksData:
     """
     This function splits the input data into chunks, and compute the .
     """
-    big_df = pd.concat(df_chunks, axis=0, ignore_index=True)
     embed_model = get_word2vec_model(big_df, config, target_dir)
     metadata_fields, timeseries_fields = build_fields(config, big_df)
     flowkeys_chunkidx = get_flowkeys_chunkidx(df_chunks, config)
     global_max_flow_len = get_global_max_flow_len(df_chunks, config)
 
-    return CrossChunkData(
+    return CrossChunksData(
         embed_model=embed_model,
         flowkeys_chunkidx=flowkeys_chunkidx,
         global_max_flow_len=global_max_flow_len,
