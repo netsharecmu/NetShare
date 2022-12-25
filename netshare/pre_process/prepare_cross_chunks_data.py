@@ -5,6 +5,7 @@ import pandas as pd
 from config_io import Config
 from gensim.models import Word2Vec
 
+from netshare.configs import get_config
 from netshare.pre_process.field import FieldKey, field_config_to_key, key_from_field
 from netshare.utils import (
     Field,
@@ -27,10 +28,8 @@ class CrossChunksData(NamedTuple):
     timeseries_fields: Dict[FieldKey, Field]
 
 
-def get_flowkeys_chunkidx(
-    df_chunks: List[pd.DataFrame], config: dict
-) -> Dict[str, List[int]]:
-    prepost_config = config.get("pre_post_processor", {}).get("config", {})
+def get_flowkeys_chunkidx(df_chunks: List[pd.DataFrame]) -> Dict[str, List[int]]:
+    prepost_config = get_config().get("pre_post_processor", {}).get("config", {})
     print("compute flowkey-chunk list from scratch...")
     flow_chunkid_keys = {}
     for chunk_id, df_chunk in enumerate(df_chunks):
@@ -55,8 +54,8 @@ def get_flowkeys_chunkidx(
     return flowkeys_chunkidx
 
 
-def get_global_max_flow_len(df_chunks: List[pd.DataFrame], config: dict) -> int:
-    prepost_config = config.get("pre_post_processor", {}).get("config", {})
+def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
+    prepost_config = get_config().get("pre_post_processor", {}).get("config", {})
     if prepost_config["max_flow_len"]:
         return int(prepost_config["max_flow_len"])
 
@@ -71,10 +70,8 @@ def get_global_max_flow_len(df_chunks: List[pd.DataFrame], config: dict) -> int:
     return max(max_flow_lens)
 
 
-def get_word2vec_model(
-    df: pd.DataFrame, config: dict, model_directory: str
-) -> Optional[Word2Vec]:
-    prepost_config = config.get("pre_post_processor", {}).get("config", {})
+def get_word2vec_model(df: pd.DataFrame, model_directory: str) -> Optional[Word2Vec]:
+    prepost_config = get_config("pre_post_processor.config", {})
     word2vec_cols = [
         m
         for m in (prepost_config["metadata"] + prepost_config["timeseries"])
@@ -101,18 +98,17 @@ def get_word2vec_model(
     return Word2Vec.load(word2vec_model_path)
 
 
-def build_field_from_config(field: Config, df: pd.DataFrame, config: Config) -> Field:
-    prepost_config = config.get("pre_post_processor", {}).get("config", {})
+def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
+    prepost_config = get_config("pre_post_processor.config", {})
 
     if not isinstance(field.column, str):
         raise ValueError('"column" should be a string')
-    if (
-        "type" not in field
-        or field.type not in config["global_config"]["allowed_data_types"]
+    if "type" not in field or field.type not in get_config(
+        "global_config.allowed_data_types"
     ):
         raise ValueError(
             '"type" must be specified as ({})'.format(
-                " | ".join(config["global_config"]["allowed_data_types"])
+                " | ".join(get_config("global_config.allowed_data_types"))
             )
         )
 
@@ -165,25 +161,25 @@ def build_field_from_config(field: Config, df: pd.DataFrame, config: Config) -> 
 
 
 def build_fields(
-    config: Config, df: pd.DataFrame
+    df: pd.DataFrame,
 ) -> Tuple[Dict[FieldKey, Field], Dict[FieldKey, Field]]:
 
     metadata_fields: Dict[FieldKey, Field] = {
-        field_config_to_key(field): build_field_from_config(field, df, config)
-        for field in config["pre_post_processor"]["config"]["metadata"]
+        field_config_to_key(field): build_field_from_config(field, df)
+        for field in get_config("pre_post_processor.config.metadata")
     }
     timeseries_fields: Dict[FieldKey, Field] = {
-        field_config_to_key(field): build_field_from_config(field, df, config)
-        for field in config["pre_post_processor"]["config"]["timeseries"]
+        field_config_to_key(field): build_field_from_config(field, df)
+        for field in get_config("pre_post_processor.config.timeseries")
     }
 
     # Multi-chunk related field instances
     # n_chunk=1 reduces to plain DoppelGANger
-    if config["global_config"]["n_chunks"] > 1:
+    if get_config("global_config.n_chunks") > 1:
         new_field = DiscreteField(name="startFromThisChunk", choices=[0.0, 1.0])
         metadata_fields[key_from_field(new_field)] = new_field
 
-        for chunk_id in range(config["global_config"]["n_chunks"]):
+        for chunk_id in range(get_config("global_config.n_chunks")):
             new_field = DiscreteField(
                 name="chunk_{}".format(chunk_id), choices=[0.0, 1.0]
             )
@@ -193,15 +189,15 @@ def build_fields(
 
 
 def prepare_cross_chunks_data(
-    big_df: pd.DataFrame, df_chunks: List[pd.DataFrame], config: Config, target_dir: str
+    big_df: pd.DataFrame, df_chunks: List[pd.DataFrame], target_dir: str
 ) -> CrossChunksData:
     """
     This function splits the input data into chunks, and compute the .
     """
-    embed_model = get_word2vec_model(big_df, config, target_dir)
-    metadata_fields, timeseries_fields = build_fields(config, big_df)
-    flowkeys_chunkidx = get_flowkeys_chunkidx(df_chunks, config)
-    global_max_flow_len = get_global_max_flow_len(df_chunks, config)
+    embed_model = get_word2vec_model(big_df, target_dir)
+    metadata_fields, timeseries_fields = build_fields(big_df)
+    flowkeys_chunkidx = get_flowkeys_chunkidx(df_chunks)
+    global_max_flow_len = get_global_max_flow_len(df_chunks)
 
     return CrossChunksData(
         embed_model=embed_model,

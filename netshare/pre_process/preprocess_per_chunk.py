@@ -10,6 +10,7 @@ from gensim.models import Word2Vec
 from config_io import Config
 
 import netshare.ray as ray
+from netshare.configs import set_config, get_config
 from netshare.pre_process.field import FieldKey, field_config_to_key, key_from_field
 from netshare.pre_process.prepare_cross_chunks_data import CrossChunksData
 from netshare.utils import (
@@ -136,10 +137,11 @@ def preprocess_per_chunk(
     chunk_id: int,
     target_dir: str,
 ) -> None:
-    metadata_config = config["pre_post_processor"]["config"]["metadata"]
-    timeseries_config = config["pre_post_processor"]["config"]["timeseries"]
-    split_name = config["pre_post_processor"]["config"]["split_name"]
-    timestamp_config = config["pre_post_processor"]["config"]["timestamp"]
+    set_config(config)
+    metadata_config = get_config("pre_post_processor.config.metadata")
+    timeseries_config = get_config("pre_post_processor.config.timeseries")
+    split_name = get_config("pre_post_processor.config.split_name")
+    timestamp_config = get_config("pre_post_processor.config.timestamp")
 
     metadata_cols = [m for m in metadata_config]
 
@@ -227,7 +229,7 @@ def preprocess_per_chunk(
         data_gen_flag.append([1.0] * len(df_group))
 
         attr_per_row: List[float] = []
-        if config["global_config"]["n_chunks"] > 1:
+        if get_config("global_config.n_chunks") > 1:
             if cross_chunks_data.flowkeys_chunkidx is None:
                 raise ValueError(
                     "Cross-chunk mechanism enabled, \
@@ -248,7 +250,7 @@ def preprocess_per_chunk(
                 ):
                     attr_per_row += [0.0, 1.0]
 
-                    for i in range(config["global_config"]["n_chunks"]):
+                    for i in range(get_config("global_config.n_chunks")):
                         if (
                             i
                             in cross_chunks_data.flowkeys_chunkidx[str(ori_group_name)]
@@ -261,11 +263,11 @@ def preprocess_per_chunk(
                 else:
                     attr_per_row += [1.0, 0.0]
                     if split_name == "multichunk_dep_v1":
-                        for i in range(config["global_config"]["n_chunks"]):
+                        for i in range(get_config("global_config.n_chunks")):
                             attr_per_row += [1.0, 0.0]
 
                     elif split_name == "multichunk_dep_v2":
-                        for i in range(config["global_config"]["n_chunks"]):
+                        for i in range(get_config("global_config.n_chunks")):
                             if (
                                 i
                                 in cross_chunks_data.flowkeys_chunkidx[
@@ -278,7 +280,7 @@ def preprocess_per_chunk(
                 flow_tags.append(attr_per_row)
             else:
                 raise ValueError(f"{ori_group_name} not found in the raw file!")
-    if config["global_config"]["n_chunks"] > 1:
+    if get_config("global_config.n_chunks") > 1:
         data_attribute = np.concatenate((data_attribute, np.array(flow_tags)), axis=1)
     if (
         timestamp_config["generation"]

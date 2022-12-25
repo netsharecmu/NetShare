@@ -1,7 +1,5 @@
 import abc
 
-from config_io import Config
-
 
 class DataFormatNormalizer(abc.ABC):
     """
@@ -11,7 +9,7 @@ class DataFormatNormalizer(abc.ABC):
     """
 
     @abc.abstractmethod
-    def normalize_data(self, input_dir: str, target_dir: str, config: Config) -> None:
+    def normalize_data(self, input_dir: str, target_dir: str) -> None:
         """
         This function normalize the data from the input_dir and stores it in the target_dir.
         For every file in the given directory it writes a new file with the same name in the target directory,

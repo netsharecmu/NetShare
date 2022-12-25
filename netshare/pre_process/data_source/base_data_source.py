@@ -11,7 +11,7 @@ class DataSource(abc.ABC):
     """
 
     @abc.abstractmethod
-    def fetch_data(self, config: Config, target_dir: str) -> None:
+    def fetch_data(self, target_dir: str) -> None:
         """
         This function reads the data from the source and stores it in the target_dir.
         The input config is a dynamic dictionary, and each data source will define its own.

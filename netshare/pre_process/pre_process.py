@@ -1,12 +1,11 @@
 import os
-import copy
 import tempfile
 from typing import List, Tuple
 
-from config_io import Config
 import pandas as pd
 
 from netshare import ray
+from netshare.configs import get_config
 from netshare.logger import logger
 from netshare.pre_process.data_source import fetch_data
 from netshare.pre_process.preprocess_per_chunk import preprocess_per_chunk
@@ -18,7 +17,7 @@ from netshare.pre_process.prepare_cross_chunks_data import (
 from netshare.pre_post_processors.netshare.preprocess_helper import df2chunks
 
 
-def pre_process(config: Config, target_dir: str) -> None:
+def pre_process(target_dir: str) -> None:
     """
     This is the main function of the preprocess phase.
     We get the configuration, and prepare everything for the training phase.
@@ -37,16 +36,14 @@ def pre_process(config: Config, target_dir: str) -> None:
     """
     raw_data_dir, normalized_csv_dir = tempfile.mkdtemp(), tempfile.mkdtemp()
 
-    fetch_data(config, raw_data_dir)
-    normalize_files_format(raw_data_dir, normalized_csv_dir, config)
-    df, df_chunks = load_dataframe_chunks(normalized_csv_dir, config)
-    cross_chunks_data = prepare_cross_chunks_data(df, df_chunks, config, target_dir)
-    apply_distributed_chunk_logic(df_chunks, cross_chunks_data, config, target_dir)
+    fetch_data(raw_data_dir)
+    normalize_files_format(raw_data_dir, normalized_csv_dir)
+    df, df_chunks = load_dataframe_chunks(normalized_csv_dir)
+    cross_chunks_data = prepare_cross_chunks_data(df, df_chunks, target_dir)
+    apply_distributed_chunk_logic(df_chunks, cross_chunks_data, target_dir)
 
 
-def load_dataframe_chunks(
-    csv_dir: str, config: Config
-) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
+def load_dataframe_chunks(csv_dir: str) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """
     This function load the CSV files into a pandas dataframe.
     """
@@ -60,9 +57,9 @@ def load_dataframe_chunks(
     )
     df_chunks, _ = df2chunks(
         big_raw_df=df,
-        config_timestamp=config["pre_post_processor"]["config"]["timestamp"],
-        split_type=config["pre_post_processor"]["config"]["df2chunks"],
-        n_chunks=config["global_config"]["n_chunks"],
+        config_timestamp=get_config("pre_post_processor.config.timestamp"),
+        split_type=get_config("pre_post_processor.config.df2chunks"),
+        n_chunks=get_config("global_config.n_chunks"),
     )
     return df, df_chunks
 
@@ -70,14 +67,13 @@ def load_dataframe_chunks(
 def apply_distributed_chunk_logic(
     df_chunks: List[pd.DataFrame],
     cross_chunks_data: CrossChunksData,
-    config: Config,
     target_dir: str,
 ) -> None:
     logger.info("Waiting for all chunks to be processed...")
     ray.get(
         [
             preprocess_per_chunk.remote(
-                config=config,
+                config=get_config(),
                 cross_chunks_data=cross_chunks_data,
                 df_per_chunk=df_chunk.copy(),
                 chunk_id=chunk_id,

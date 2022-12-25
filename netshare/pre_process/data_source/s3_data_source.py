@@ -1,7 +1,6 @@
 import os
 
-from config_io import Config
-
+from netshare.configs import get_config
 from netshare.pre_process.data_source.base_data_source import DataSource
 
 
@@ -14,11 +13,11 @@ class S3DataSource(DataSource):
     * bucket_name: The name of the bucket to download from.
     """
 
-    def fetch_data(self, config: Config, target_dir: str) -> None:
+    def fetch_data(self, target_dir: str) -> None:
         # We import boto3 here, because it is a requirement only if you use s3 as a data source.
         import boto3
 
-        s3_bucket = boto3.resource("s3").Bucket(config["bucket_name"])
+        s3_bucket = boto3.resource("s3").Bucket(get_config("bucket_name"))
         for s3_object in s3_bucket.objects.all():
             path, filename = os.path.split(s3_object.key)
             unique_filename = os.path.join(path, filename).replace("/", "_")

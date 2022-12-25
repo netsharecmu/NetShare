@@ -1,3 +1,2 @@
-
-def post_process(config: dict) -> None:
+def post_process() -> None:
     pass
