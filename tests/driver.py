@@ -7,7 +7,6 @@ if __name__ == "__main__":
     ray.init(address="auto")
 
     # configuration file
-    # generator = Generator(config="config_example_netflow_nodp.json")
     generator = GeneratorV2(
         config="../examples/netflow/config_example_netflow_nodp.json"
     )
