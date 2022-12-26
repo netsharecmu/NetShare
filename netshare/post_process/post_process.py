@@ -1,8 +1,9 @@
 from netshare.configs import get_config
-from netshare.utils.paths import copy_files
+from netshare.post_process.denormalize_fields import denormalize_fields
+from netshare.utils.paths import copy_files, get_post_processed_data_folder
 
 
-def post_process(generated_data_dir: str) -> None:
+def post_process() -> None:
     """
     This is the main function of the postprocess phase.
     We get the generated data, prepare it to be exported, export it, and create the visualization.
@@ -13,17 +14,10 @@ def post_process(generated_data_dir: str) -> None:
     3. Denormalize format (e.g. CSV to pcap, etc.)
     4. Export the data to the data destination (e.g. to S3 bucket, specific directory, etc.)
     """
-    denormalized_fields_dir = denormalize_fields(generated_data_dir)
+    denormalized_fields_dir = denormalize_fields()
     chosen_data_dir = choose_best_chunk(denormalized_fields_dir)
     denormalized_format_dir = denormalize_format(chosen_data_dir)
     export_data(denormalized_format_dir)
-
-
-def denormalize_fields(generated_data_dir: str) -> str:
-    """
-    :return: the path to the denormalized data.
-    """
-    return generated_data_dir
 
 
 def choose_best_chunk(denormalized_fields_dir: str) -> str:
@@ -44,6 +38,4 @@ def export_data(denormalized_fields_dir: str) -> None:
     """
     :return: the path to the files that should be shared with the users.
     """
-    target_dir = get_config("post_process.export_data.output_dir", "")
-    if target_dir:
-        copy_files(denormalized_fields_dir, target_dir)
+    copy_files(denormalized_fields_dir, get_post_processed_data_folder())

@@ -1,20 +1,20 @@
 from typing import Optional, Type
 
 import netshare.models as models
-from netshare.configs import get_config, change_work_folder, load_from_file
+from netshare.configs import change_work_folder, get_config, load_from_file
+from netshare.dashboard.visualize import visualize
 from netshare.model_managers import ModelManager, build_model_manager_from_config
 from netshare.models import Model
 from netshare.post_process.post_process import post_process
 from netshare.pre_process.pre_process import pre_process
-from netshare.dashboard.visualize import visualize
 from netshare.utils.paths import (
-    get_pre_processed_data_folder,
-    get_model_folder,
     get_generated_data_folder,
+    get_generated_data_log_folder,
+    get_model_folder,
     get_model_log_folder,
     get_post_processed_data_folder,
+    get_pre_processed_data_folder,
     get_visualization_folder,
-    get_generated_data_log_folder,
 )
 
 
@@ -34,7 +34,7 @@ class GeneratorV2(object):
             create_new_model=self._model,
             model_config=get_config("model.config"),
         )
-        post_process(get_generated_data_folder())
+        post_process()
 
     def train(self, work_folder: Optional[str] = None) -> None:
         change_work_folder(work_folder)

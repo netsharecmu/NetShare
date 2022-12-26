@@ -1,13 +1,19 @@
+from typing import List, Tuple, Union
+
 import numpy as np
 import pandas as pd
-from .output import Normalization, OutputType, Output
+from config_io import Config
+
+from .output import Normalization, Output, OutputType
 
 EPS = 1e-8
+FieldKey = Tuple[str, str, str]
 
 
 class Field(object):
-    def __init__(self, name):
+    def __init__(self, name: Union[str, List[str]], log1p_norm: bool = False):
         self.name = name
+        self.log1p_norm = log1p_norm
 
     def normalize(self, x):
         raise NotImplementedError
@@ -34,6 +40,8 @@ class ContinuousField(Field):
             raise ValueError(
                 f"Dimension is {x.shape[-1]}. Expected dimension is {self.dim_x}"
             )
+        if self.log1p_norm:
+            x = np.log1p(x)
         # [0, 1] normalization
         if self.norm_option == Normalization.ZERO_ONE:
             if self.max_x - self.min_x == 0:
@@ -55,14 +63,17 @@ class ContinuousField(Field):
             )
         # [0, 1] normalization
         if self.norm_option == Normalization.ZERO_ONE:
-            return norm_x * float(self.max_x - self.min_x) + self.min_x
+            to_return = norm_x * float(self.max_x - self.min_x) + self.min_x
 
         # [-1, 1] normalization
         elif self.norm_option == Normalization.MINUSONE_ONE:
-            return (norm_x + 1) / 2.0 * float(self.max_x - self.min_x) + self.min_x
+            to_return = (norm_x + 1) / 2.0 * float(self.max_x - self.min_x) + self.min_x
 
         else:
             raise Exception("Not valid normalization option!")
+        if self.log1p_norm:
+            to_return = np.expm1(to_return)
+        return to_return
 
     def getOutputType(self):
         return Output(
@@ -154,3 +165,15 @@ class BitField(Field):
             outputs.append(Output(type_=OutputType.DISCRETE, dim=2))
 
         return outputs
+
+
+def field_config_to_key(field: Config) -> FieldKey:
+    return (
+        field.get("column") or str(field.columns),
+        field.type,
+        field.get("encoding", ""),
+    )
+
+
+def key_from_field(field: Field) -> FieldKey:
+    return str(field.name), field.__class__.__name__, ""

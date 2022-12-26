@@ -11,10 +11,16 @@ from tqdm import tqdm
 import netshare.ray as ray
 from netshare.configs import get_config, set_config
 from netshare.pre_post_processors.netshare.embedding_helper import get_vector
-from netshare.pre_process import api
-from netshare.pre_process.field import FieldKey, field_config_to_key, key_from_field
+from netshare.pre_process import preprocess_api
 from netshare.pre_process.prepare_cross_chunks_data import CrossChunksData
-from netshare.utils import ContinuousField, Field, Normalization
+from netshare.utils.field import (
+    ContinuousField,
+    Field,
+    FieldKey,
+    Normalization,
+    field_config_to_key,
+    key_from_field,
+)
 
 
 def apply_configuration_fields(
@@ -70,8 +76,6 @@ def apply_configuration_fields(
         # Continuous Field: (float)
         if field.type == "float":
             for column in field.get("columns") or [field.column]:
-                if getattr(field, "log1p_norm", False):
-                    original_df[column] = np.log1p(original_df[column])
                 new_df[column] = field_instance.normalize(
                     original_df[column].to_numpy().reshape(-1, 1)
                 )
@@ -97,17 +101,21 @@ def write_chunk_data(
 ) -> None:
     """
     This function writes the data of a single chunk using the pre_process API.
+
+    TODO: Why do we store the cross_chunks_data for every chunk?
+        It creates trouble later when we try to load it in the postprocess phase.
     """
-    api.write_raw_chunk(df_per_chunk, chunk_id)
-    api.write_data_train_npz(
+    preprocess_api.create_dirs(chunk_id)
+    preprocess_api.write_raw_chunk(df_per_chunk, chunk_id)
+    preprocess_api.write_data_train_npz(
         data_attribute,
         data_gen_flag,
         data_feature,
         cross_chunks_data.global_max_flow_len,
         chunk_id,
     )
-    api.write_attributes(cross_chunks_data.metadata_fields, chunk_id)
-    api.write_features(cross_chunks_data.timeseries_fields, chunk_id)
+    preprocess_api.write_attributes(cross_chunks_data.metadata_fields, chunk_id)
+    preprocess_api.write_features(cross_chunks_data.timeseries_fields, chunk_id)
 
 
 def apply_timestamp_generation(
@@ -253,14 +261,22 @@ def apply_cross_chunk_mechanism(
     return attr_per_row
 
 
-def reduce_samples(df: pd.DataFrame) -> pd.DataFrame:
+def reduce_samples(
+    data_attribute: np.ndarray, data_feature: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     This function reduces the number of samples in the given dataframe, according to the
         global_config.sample_ratio.
     """
-    if get_config("num_train_samples", default_value=False):
-        df = df.sample(n=get_config("num_train_samples"))
-    return df
+    samples = get_config(
+        "pre_post_processor.config.num_train_samples", default_value=False
+    )
+    if samples:
+        np.random.seed(get_config("global_config.seed", default_value=0))
+        ids = np.random.permutation(data_attribute.shape[0])
+        data_attribute = data_attribute[ids[:samples]]
+        data_feature = data_feature[ids[:samples]]
+    return data_attribute, data_feature
 
 
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
@@ -292,11 +308,9 @@ def preprocess_per_chunk(
         df_per_chunk, cross_chunks_data, new_timeseries_list
     )
 
-    df_per_chunk = reduce_samples(df_per_chunk)
-
     gk = df_per_chunk.groupby(new_metadata_list)
     data_attribute: np.array = np.array(list(gk.groups.keys()))
-    data_feature = []
+    data_feature: List[np.ndarray] = []
     data_gen_flag: List[List[float]] = []
     flow_tags: List[List[float]] = []
     for group_name, df_group in tqdm(gk):
@@ -313,7 +327,7 @@ def preprocess_per_chunk(
 
     if flow_tags:
         data_attribute = np.concatenate((data_attribute, np.array(flow_tags)), axis=1)
-    if timestamp_generation_attributes:
+    if len(timestamp_generation_attributes) > 0:
         data_attribute = np.concatenate(
             (data_attribute, timestamp_generation_attributes), axis=1
         )
@@ -321,6 +335,8 @@ def preprocess_per_chunk(
     data_attribute = np.asarray(data_attribute)
     data_feature = np.asarray(data_feature)
     data_gen_flag = np.asarray(data_gen_flag)
+
+    data_attribute, data_feature = reduce_samples(data_attribute, data_feature)
 
     write_chunk_data(
         df_per_chunk=df_per_chunk,

@@ -1,24 +1,27 @@
 import os
 import pickle
-from typing import Dict
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
 
 from netshare.configs import get_config
-from netshare.pre_process.field import FieldKey
-from netshare.utils import Field, BitField
+from netshare.logger import logger
+from netshare.utils.field import BitField, Field, FieldKey
 from netshare.utils.paths import get_pre_processed_data_folder
 
 
-def get_chunk_dir(chunk_id: int) -> str:
+def get_chunk_dir(chunk_id: Optional[int]) -> str:
     if get_config("global_config.n_chunks", default_value=1) == 1:
-        if chunk_id == 0:
+        if chunk_id == 0 or chunk_id is None:
             return get_pre_processed_data_folder()
         else:
             raise ValueError(
                 f"Internal error: shouldn't have chunk_id={chunk_id} in this configuration"
             )
+    if chunk_id is None:
+        logger.warning("chunk_id is None, moved to a fallback chunk_id=0")
+        chunk_id = 0
     chunk_dir = os.path.join(get_pre_processed_data_folder(), f"chunkid-{chunk_id}")
     os.makedirs(chunk_dir, exist_ok=True)
     return chunk_dir
@@ -26,6 +29,13 @@ def get_chunk_dir(chunk_id: int) -> str:
 
 def get_word2vec_model_directory() -> str:
     return get_pre_processed_data_folder()
+
+
+def create_dirs(chunk_id: int) -> None:
+    """
+    Create the directories for the preprocessed data.
+    """
+    os.makedirs(get_chunk_dir(chunk_id), exist_ok=True)
 
 
 def write_raw_chunk(chunk: pd.DataFrame, chunk_id: int) -> None:
@@ -91,7 +101,7 @@ def write_features(timeseries_fields: Dict[FieldKey, Field], chunk_id: int) -> N
     _write_fields(field_type="feature", fields=timeseries_fields, chunk_id=chunk_id)
 
 
-def get_fields(field_type: str, chunk_id: int) -> Dict[FieldKey, Field]:
+def get_fields(field_type: str, chunk_id: Optional[int]) -> Dict[FieldKey, Field]:
     """
     This function loads the attributes fields from the pickle file.
     """
@@ -101,14 +111,14 @@ def get_fields(field_type: str, chunk_id: int) -> Dict[FieldKey, Field]:
         return pickle.load(f)  # type: ignore
 
 
-def get_attributes_fields(chunk_id: int) -> Dict[FieldKey, Field]:
+def get_attributes_fields(chunk_id: Optional[int] = None) -> Dict[FieldKey, Field]:
     """
     This function returns the attributes fields that were stored in the preprocess phase.
     """
     return get_fields("attribute", chunk_id)
 
 
-def get_feature_fields(chunk_id: int) -> Dict[FieldKey, Field]:
+def get_feature_fields(chunk_id: Optional[int] = None) -> Dict[FieldKey, Field]:
     """
     Similar to get_attributes_fields, but for the features.
     """

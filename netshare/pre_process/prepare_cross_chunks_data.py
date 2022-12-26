@@ -1,22 +1,24 @@
-from typing import Dict, List, Tuple, Optional, NamedTuple
+import os
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
-import numpy as np
 import pandas as pd
 from config_io import Config
 from gensim.models import Word2Vec
 
 from netshare.configs import get_config
-from netshare.pre_process.api import get_word2vec_model_directory
-from netshare.pre_process.field import FieldKey, field_config_to_key, key_from_field
-from netshare.utils import (
-    Field,
-    BitField,
-    DiscreteField,
-    Normalization,
-    ContinuousField,
-)
 from netshare.logger import logger
 from netshare.pre_post_processors.netshare.word2vec_embedding import word2vec_train
+from netshare.pre_process.preprocess_api import get_word2vec_model_directory
+from netshare.utils.field import (
+    BitField,
+    ContinuousField,
+    DiscreteField,
+    Field,
+    FieldKey,
+    Normalization,
+    field_config_to_key,
+    key_from_field,
+)
 from netshare.utils.paths import get_pre_processed_data_folder
 
 EPS = 1e-8
@@ -89,6 +91,7 @@ def get_word2vec_model(df: pd.DataFrame) -> Optional[Word2Vec]:
         return Word2Vec.load(prepost_config["word2vec"]["pretrain_model_path"])
 
     logger.info("Word2vec: training model")
+    os.makedirs(get_pre_processed_data_folder(), exist_ok=True)
     word2vec_model_path = word2vec_train(
         df=df,
         out_dir=get_word2vec_model_directory(),
@@ -127,9 +130,7 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
             )
         )
 
-    field_name = (
-        getattr(field, "name", "") or field.get("column", "") or str(field.columns)
-    )
+    field_name = getattr(field, "name", "") or field.get("column", "") or field.columns
     if field.get("column", ""):
         this_df = df[field.column]
     else:
@@ -167,6 +168,7 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
     elif field.type == "float":
         return ContinuousField(
             name=field_name,
+            log1p_norm=getattr(field, "log1p_norm", False),
             norm_option=getattr(Normalization, field.normalization),
             min_x=min(this_df) - EPS,
             max_x=max(this_df) + EPS,
