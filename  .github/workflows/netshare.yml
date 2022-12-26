@@ -1,29 +1,19 @@
 name: Netshare tests
 
-on:
-  push:
-    branches:
-      - '**'
+on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.6"]
-
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.6"
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install flake8 pytest
           pip install -e .[dev]
-      - name: pre-commit on all files changed since the branch new_dataset (future change to master)
+      - name: pre-commit on all files changed from the main branch
         run: |
           pre-commit run --files $(git diff --name-only origin/new_dataset)
       - name: Test with pytest
