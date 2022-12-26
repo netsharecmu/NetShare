@@ -1,24 +1,20 @@
 import copy
-from typing import List, Optional, Tuple, Dict
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+from config_io import Config
+from gensim.models import Word2Vec
 from pandas.core.groupby import DataFrameGroupBy
 from tqdm import tqdm
-from gensim.models import Word2Vec
-from config_io import Config
 
 import netshare.ray as ray
-from netshare.configs import set_config, get_config
+from netshare.configs import get_config, set_config
+from netshare.pre_post_processors.netshare.embedding_helper import get_vector
 from netshare.pre_process import api
 from netshare.pre_process.field import FieldKey, field_config_to_key, key_from_field
 from netshare.pre_process.prepare_cross_chunks_data import CrossChunksData
-from netshare.utils import (
-    Field,
-    Normalization,
-    ContinuousField,
-)
-from netshare.pre_post_processors.netshare.embedding_helper import get_vector
+from netshare.utils import ContinuousField, Field, Normalization
 
 
 def apply_configuration_fields(

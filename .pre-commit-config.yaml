@@ -10,3 +10,8 @@ repos:
     -   id: mypy
         exclude: 'examples/'
         args: ['--show-error-codes', '--check-untyped-defs', '--follow-imports=silent', '--ignore-missing-imports', '--warn-redundant-casts', '--strict-equality', '--warn-unused-ignores', '--warn-return-any', '--disallow-incomplete-defs']
+-   repo: https://github.com/pycqa/isort
+    rev: 5.6.4
+    hooks:
+        - id: isort
+          args: ["--profile", "black", "--filter-files"]
