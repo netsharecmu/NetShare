@@ -33,7 +33,7 @@ class CrossChunksData(NamedTuple):
 
 
 def get_flowkeys_chunkidx(df_chunks: List[pd.DataFrame]) -> Dict[str, List[int]]:
-    prepost_config = get_config().get("pre_post_processor", {}).get("config", {})
+    prepost_config = get_config("pre_post_processor.config", default_value={})
     logger.info("compute flowkey-chunk list from scratch")
     flow_chunkid_keys = {}
     for chunk_id, df_chunk in enumerate(df_chunks):
@@ -59,7 +59,7 @@ def get_flowkeys_chunkidx(df_chunks: List[pd.DataFrame]) -> Dict[str, List[int]]
 
 
 def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
-    prepost_config = get_config().get("pre_post_processor", {}).get("config", {})
+    prepost_config = get_config("pre_post_processor.config", default_value={})
     if prepost_config.get("max_flow_len"):
         return int(prepost_config["max_flow_len"])
 
@@ -75,7 +75,7 @@ def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
 
 
 def get_word2vec_model(df: pd.DataFrame) -> Optional[Word2Vec]:
-    prepost_config = get_config("pre_post_processor.config", {})
+    prepost_config = get_config("pre_post_processor.config", default_value={})
     word2vec_cols = [
         m
         for m in (prepost_config["metadata"] + prepost_config["timeseries"])
@@ -113,7 +113,7 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
         2.2 when type = float, we take the min and max value of the column in the dataframe.
     3. DiscreteField: when encoding = categorical or type = string, we use the unique values of the column in the dataframe.
     """
-    prepost_config = get_config("pre_post_processor.config", {})
+    prepost_config = get_config("pre_post_processor.config", default_value={})
 
     if not isinstance(field.get("column"), str) and not isinstance(
         field.get("columns"), list

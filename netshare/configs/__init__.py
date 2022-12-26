@@ -1,10 +1,9 @@
 import os
-from typing import Optional, Any
+from typing import Any, Optional
 
 from config_io import Config
 
 from .default import __path__ as defaults_path
-
 
 _config: Optional[Config] = None
 
@@ -19,7 +18,11 @@ def set_config(config: Config) -> None:
     _config = config
 
 
-def get_config(path: Optional[str] = None, default_value: Any = Exception) -> Any:
+def get_config(
+    path: Optional[str] = None,
+    default_value: Any = Exception,
+    path2: Optional[str] = None,
+) -> Any:
     global _config
     if _config is None:
         raise ValueError("Config is not set")
@@ -30,6 +33,8 @@ def get_config(path: Optional[str] = None, default_value: Any = Exception) -> An
                 curr = curr[sep]
             return curr
         except (KeyError, AttributeError):
+            if path2:
+                return get_config(path=path2, default_value=default_value)
             if default_value != Exception:
                 return default_value
             raise ValueError(f"Config path {path} not found") from None

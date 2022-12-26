@@ -23,8 +23,9 @@ class LocalFilesDataSource(DataSource):
             return target_dir
 
         input_folder = get_config(
-            "global_config.original_data_folder", ""
-        ) or get_config("pre_process.data_source.input_folder")
+            "global_config.original_data_folder",
+            path2="pre_process.data_source.input_folder",
+        )
         if not input_folder or not isinstance(input_folder, str):
             raise ValueError(
                 "Missing input location in the config (either original_data_folder or original_data_file)"

@@ -1,9 +1,9 @@
-from netshare.logger import logger
 from netshare.configs import get_config
+from netshare.logger import logger
 
+from .base_data_source import DataSource
 from .local_files_data_source import LocalFilesDataSource
 from .s3_data_source import S3DataSource
-from .base_data_source import DataSource
 
 
 def fetch_data() -> str:
@@ -11,7 +11,7 @@ def fetch_data() -> str:
     This is the builder function for the data source.
     It returns the path to the directory that contains the fetched data.
     """
-    data_source_config = get_config().get("pre_process", {}).get("data_source", {})
+    data_source_config = get_config("pre_process.data_source", default_value={})
     data_source_type = data_source_config.get("type") or "local_files"
 
     data_source: DataSource

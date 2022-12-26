@@ -7,14 +7,14 @@ import pandas as pd
 from netshare import ray
 from netshare.configs import get_config
 from netshare.logger import logger
+from netshare.pre_post_processors.netshare.preprocess_helper import df2chunks
 from netshare.pre_process.data_source import fetch_data
-from netshare.pre_process.preprocess_per_chunk import preprocess_per_chunk
 from netshare.pre_process.normalize_format_to_csv import normalize_files_format
 from netshare.pre_process.prepare_cross_chunks_data import (
     CrossChunksData,
     prepare_cross_chunks_data,
 )
-from netshare.pre_post_processors.netshare.preprocess_helper import df2chunks
+from netshare.pre_process.preprocess_per_chunk import preprocess_per_chunk
 
 
 def pre_process() -> None:
@@ -55,10 +55,19 @@ def load_dataframe_chunks(csv_dir: str) -> Tuple[pd.DataFrame, List[pd.DataFrame
     )
     df.dropna(inplace=True)
     if get_config("global_config.n_chunks", default_value=1) > 1:
+        config_timestamp = get_config(
+            "pre_post_processor.config.timestamp", path2="global_config.timestamp"
+        )
+        if not isinstance(config_timestamp, dict):
+            raise ValueError(
+                "The timestamp configuration is not a dictionary, please upgrade to the new format"
+            )
         df_chunks, _ = df2chunks(
             big_raw_df=df,
-            config_timestamp=get_config("pre_post_processor.config.timestamp"),
-            split_type=get_config("pre_post_processor.config.df2chunks"),
+            config_timestamp=config_timestamp,
+            split_type=get_config(
+                "pre_post_processor.config.df2chunks", path2="global_config.df2chunks"
+            ),
             n_chunks=get_config("global_config.n_chunks"),
         )
     else:

@@ -6,38 +6,38 @@ from netshare.logger import logger
 
 
 def get_pre_processed_data_folder() -> str:
-    return os.path.join(get_config()["work_folder"], "pre_processed_data")
+    return os.path.join(get_config("work_folder"), "pre_processed_data")
 
 
 def get_post_processed_data_folder() -> str:
-    return os.path.join(get_config()["work_folder"], "post_processed_data")
+    return os.path.join(get_config("work_folder"), "post_processed_data")
 
 
 def get_generated_data_folder() -> str:
-    return os.path.join(get_config()["work_folder"], "generated_data")
+    return os.path.join(get_config("work_folder"), "generated_data")
 
 
 def get_model_folder() -> str:
-    return os.path.join(get_config()["work_folder"], "models")
+    return os.path.join(get_config("work_folder"), "models")
 
 
 def get_visualization_folder() -> str:
-    return os.path.join(get_config()["work_folder"], "visulization")
+    return os.path.join(get_config("work_folder"), "visulization")
 
 
 def get_generated_data_log_folder() -> str:
-    return os.path.join(get_config()["work_folder"], "logs", "generated_data")
+    return os.path.join(get_config("work_folder"), "logs", "generated_data")
 
 
 def get_model_log_folder() -> str:
-    return os.path.join(get_config()["work_folder"], "logs", "models")
+    return os.path.join(get_config("work_folder"), "logs", "models")
 
 
 def check_folder(folder: str, skip_existing: bool = False) -> None:
     if os.path.exists(folder):
         if skip_existing:
             return
-        if get_config()["global_config"]["overwrite"]:
+        if get_config("global_config.overwrite", default_value=False):
             logger.warning(f"{folder} already exists. You are overwriting the results.")
         else:
             raise Exception(

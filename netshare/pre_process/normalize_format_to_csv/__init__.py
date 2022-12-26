@@ -1,9 +1,9 @@
-from netshare.logger import logger
 from netshare.configs import get_config
+from netshare.logger import logger
 
+from .base_format_normalizer import DataFormatNormalizer
 from .default_format_normalizer import CsvNormalizer
 from .pcap_format_normalizer import PcapNormalizer
-from .base_format_normalizer import DataFormatNormalizer
 
 
 def normalize_files_format(input_dir: str) -> str:
@@ -11,12 +11,14 @@ def normalize_files_format(input_dir: str) -> str:
     This is the builder function for the files format normalizer.
     This function return the path to the directory that contains the normalized files.
     """
-    format_normalizer_config = (
-        get_config().get("pre_process", {}).get("format_normalizer", {})
+    format_normalizer_config = get_config(
+        "pre_process.format_normalizer", default_value={}
     )
     normalizer_type = (
-        get_config().get("dataset_type")
-        or format_normalizer_config.get("dataset_type")
+        get_config(
+            "dataset_type", path2="global_config.dataset_type", default_value=None
+        )
+        or format_normalizer_config.get("dataset_type", None)
         or "csv"
     )
 
