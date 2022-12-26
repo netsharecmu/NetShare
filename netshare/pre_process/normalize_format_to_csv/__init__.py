@@ -6,9 +6,10 @@ from .pcap_format_normalizer import PcapNormalizer
 from .base_format_normalizer import DataFormatNormalizer
 
 
-def normalize_files_format(input_dir: str, target_dir: str) -> None:
+def normalize_files_format(input_dir: str) -> str:
     """
     This is the builder function for the files format normalizer.
+    This function return the path to the directory that contains the normalized files.
     """
     format_normalizer_config = (
         get_config().get("pre_process", {}).get("format_normalizer", {})
@@ -29,4 +30,4 @@ def normalize_files_format(input_dir: str, target_dir: str) -> None:
     else:
         raise ValueError(f"Unknown format normalizer type: {normalizer_type}")
 
-    format_normalizer.normalize_data(input_dir, target_dir)
+    return format_normalizer.normalize_data(input_dir)

@@ -11,11 +11,13 @@ class DataSource(abc.ABC):
     """
 
     @abc.abstractmethod
-    def fetch_data(self, target_dir: str) -> None:
+    def fetch_data(self) -> str:
         """
         This function reads the data from the source and stores it in the target_dir.
         The input config is a dynamic dictionary, and each data source will define its own.
 
         The data should be stored in the target_dir as files.
+
+        :return: The path to the directory that contains the fetched data.
         """
         raise NotImplementedError()

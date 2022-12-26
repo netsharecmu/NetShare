@@ -1,41 +1,42 @@
-import os
 import copy
-import pickle
 from typing import List, Optional, Tuple, Dict
 
 import numpy as np
 import pandas as pd
+from pandas.core.groupby import DataFrameGroupBy
 from tqdm import tqdm
 from gensim.models import Word2Vec
 from config_io import Config
 
 import netshare.ray as ray
 from netshare.configs import set_config, get_config
+from netshare.pre_process import api
 from netshare.pre_process.field import FieldKey, field_config_to_key, key_from_field
 from netshare.pre_process.prepare_cross_chunks_data import CrossChunksData
 from netshare.utils import (
     Field,
-    BitField,
     Normalization,
     ContinuousField,
 )
 from netshare.pre_post_processors.netshare.embedding_helper import get_vector
 
 
-def get_chunk_dir(target_dir: str, chunk_id: int) -> str:
-    return os.path.join(target_dir, f"chunkid-{chunk_id}")
-
-
-def apply_per_field(
+def apply_configuration_fields(
     original_df: pd.DataFrame,
     config_fields: Config,
     field_instances: Dict[FieldKey, Field],
     embed_model: Optional[Word2Vec] = None,
 ) -> Tuple[pd.DataFrame, List[str]]:
+    """
+    This function applies the fields configuration to the original dataframe.
+    It executes Field.normalize on the relevant columns and tracks the new columns that were added to the dataframe.
+
+    :return: the new dataframe and the list of the new columns.
+    """
     original_df.reset_index(drop=True, inplace=True)
     new_df = copy.deepcopy(original_df)
     new_field_list: List[str] = []
-    for i, field in enumerate(config_fields):
+    for field in config_fields:
         field_instance = field_instances[field_config_to_key(field)]
         # Bit Field: (integer)
         if "bit" in getattr(field, "encoding", ""):
@@ -72,10 +73,20 @@ def apply_per_field(
 
         # Continuous Field: (float)
         if field.type == "float":
-            new_df[field.column] = field_instance.normalize(
-                original_df[field.column].to_numpy().reshape(-1, 1)
-            )
-            new_field_list.append(field.column)
+            for column in field.get("columns") or [field.column]:
+                if getattr(field, "log1p_norm", False):
+                    original_df[column] = np.log1p(original_df[column])
+                new_df[column] = field_instance.normalize(
+                    original_df[column].to_numpy().reshape(-1, 1)
+                )
+                new_field_list.append(column)
+
+        if "regex" in field:
+            for column in field.get("columns") or [field.column]:
+                new_df[column] = original_df[column].str.extract(
+                    field.regex, expand=False
+                )
+                new_field_list.append(column)
 
     return new_df, new_field_list
 
@@ -83,84 +94,51 @@ def apply_per_field(
 def write_chunk_data(
     df_per_chunk: pd.DataFrame,
     cross_chunks_data: CrossChunksData,
-    target_dir: str,
     data_attribute: np.array,
     data_gen_flag: np.array,
     data_feature: np.array,
     chunk_id: int,
 ) -> None:
-    data_out_dir = get_chunk_dir(target_dir, chunk_id=chunk_id)
-    os.makedirs(data_out_dir, exist_ok=True)
-    df_per_chunk.to_csv(os.path.join(data_out_dir, "raw.csv"), index=False)
-
-    num_rows = data_attribute.shape[0]
-    os.makedirs(os.path.join(data_out_dir, "data_train_npz"), exist_ok=True)
-    gt_lengths = []
-    for row_id in range(num_rows):
-        gt_lengths.append(sum(data_gen_flag[row_id]))
-        np.savez(
-            os.path.join(data_out_dir, "data_train_npz", f"data_train_{row_id}.npz"),
-            data_feature=data_feature[row_id],
-            data_attribute=data_attribute[row_id],
-            data_gen_flag=data_gen_flag[row_id],
-            global_max_flow_len=[cross_chunks_data.global_max_flow_len],
-        )
-    np.save(os.path.join(data_out_dir, "gt_lengths"), gt_lengths)
-
-    with open(os.path.join(data_out_dir, "data_attribute_output.pkl"), "wb") as f:
-        data_attribute_output = []
-        for v in cross_chunks_data.metadata_fields.values():
-            if isinstance(v, BitField):
-                data_attribute_output += v.getOutputType()
-            else:
-                data_attribute_output.append(v.getOutputType())
-        pickle.dump(data_attribute_output, f)
-    with open(os.path.join(data_out_dir, "data_feature_output.pkl"), "wb") as f:
-        data_feature_output = []
-        for v in cross_chunks_data.timeseries_fields.values():
-            if isinstance(v, BitField):
-                data_feature_output += v.getOutputType()
-            else:
-                data_feature_output.append(v.getOutputType())
-        pickle.dump(data_feature_output, f)
-    with open(os.path.join(data_out_dir, "data_attribute_fields.pkl"), "wb") as f:
-        pickle.dump(cross_chunks_data.metadata_fields, f)
-    with open(os.path.join(data_out_dir, "data_feature_fields.pkl"), "wb") as f:
-        pickle.dump(cross_chunks_data.timeseries_fields, f)
+    """
+    This function writes the data of a single chunk using the pre_process API.
+    """
+    api.write_raw_chunk(df_per_chunk, chunk_id)
+    api.write_data_train_npz(
+        data_attribute,
+        data_gen_flag,
+        data_feature,
+        cross_chunks_data.global_max_flow_len,
+        chunk_id,
+    )
+    api.write_attributes(cross_chunks_data.metadata_fields, chunk_id)
+    api.write_features(cross_chunks_data.timeseries_fields, chunk_id)
 
 
-@ray.remote(scheduling_strategy="SPREAD", max_calls=1)
-def preprocess_per_chunk(
-    config: Config,
-    cross_chunks_data: CrossChunksData,
+def apply_timestamp_generation(
     df_per_chunk: pd.DataFrame,
-    chunk_id: int,
-    target_dir: str,
-) -> None:
-    set_config(config)
+    cross_chunks_data: CrossChunksData,
+    new_timeseries_list: List[str],
+) -> np.array:
+    """
+    This function reads the configuration from pre_post_processor.config.timestamp,
+        and generate the normalized timestamp column if needed.
+
+    There are two types of timestamp generation:
+    1. encoding = raw: Taking a specific column as another timestamp column. TODO: I don't understand why this is needed.
+    2. encoding = interarrival: For each tuple of metadata, we take the start time of the flow a metadata column,
+        and also take the diff between every packet to the previous one as a feature column.
+    """
     metadata_config = get_config("pre_post_processor.config.metadata")
-    timeseries_config = get_config("pre_post_processor.config.timeseries")
-    split_name = get_config("pre_post_processor.config.split_name")
-    timestamp_config = get_config("pre_post_processor.config.timestamp")
+    timestamp_config = get_config(
+        "pre_post_processor.config.timestamp", default_value={}
+    )
 
     metadata_cols = [m for m in metadata_config]
 
-    df_per_chunk, new_metadata_list = apply_per_field(
-        original_df=df_per_chunk,
-        config_fields=metadata_config,
-        field_instances=cross_chunks_data.metadata_fields,
-        embed_model=cross_chunks_data.embed_model,
-    )
-
-    df_per_chunk, new_timeseries_list = apply_per_field(
-        original_df=df_per_chunk,
-        config_fields=timeseries_config,
-        field_instances=cross_chunks_data.timeseries_fields,
-        embed_model=cross_chunks_data.embed_model,
-    )
+    additional_data_attributes = np.array([])
 
     # w/o DP: normalize time by per-chunk min/max
-    if timestamp_config["generation"]:
+    if timestamp_config.get("generation"):
         if "column" not in timestamp_config:
             raise ValueError('Timestamp generation is enabled! "column" must be set...')
         time_col = timestamp_config["column"]
@@ -181,6 +159,7 @@ def preprocess_per_chunk(
             flow_start_list = flow_start_metadata_field.normalize(
                 np.array(flow_start_list).reshape(-1, 1)
             )
+            additional_data_attributes = np.array(flow_start_list).reshape(-1, 1)
 
             interarrival_within_flow_list = list(gk[time_col].diff().fillna(0.0))
             df_per_chunk["interarrival_within_flow"] = interarrival_within_flow_list
@@ -217,77 +196,130 @@ def preprocess_per_chunk(
         else:
             raise ValueError("Timestamp encoding can be only 'interarrival' or 'raw'")
 
+    return additional_data_attributes
+
+
+def apply_cross_chunk_mechanism(
+    df_group: DataFrameGroupBy,
+    cross_chunks_data: CrossChunksData,
+    chunk_id: int,
+) -> List[float]:
+    """
+    This function executes the cross-chunk mechanism (if global_config.n_chunks > 1) for
+        the given group of metadata attributes.
+    In this mechanism, we use the data in cross_chunks_data.flowkeys_chunkidx to compute the
+        flow-tags attributes for the given group, and return it.
+
+    TODO - why is it happen in every chunk? Probably the groups are distributed evenly across every chunk.
+        Maybe we can spare performance here?
+        Note the signature of this function - it doesn't get the data of the current chunk...
+    """
+    metadata_config = get_config("pre_post_processor.config.metadata")
+
+    attr_per_row: List[float] = []
+    if get_config("global_config.n_chunks", default_value=1) > 1:
+        split_name = get_config("pre_post_processor.config.split_name")
+        if cross_chunks_data.flowkeys_chunkidx is None:
+            raise ValueError(
+                "Cross-chunk mechanism enabled, \
+                cross-chunk flow stats not provided!"
+            )
+        ori_group_name = tuple(df_group.iloc[0][[m.column for m in metadata_config]])
+        chunk_indexes = cross_chunks_data.flowkeys_chunkidx.get(str(ori_group_name))
+
+        # MULTI-CHUNK TAGS: TO BE OPTIMIZED FOR PERFORMANCE
+        if chunk_indexes:  # sanity check
+            # flow starts from this chunk
+            if chunk_indexes[0] == chunk_id:
+                attr_per_row += [0.0, 1.0]
+
+                for i in range(get_config("global_config.n_chunks")):
+                    if i in chunk_indexes:
+                        attr_per_row += [0.0, 1.0]
+                    else:
+                        attr_per_row += [1.0, 0.0]
+
+            # flow does not start from this chunk
+            else:
+                attr_per_row += [1.0, 0.0]
+                if split_name == "multichunk_dep_v1":
+                    for i in range(get_config("global_config.n_chunks")):
+                        attr_per_row += [1.0, 0.0]
+
+                elif split_name == "multichunk_dep_v2":
+                    for i in range(get_config("global_config.n_chunks")):
+                        if i in chunk_indexes:
+                            attr_per_row += [0.0, 1.0]
+                        else:
+                            attr_per_row += [1.0, 0.0]
+        else:
+            raise ValueError(f"{ori_group_name} not found in the raw file!")
+    return attr_per_row
+
+
+def reduce_samples(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    This function reduces the number of samples in the given dataframe, according to the
+        global_config.sample_ratio.
+    """
+    if get_config("num_train_samples", default_value=False):
+        df = df.sample(n=get_config("num_train_samples"))
+    return df
+
+
+@ray.remote(scheduling_strategy="SPREAD", max_calls=1)
+def preprocess_per_chunk(
+    config: Config,
+    cross_chunks_data: CrossChunksData,
+    df_per_chunk: pd.DataFrame,
+    chunk_id: int,
+) -> None:
+    set_config(config)
+    metadata_config = get_config("pre_post_processor.config.metadata")
+    timeseries_config = get_config("pre_post_processor.config.timeseries")
+
+    df_per_chunk, new_metadata_list = apply_configuration_fields(
+        original_df=df_per_chunk,
+        config_fields=metadata_config,
+        field_instances=cross_chunks_data.metadata_fields,
+        embed_model=cross_chunks_data.embed_model,
+    )
+
+    df_per_chunk, new_timeseries_list = apply_configuration_fields(
+        original_df=df_per_chunk,
+        config_fields=timeseries_config,
+        field_instances=cross_chunks_data.timeseries_fields,
+        embed_model=cross_chunks_data.embed_model,
+    )
+
+    timestamp_generation_attributes = apply_timestamp_generation(
+        df_per_chunk, cross_chunks_data, new_timeseries_list
+    )
+
+    df_per_chunk = reduce_samples(df_per_chunk)
+
     gk = df_per_chunk.groupby(new_metadata_list)
     data_attribute: np.array = np.array(list(gk.groups.keys()))
     data_feature = []
     data_gen_flag: List[List[float]] = []
     flow_tags: List[List[float]] = []
     for group_name, df_group in tqdm(gk):
-        # RESET INDEX TO MAKE IT START FROM ZERO
-        df_group = df_group.reset_index(drop=True)
+        df_group = df_group.reset_index(
+            drop=True
+        )  # reset index to make it start from zero
         data_feature.append(df_group[new_timeseries_list].to_numpy())
         data_gen_flag.append([1.0] * len(df_group))
+        attr_per_row = apply_cross_chunk_mechanism(
+            df_group=df_group, cross_chunks_data=cross_chunks_data, chunk_id=chunk_id
+        )
+        if attr_per_row:
+            flow_tags.append(attr_per_row)
 
-        attr_per_row: List[float] = []
-        if get_config("global_config.n_chunks") > 1:
-            if cross_chunks_data.flowkeys_chunkidx is None:
-                raise ValueError(
-                    "Cross-chunk mechanism enabled, \
-                    cross-chunk flow stats not provided!"
-                )
-            ori_group_name = tuple(
-                df_group.iloc[0][[m.column for m in metadata_config]]
-            )
-
-            # MULTI-CHUNK TAGS: TO BE OPTIMIZED FOR PERFORMANCE
-            if (
-                str(ori_group_name) in cross_chunks_data.flowkeys_chunkidx
-            ):  # sanity check
-                # flow starts from this chunk
-                if (
-                    cross_chunks_data.flowkeys_chunkidx[str(ori_group_name)][0]
-                    == chunk_id
-                ):
-                    attr_per_row += [0.0, 1.0]
-
-                    for i in range(get_config("global_config.n_chunks")):
-                        if (
-                            i
-                            in cross_chunks_data.flowkeys_chunkidx[str(ori_group_name)]
-                        ):
-                            attr_per_row += [0.0, 1.0]
-                        else:
-                            attr_per_row += [1.0, 0.0]
-
-                # flow does not start from this chunk
-                else:
-                    attr_per_row += [1.0, 0.0]
-                    if split_name == "multichunk_dep_v1":
-                        for i in range(get_config("global_config.n_chunks")):
-                            attr_per_row += [1.0, 0.0]
-
-                    elif split_name == "multichunk_dep_v2":
-                        for i in range(get_config("global_config.n_chunks")):
-                            if (
-                                i
-                                in cross_chunks_data.flowkeys_chunkidx[
-                                    str(ori_group_name)
-                                ]
-                            ):
-                                attr_per_row += [0.0, 1.0]
-                            else:
-                                attr_per_row += [1.0, 0.0]
-                flow_tags.append(attr_per_row)
-            else:
-                raise ValueError(f"{ori_group_name} not found in the raw file!")
-    if get_config("global_config.n_chunks") > 1:
+    if flow_tags:
         data_attribute = np.concatenate((data_attribute, np.array(flow_tags)), axis=1)
-    if (
-        timestamp_config["generation"]
-        and timestamp_config["encoding"] == "interarrival"
-    ):
+    if timestamp_generation_attributes:
         data_attribute = np.concatenate(
-            (data_attribute, np.array(flow_start_list).reshape(-1, 1)), axis=1
+            (data_attribute, timestamp_generation_attributes), axis=1
         )
 
     data_attribute = np.asarray(data_attribute)
@@ -297,7 +329,6 @@ def preprocess_per_chunk(
     write_chunk_data(
         df_per_chunk=df_per_chunk,
         cross_chunks_data=cross_chunks_data,
-        target_dir=target_dir,
         data_attribute=data_attribute,
         data_gen_flag=data_gen_flag,
         data_feature=data_feature,

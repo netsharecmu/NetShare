@@ -1,5 +1,5 @@
 from netshare.configs import get_config
-from netshare.utils.working_directories import copy_files
+from netshare.utils.paths import copy_files
 
 
 def post_process(generated_data_dir: str) -> None:

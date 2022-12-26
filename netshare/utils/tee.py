@@ -1,3 +1,4 @@
+import os.path
 import sys
 import traceback
 
@@ -23,16 +24,20 @@ class DuplicateWriter(object):
 
 class Tee(object):
     def __init__(self, stdout_path, stderr_path):
-        self.stdout_file = open(stdout_path, 'w')
-        self.stderr_file = open(stderr_path, 'w')
+        if not os.path.exists(os.path.dirname(stdout_path)):
+            os.makedirs(os.path.dirname(stdout_path))
+        if not os.path.exists(os.path.dirname(stderr_path)):
+            os.makedirs(os.path.dirname(stderr_path))
+        self.stdout_file = open(stdout_path, "w")
+        self.stderr_file = open(stderr_path, "w")
         self.stdout = sys.stdout
         self.stderr = sys.stderr
         self.stdout_writer = DuplicateWriter([sys.stdout, self.stdout_file])
         self.stderr_writer = DuplicateWriter([sys.stderr, self.stderr_file])
 
     def __enter__(self):
-        sys.stdout = self.stdout_writer
-        sys.stderr = self.stderr_writer
+        sys.stdout = self.stdout_writer  # type: ignore
+        sys.stderr = self.stderr_writer  # type: ignore
 
     def __exit__(self, exc_type, exc, exc_tb):
         sys.stdout = self.stdout

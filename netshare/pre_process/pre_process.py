@@ -17,7 +17,7 @@ from netshare.pre_process.prepare_cross_chunks_data import (
 from netshare.pre_post_processors.netshare.preprocess_helper import df2chunks
 
 
-def pre_process(target_dir: str) -> None:
+def pre_process() -> None:
     """
     This is the main function of the preprocess phase.
     We get the configuration, and prepare everything for the training phase.
@@ -28,19 +28,17 @@ def pre_process(target_dir: str) -> None:
     3. Split the CSV data into chunks
     4. Prepare cross-chunks data:
       4.1. Word2Vec model
-      4.2. metadata and timeseries fields
-      4.3. max flow size
-      4.4. mapping between flow keys and chunk indexes
+      4.2. The features and attributes fields
+      4.3. Max flow size
+      4.4. Mapping between flow keys and chunk indexes
     5. Normalize the fields in each chunk (e.g. apply Word2Vec, etc.)
-    6. Save each chunk to disk
+    6. Use preprocess.api to save the prepared data
     """
-    raw_data_dir, normalized_csv_dir = tempfile.mkdtemp(), tempfile.mkdtemp()
-
-    fetch_data(raw_data_dir)
-    normalize_files_format(raw_data_dir, normalized_csv_dir)
+    raw_data_dir = fetch_data()
+    normalized_csv_dir = normalize_files_format(raw_data_dir)
     df, df_chunks = load_dataframe_chunks(normalized_csv_dir)
-    cross_chunks_data = prepare_cross_chunks_data(df, df_chunks, target_dir)
-    apply_distributed_chunk_logic(df_chunks, cross_chunks_data, target_dir)
+    cross_chunks_data = prepare_cross_chunks_data(df, df_chunks)
+    apply_distributed_chunk_logic(df_chunks, cross_chunks_data)
 
 
 def load_dataframe_chunks(csv_dir: str) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
@@ -55,19 +53,22 @@ def load_dataframe_chunks(csv_dir: str) -> Tuple[pd.DataFrame, List[pd.DataFrame
         axis=0,
         ignore_index=True,
     )
-    df_chunks, _ = df2chunks(
-        big_raw_df=df,
-        config_timestamp=get_config("pre_post_processor.config.timestamp"),
-        split_type=get_config("pre_post_processor.config.df2chunks"),
-        n_chunks=get_config("global_config.n_chunks"),
-    )
+    df.dropna(inplace=True)
+    if get_config("global_config.n_chunks", default_value=1) > 1:
+        df_chunks, _ = df2chunks(
+            big_raw_df=df,
+            config_timestamp=get_config("pre_post_processor.config.timestamp"),
+            split_type=get_config("pre_post_processor.config.df2chunks"),
+            n_chunks=get_config("global_config.n_chunks"),
+        )
+    else:
+        df_chunks = [df]
     return df, df_chunks
 
 
 def apply_distributed_chunk_logic(
     df_chunks: List[pd.DataFrame],
     cross_chunks_data: CrossChunksData,
-    target_dir: str,
 ) -> None:
     logger.info("Waiting for all chunks to be processed...")
     ray.get(
@@ -77,7 +78,6 @@ def apply_distributed_chunk_logic(
                 cross_chunks_data=cross_chunks_data,
                 df_per_chunk=df_chunk.copy(),
                 chunk_id=chunk_id,
-                target_dir=target_dir,
             )
             for chunk_id, df_chunk in enumerate(df_chunks)
             if len(df_chunk) != 0

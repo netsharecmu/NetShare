@@ -6,6 +6,7 @@ from config_io import Config
 from gensim.models import Word2Vec
 
 from netshare.configs import get_config
+from netshare.pre_process.api import get_word2vec_model_directory
 from netshare.pre_process.field import FieldKey, field_config_to_key, key_from_field
 from netshare.utils import (
     Field,
@@ -16,6 +17,7 @@ from netshare.utils import (
 )
 from netshare.logger import logger
 from netshare.pre_post_processors.netshare.word2vec_embedding import word2vec_train
+from netshare.utils.paths import get_pre_processed_data_folder
 
 EPS = 1e-8
 
@@ -56,11 +58,11 @@ def get_flowkeys_chunkidx(df_chunks: List[pd.DataFrame]) -> Dict[str, List[int]]
 
 def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
     prepost_config = get_config().get("pre_post_processor", {}).get("config", {})
-    if prepost_config["max_flow_len"]:
+    if prepost_config.get("max_flow_len"):
         return int(prepost_config["max_flow_len"])
 
     max_flow_lens: List[int] = []
-    for chunk_id, df_chunk in enumerate(df_chunks[1:]):
+    for df_chunk in df_chunks:
         # corner case: skip for empty df_chunk
         if len(df_chunk) == 0:
             continue
@@ -70,7 +72,7 @@ def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
     return max(max_flow_lens)
 
 
-def get_word2vec_model(df: pd.DataFrame, model_directory: str) -> Optional[Word2Vec]:
+def get_word2vec_model(df: pd.DataFrame) -> Optional[Word2Vec]:
     prepost_config = get_config("pre_post_processor.config", {})
     word2vec_cols = [
         m
@@ -89,7 +91,7 @@ def get_word2vec_model(df: pd.DataFrame, model_directory: str) -> Optional[Word2
     logger.info("Word2vec: training model")
     word2vec_model_path = word2vec_train(
         df=df,
-        out_dir=model_directory,
+        out_dir=get_word2vec_model_directory(),
         model_name=prepost_config["word2vec"]["model_name"],
         word2vec_cols=word2vec_cols,
         word2vec_size=prepost_config["word2vec"]["vec_size"],
@@ -99,12 +101,25 @@ def get_word2vec_model(df: pd.DataFrame, model_directory: str) -> Optional[Word2
 
 
 def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
+    """
+    This function builds the Field object from a specific field configuration.
+    There are 3 types of fields:
+    1. BitField: when encoding = bit. This field using the configuration n_bits.
+    2. ContinuousField:
+        2.1 when encoding = word2vec, we use the word2vec model to encode the field.
+        2.2 when type = float, we take the min and max value of the column in the dataframe.
+    3. DiscreteField: when encoding = categorical or type = string, we use the unique values of the column in the dataframe.
+    """
     prepost_config = get_config("pre_post_processor.config", {})
 
-    if not isinstance(field.column, str):
-        raise ValueError('"column" should be a string')
+    if not isinstance(field.get("column"), str) and not isinstance(
+        field.get("columns"), list
+    ):
+        raise ValueError(
+            f'In field configuration: "column" should be a string or "columns" a list of strings ({field})'
+        )
     if "type" not in field or field.type not in get_config(
-        "global_config.allowed_data_types"
+        "global_config.allowed_data_types", default_value=[field.type]
     ):
         raise ValueError(
             '"type" must be specified as ({})'.format(
@@ -112,7 +127,13 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
             )
         )
 
-    field_name = getattr(field, "name", field.column)
+    field_name = (
+        getattr(field, "name", "") or field.get("column", "") or str(field.columns)
+    )
+    if field.get("column", ""):
+        this_df = df[field.column]
+    else:
+        this_df = df[field.columns].stack()
 
     # Bit Field: (integer)
     field_instance: Field
@@ -121,43 +142,42 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
             raise ValueError('"encoding=bit" can be only used for "type=integer"')
         if "n_bits" not in field:
             raise ValueError("`n_bits` needs to be specified for bit fields")
-        field_instance = BitField(
-            name=getattr(field, "name", field.column), num_bits=field.n_bits
-        )
+        return BitField(name=field_name, num_bits=field.n_bits)
 
     # word2vec field: (any)
     elif "word2vec" in getattr(field, "encoding", ""):
-        field_instance = ContinuousField(
+        return ContinuousField(
             name=field_name,
             norm_option=Normalization.MINUSONE_ONE,  # l2-norm
             dim_x=prepost_config["word2vec"]["vec_size"],
         )
 
     # Categorical field: (string | integer)
-    elif "categorical" in getattr(field, "encoding", ""):
+    elif "categorical" in getattr(field, "encoding", "") or field.type == "string":
         if field.type not in ["string", "integer"]:
             raise ValueError(
                 '"encoding=cateogrical" can be only used for "type=(string | integer)"'
             )
-        field_instance = DiscreteField(
-            choices=list(set(df[field.column])),
-            name=getattr(field, "name", field.column),
+        return DiscreteField(
+            choices=list(pd.unique(this_df)),
+            name=field_name,
         )
 
     # Continuous Field: (float)
     elif field.type == "float":
-        field_instance = ContinuousField(
+        return ContinuousField(
             name=field_name,
             norm_option=getattr(Normalization, field.normalization),
-            min_x=min(df[field.column]) - EPS,
-            max_x=max(df[field.column]) + EPS,
+            min_x=min(this_df) - EPS,
+            max_x=max(this_df) + EPS,
             dim_x=1,
         )
-        if getattr(field, "log1p_norm", False):
-            df[field.column] = np.log1p(df[field.column])
-    else:
-        raise ValueError("Unable to build field from config: {}".format(field))
-    return field_instance
+
+    raise ValueError(
+        "Unable to build field from config (known field type / encoding): {}".format(
+            field
+        )
+    )
 
 
 def build_fields(
@@ -173,9 +193,7 @@ def build_fields(
         for field in get_config("pre_post_processor.config.timeseries")
     }
 
-    # Multi-chunk related field instances
-    # n_chunk=1 reduces to plain DoppelGANger
-    if get_config("global_config.n_chunks") > 1:
+    if get_config("global_config.n_chunks", default_value=1) > 1:
         new_field = DiscreteField(name="startFromThisChunk", choices=[0.0, 1.0])
         metadata_fields[key_from_field(new_field)] = new_field
 
@@ -189,12 +207,12 @@ def build_fields(
 
 
 def prepare_cross_chunks_data(
-    big_df: pd.DataFrame, df_chunks: List[pd.DataFrame], target_dir: str
+    big_df: pd.DataFrame, df_chunks: List[pd.DataFrame]
 ) -> CrossChunksData:
     """
     This function splits the input data into chunks, and compute the .
     """
-    embed_model = get_word2vec_model(big_df, target_dir)
+    embed_model = get_word2vec_model(big_df)
     metadata_fields, timeseries_fields = build_fields(big_df)
     flowkeys_chunkidx = get_flowkeys_chunkidx(df_chunks)
     global_max_flow_len = get_global_max_flow_len(df_chunks)

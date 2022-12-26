@@ -19,7 +19,7 @@ def set_config(config: Config) -> None:
     _config = config
 
 
-def get_config(path: Optional[str] = None, default_value: Any = None) -> Any:
+def get_config(path: Optional[str] = None, default_value: Any = Exception) -> Any:
     global _config
     if _config is None:
         raise ValueError("Config is not set")
@@ -29,10 +29,10 @@ def get_config(path: Optional[str] = None, default_value: Any = None) -> Any:
             for sep in path.split("."):
                 curr = curr[sep]
             return curr
-        except KeyError:
-            if default_value is not None:
+        except (KeyError, AttributeError):
+            if default_value != Exception:
                 return default_value
-            raise
+            raise ValueError(f"Config path {path} not found") from None
     return _config
 
 
