@@ -1,6 +1,9 @@
 name: Netshare tests
 
-on: [push]
+on:
+  push:
+    branches:
+      - '**'
 
 jobs:
   build:
