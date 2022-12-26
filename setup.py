@@ -1,5 +1,6 @@
-from setuptools import setup, find_packages
 from pathlib import Path
+
+from setuptools import find_packages, setup
 
 VERSION = "0.0.1"
 DESCRIPTION = "NetShare"
@@ -11,7 +12,7 @@ setup(
     # the name must match the folder name 'verysimplemodule'
     name="netshare",
     version=VERSION,
-    author="Yucheng Yin, Zinan Lin, Minhao Jin, Giulia Fanti, Vyas Sekar",
+    author="Yucheng Yin, Zinan Lin, Minhao Jin, Giulia Fanti, Vyas Sekar, Saar Tochner",
     author_email="yyin4@andrew.cmu.edu",
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,

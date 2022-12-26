@@ -1,7 +1,7 @@
-from .tee import Tee
-from .field import ContinuousField, DiscreteField, BitField, Field
-from .output import OutputType, Normalization, Output
 from .exec_cmd import exec_cmd
+from .field import BitField, ContinuousField, DiscreteField, Field
+from .output import Normalization, Output, OutputType
+from .tee import Tee
 
 __all__ = [
     "Tee",

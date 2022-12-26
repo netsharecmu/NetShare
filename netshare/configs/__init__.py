@@ -1,5 +1,5 @@
 import os
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from config_io import Config
 
@@ -13,7 +13,7 @@ def load_from_file(path: str) -> None:
     _config = Config.load_from_file(path, default_search_paths=defaults_path)
 
 
-def set_config(config: Config) -> None:
+def set_config(config: Union[Config, dict]) -> None:
     global _config
     _config = config
 

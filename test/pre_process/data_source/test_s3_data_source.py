@@ -1,6 +1,10 @@
-from netshare.pre_process.data_source.s3_data_source import S3DataSource
-from moto import mock_s3
+import os
+
 import boto3
+from moto import mock_s3
+
+from netshare.configs import set_config
+from netshare.pre_process.data_source.s3_data_source import S3DataSource
 
 
 @mock_s3
@@ -13,11 +17,9 @@ def test_fetch_data(tmp_path):
     client.put_object(Bucket="test-bucket", Key="file1.txt", Body="file1")
     client.put_object(Bucket="test-bucket", Key="subdir/file2.txt", Body="file2")
 
-    target = tmp_path / "target"
-    target.mkdir()
-
-    data_source.fetch_data({"bucket_name": "test-bucket"}, str(target))
+    set_config({"bucket_name": "test-bucket"})
+    target = data_source.fetch_data()
 
     # Check that the files were copied
-    assert (target / "file1.txt").read_text() == "file1"
-    assert (target / "subdir_file2.txt").read_text() == "file2"
+    assert open(os.path.join(target, "file1.txt"), "r").read() == "file1"
+    assert open(os.path.join(target, "subdir_file2.txt"), "r").read() == "file2"

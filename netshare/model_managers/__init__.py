@@ -2,9 +2,9 @@ from config_io import Config
 
 from netshare.configs import get_config
 
+from .dg_model_manager import DGModelManager
 from .model_manager import ModelManager
 from .netshare_manager.netshare_manager import NetShareManager
-from .dg_model_manager import DGModelManager
 
 
 def build_model_manager_from_config() -> ModelManager:

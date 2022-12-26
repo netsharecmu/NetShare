@@ -17,7 +17,7 @@ class LocalFilesDataSource(DataSource):
 
     def fetch_data(self) -> str:
         target_dir = tempfile.mkdtemp()
-        single_file = get_config("global_config.original_data_file")
+        single_file = get_config("global_config.original_data_file", default_value=None)
         if single_file:
             shutil.copy(single_file, target_dir)
             return target_dir

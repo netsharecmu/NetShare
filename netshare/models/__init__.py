@@ -2,8 +2,8 @@ from typing import Type
 
 from netshare.configs import get_config
 
-from .model import Model
 from .doppelganger_tf_model import DoppelGANgerTFModel
+from .model import Model
 
 
 def build_model_from_config() -> Type[Model]:

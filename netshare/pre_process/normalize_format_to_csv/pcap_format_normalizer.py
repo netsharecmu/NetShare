@@ -2,10 +2,10 @@ import ctypes
 import os
 import tempfile
 
+import netshare.pre_post_processors.netshare
 from netshare.pre_process.normalize_format_to_csv.base_format_normalizer import (
     DataFormatNormalizer,
 )
-import netshare.pre_post_processors.netshare
 from netshare.utils import exec_cmd
 
 
