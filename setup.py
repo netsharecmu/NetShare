@@ -39,7 +39,6 @@ setup(
         "tqdm",
         "matplotlib",
         "pandas",
-        "sklearn",
         "more-itertools",
         "gensim==3.8.3",
         "networkx",
