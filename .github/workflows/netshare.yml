@@ -10,11 +10,14 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: "3.6"
+          cache: 'pip' # caching pip dependencies
       - name: Install dependencies
         run: |
           pip install -e .[dev]
+          apt-get install libpcap-dev
       - name: pre-commit on all files changed from the main branch
         run: |
+          git fetch origin new_dataset
           pre-commit run --files $(git diff --name-only origin/new_dataset)
       - name: Test with pytest
         run: |
