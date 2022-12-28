@@ -2,7 +2,7 @@ import os
 import tempfile
 
 from netshare.configs import get_config
-from netshare.pre_process.data_source.base_data_source import DataSource
+from netshare.preprocess.data_source.base_data_source import DataSource
 
 
 class S3DataSource(DataSource):

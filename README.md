@@ -162,13 +162,11 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 ├── doc                       # (tentative) NetShare tutorials and APIs
 ├── examples                  # Examples of using NetShare on different datasets
 ├── netshare                  # NetShare source code
-│   ├── configs               # Default configurations  
-│   ├── dashboard             # visualization of real v.s. synthetic data  
-│   ├── generators            # Generator class
-│   ├── model_managers        # Core of NetShare service (i.e, train/generate)
-│   ├── models                # Timeseries GAN models (e.g., DoppelGANger)
-│   ├── pre_post_processors   # Pre- and post-process data
-│   ├── ray                   # Ray functions overloading
+│   ├── api                   # The interface to use NetSahre
+│   ├── preprocessor          # Preprocess data
+│   ├── model                 # Core of NetShare service (i.e, train/generate)
+│   ├── postprocessor         # Postprocess data
+│   ├── measurements          # visualization of real v.s. synthetic data
 │   └── utils                 # Utility functions/common class definitions
 ├── traces                    # Traces/datasets
 └── util                      # MISC/setup scripts
@@ -177,7 +175,7 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 
 
 # References
-Please cite our paper/codebase approriately if you find NetShare is useful.
+Please cite our paper/codebase appropriately if you find NetShare useful.
 
 ```bibtex
 @inproceedings{netshare-sigcomm2022,

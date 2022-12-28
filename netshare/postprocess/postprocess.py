@@ -1,9 +1,8 @@
-from netshare.configs import get_config
-from netshare.post_process.denormalize_fields import denormalize_fields
-from netshare.utils.paths import copy_files, get_post_processed_data_folder
+from netshare.postprocess.denormalize_fields import denormalize_fields
+from netshare.utils.paths import copy_files, get_postprocessed_data_folder
 
 
-def post_process() -> None:
+def postprocess() -> None:
     """
     This is the main function of the postprocess phase.
     We get the generated data, prepare it to be exported, export it, and create the visualization.
@@ -38,4 +37,4 @@ def export_data(denormalized_fields_dir: str) -> None:
     """
     :return: the path to the files that should be shared with the users.
     """
-    copy_files(denormalized_fields_dir, get_post_processed_data_folder())
+    copy_files(denormalized_fields_dir, get_postprocessed_data_folder())

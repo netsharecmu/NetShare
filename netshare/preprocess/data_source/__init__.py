@@ -8,10 +8,10 @@ from .s3_data_source import S3DataSource
 
 def fetch_data() -> str:
     """
-    This is the builder function for the data source.
+    This is the factory function for the data source.
     It returns the path to the directory that contains the fetched data.
     """
-    data_source_config = get_config("pre_process.data_source", default_value={})
+    data_source_config = get_config("preprocess.data_source", default_value={})
     data_source_type = data_source_config.get("type") or "local_files"
 
     data_source: DataSource

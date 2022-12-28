@@ -5,11 +5,11 @@ from netshare.configs import get_config
 from netshare.logger import logger
 
 
-def get_pre_processed_data_folder() -> str:
+def get_preprocessed_data_folder() -> str:
     return os.path.join(get_config("work_folder"), "pre_processed_data")
 
 
-def get_post_processed_data_folder() -> str:
+def get_postprocessed_data_folder() -> str:
     return os.path.join(get_config("work_folder"), "post_processed_data")
 
 
@@ -18,7 +18,9 @@ def get_generated_data_folder() -> str:
 
 
 def get_model_folder() -> str:
-    return os.path.join(get_config("work_folder"), "models")
+    result = os.path.join(get_config("work_folder"), "models")
+    check_folder(result, skip_existing=True)
+    return result
 
 
 def get_visualization_folder() -> str:

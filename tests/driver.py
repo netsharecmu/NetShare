@@ -15,7 +15,7 @@ if __name__ == "__main__":
     # Please set the `worker_folder` as *absolute path*
     # if you are using Ray with multi-machine setup
     # since Ray has bugs when dealing with relative paths.
-    generator.train_and_generate(work_folder="../results/test_ugr16")
+    generator.train_and_generate(work_folder="~/results/test_ugr16")
     # generator.generate(work_folder='../results/test_ugr16')
 
     ray.shutdown()

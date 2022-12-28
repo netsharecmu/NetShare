@@ -12,7 +12,7 @@ def normalize_files_format(input_dir: str) -> str:
     This function return the path to the directory that contains the normalized files.
     """
     format_normalizer_config = get_config(
-        "pre_process.format_normalizer", default_value={}
+        "preprocess.format_normalizer", default_value={}
     )
     normalizer_type = (
         get_config(

@@ -8,7 +8,7 @@ from gensim.models import Word2Vec
 from netshare.configs import get_config
 from netshare.logger import logger
 from netshare.pre_post_processors.netshare.word2vec_embedding import word2vec_train
-from netshare.pre_process.preprocess_api import get_word2vec_model_directory
+from netshare.preprocess.preprocess_api import get_word2vec_model_directory
 from netshare.utils.field import (
     BitField,
     ContinuousField,
@@ -19,7 +19,7 @@ from netshare.utils.field import (
     field_config_to_key,
     key_from_field,
 )
-from netshare.utils.paths import get_pre_processed_data_folder
+from netshare.utils.paths import get_preprocessed_data_folder
 
 EPS = 1e-8
 
@@ -91,7 +91,7 @@ def get_word2vec_model(df: pd.DataFrame) -> Optional[Word2Vec]:
         return Word2Vec.load(prepost_config["word2vec"]["pretrain_model_path"])
 
     logger.info("Word2vec: training model")
-    os.makedirs(get_pre_processed_data_folder(), exist_ok=True)
+    os.makedirs(get_preprocessed_data_folder(), exist_ok=True)
     word2vec_model_path = word2vec_train(
         df=df,
         out_dir=get_word2vec_model_directory(),

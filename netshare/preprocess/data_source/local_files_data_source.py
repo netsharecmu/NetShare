@@ -3,7 +3,7 @@ import shutil
 import tempfile
 
 from netshare.configs import get_config
-from netshare.pre_process.data_source.base_data_source import DataSource
+from netshare.preprocess.data_source.base_data_source import DataSource
 
 
 class LocalFilesDataSource(DataSource):
@@ -24,7 +24,7 @@ class LocalFilesDataSource(DataSource):
 
         input_folder = get_config(
             "global_config.original_data_folder",
-            path2="pre_process.data_source.input_folder",
+            path2="preprocess.data_source.input_folder",
         )
         if not input_folder or not isinstance(input_folder, str):
             raise ValueError(

@@ -8,16 +8,16 @@ from netshare import ray
 from netshare.configs import get_config
 from netshare.logger import logger
 from netshare.pre_post_processors.netshare.preprocess_helper import df2chunks
-from netshare.pre_process.data_source import fetch_data
-from netshare.pre_process.normalize_format_to_csv import normalize_files_format
-from netshare.pre_process.prepare_cross_chunks_data import (
+from netshare.preprocess.data_source import fetch_data
+from netshare.preprocess.normalize_format_to_csv import normalize_files_format
+from netshare.preprocess.prepare_cross_chunks_data import (
     CrossChunksData,
     prepare_cross_chunks_data,
 )
-from netshare.pre_process.preprocess_per_chunk import preprocess_per_chunk
+from netshare.preprocess.preprocess_per_chunk import preprocess_per_chunk
 
 
-def pre_process() -> None:
+def preprocess() -> None:
     """
     This is the main function of the preprocess phase.
     We get the configuration, and prepare everything for the training phase.

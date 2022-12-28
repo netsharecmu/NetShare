@@ -11,8 +11,8 @@ from tqdm import tqdm
 import netshare.ray as ray
 from netshare.configs import get_config, set_config
 from netshare.pre_post_processors.netshare.embedding_helper import get_vector
-from netshare.pre_process import preprocess_api
-from netshare.pre_process.prepare_cross_chunks_data import CrossChunksData
+from netshare.preprocess import preprocess_api
+from netshare.preprocess.prepare_cross_chunks_data import CrossChunksData
 from netshare.utils.field import (
     ContinuousField,
     Field,
@@ -82,6 +82,7 @@ def apply_configuration_fields(
                 new_field_list.append(column)
 
         if "regex" in field:
+            # TODO: regex should be a Field
             for column in field.get("columns") or [field.column]:
                 new_df[column] = original_df[column].str.extract(
                     field.regex, expand=False
@@ -100,7 +101,7 @@ def write_chunk_data(
     chunk_id: int,
 ) -> None:
     """
-    This function writes the data of a single chunk using the pre_process API.
+    This function writes the data of a single chunk using the preprocess API.
 
     TODO: Why do we store the cross_chunks_data for every chunk?
         It creates trouble later when we try to load it in the postprocess phase.

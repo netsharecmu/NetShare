@@ -7,7 +7,7 @@ from typing import List
 import numpy as np
 
 from netshare.models import model_api
-from netshare.pre_process import preprocess_api
+from netshare.preprocess import preprocess_api
 from netshare.utils.field import ContinuousField, Field
 
 

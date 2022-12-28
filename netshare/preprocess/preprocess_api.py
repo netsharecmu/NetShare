@@ -8,13 +8,13 @@ import pandas as pd
 from netshare.configs import get_config
 from netshare.logger import logger
 from netshare.utils.field import BitField, Field, FieldKey
-from netshare.utils.paths import get_pre_processed_data_folder
+from netshare.utils.paths import get_preprocessed_data_folder
 
 
 def get_chunk_dir(chunk_id: Optional[int]) -> str:
     if get_config("global_config.n_chunks", default_value=1) == 1:
         if chunk_id == 0 or chunk_id is None:
-            return get_pre_processed_data_folder()
+            return get_preprocessed_data_folder()
         else:
             raise ValueError(
                 f"Internal error: shouldn't have chunk_id={chunk_id} in this configuration"
@@ -22,13 +22,13 @@ def get_chunk_dir(chunk_id: Optional[int]) -> str:
     if chunk_id is None:
         logger.warning("chunk_id is None, moved to a fallback chunk_id=0")
         chunk_id = 0
-    chunk_dir = os.path.join(get_pre_processed_data_folder(), f"chunkid-{chunk_id}")
+    chunk_dir = os.path.join(get_preprocessed_data_folder(), f"chunkid-{chunk_id}")
     os.makedirs(chunk_dir, exist_ok=True)
     return chunk_dir
 
 
 def get_word2vec_model_directory() -> str:
-    return get_pre_processed_data_folder()
+    return get_preprocessed_data_folder()
 
 
 def create_dirs(chunk_id: int) -> None:
