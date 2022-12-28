@@ -13,7 +13,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .[dev]
-          apt-get install libpcap-dev
+          sudo apt-get install libpcap-dev
       - name: pre-commit on all files changed from the main branch
         run: |
           git fetch origin new_dataset
