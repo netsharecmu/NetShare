@@ -2,7 +2,7 @@ import csv
 import os
 import shutil
 
-from netshare.pre_process.normalize_format_to_csv.pcap_format_normalizer import (
+from netshare.preprocess.normalize_format_to_csv.pcap_format_normalizer import (
     PcapNormalizer,
 )
 

@@ -4,7 +4,7 @@ import boto3
 from moto import mock_s3
 
 from netshare.configs import set_config
-from netshare.pre_process.data_source.s3_data_source import S3DataSource
+from netshare.preprocess.data_source.s3_data_source import S3DataSource
 
 
 @mock_s3

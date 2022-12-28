@@ -1,6 +1,6 @@
 import os
 
-from netshare.pre_process.normalize_format_to_csv.default_format_normalizer import (
+from netshare.preprocess.normalize_format_to_csv.default_format_normalizer import (
     CsvNormalizer,
 )
 

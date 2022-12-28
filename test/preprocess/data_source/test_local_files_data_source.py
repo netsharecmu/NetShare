@@ -1,9 +1,7 @@
 import os
 
 from netshare.configs import set_config
-from netshare.pre_process.data_source.local_files_data_source import (
-    LocalFilesDataSource,
-)
+from netshare.preprocess.data_source.local_files_data_source import LocalFilesDataSource
 
 
 def test_fetch_data(tmp_path):
