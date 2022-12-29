@@ -45,14 +45,12 @@ def load_dataframe_chunks(csv_dir: str) -> Tuple[pd.DataFrame, List[pd.DataFrame
     """
     This function load the CSV files into a pandas dataframe.
     """
-    df = pd.concat(
-        [
-            pd.read_csv(os.path.join(csv_dir, filename), index_col=None, header=0)
-            for filename in os.listdir(csv_dir)
-        ],
-        axis=0,
-        ignore_index=True,
-    )
+    dfs = []
+    for filename in os.listdir(csv_dir):
+        df = pd.read_csv(os.path.join(csv_dir, filename), index_col=None, header=0)
+        df["filename"] = filename
+        dfs.append(df)
+    df = pd.concat(dfs, axis=0, ignore_index=True)
     df.dropna(inplace=True)
     if get_config("global_config.n_chunks", default_value=1) > 1:
         config_timestamp = get_config(
@@ -66,8 +64,11 @@ def load_dataframe_chunks(csv_dir: str) -> Tuple[pd.DataFrame, List[pd.DataFrame
             big_raw_df=df,
             config_timestamp=config_timestamp,
             split_type=get_config(
-                "pre_post_processor.config.df2chunks", path2="global_config.df2chunks"
-            ),
+                "pre_post_processor.config.df2chunks",
+                path2="global_config.df2chunks",
+                default_value=None,
+            )
+            or get_config("preprocess.chunk_split_type"),
             n_chunks=get_config("global_config.n_chunks"),
         )
     else:

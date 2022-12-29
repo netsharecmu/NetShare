@@ -65,7 +65,7 @@ def apply_configuration_fields(
             new_df = pd.concat([new_df, this_df], axis=1)
 
         # Categorical field: (string | integer)
-        if "categorical" in getattr(field, "encoding", ""):
+        if "categorical" in getattr(field, "encoding", "") or field.type == "string":
             this_df = pd.DataFrame(
                 field_instance.normalize(original_df[field.column].to_numpy())
             )
@@ -133,9 +133,13 @@ def apply_timestamp_generation(
     2. encoding = interarrival: For each tuple of metadata, we take the start time of the flow a metadata column,
         and also take the diff between every packet to the previous one as a feature column.
     """
-    metadata_config = get_config("pre_post_processor.config.metadata")
+    metadata_config = get_config(
+        "pre_post_processor.config.metadata", path2="preprocess.metadata"
+    )
     timestamp_config = get_config(
-        "pre_post_processor.config.timestamp", default_value={}
+        "pre_post_processor.config.timestamp",
+        path2="preprocess.timestamp",
+        default_value={},
     )
 
     metadata_cols = [m for m in metadata_config]
@@ -219,15 +223,18 @@ def apply_cross_chunk_mechanism(
         Maybe we can spare performance here?
         Note the signature of this function - it doesn't get the data of the current chunk...
     """
-    metadata_config = get_config("pre_post_processor.config.metadata")
+    metadata_config = get_config(
+        "pre_post_processor.config.metadata", path2="preprocess.metadata"
+    )
 
     attr_per_row: List[float] = []
     if get_config("global_config.n_chunks", default_value=1) > 1:
-        split_name = get_config("pre_post_processor.config.split_name")
+        split_name = get_config(
+            "pre_post_processor.config.split_name", path2="preprocess.split_name"
+        )
         if cross_chunks_data.flowkeys_chunkidx is None:
             raise ValueError(
-                "Cross-chunk mechanism enabled, \
-                cross-chunk flow stats not provided!"
+                "Internal error: cross-chunk data is missing is the per-chunk processing!"
             )
         ori_group_name = tuple(df_group.iloc[0][[m.column for m in metadata_config]])
         chunk_indexes = cross_chunks_data.flowkeys_chunkidx.get(str(ori_group_name))
@@ -288,8 +295,12 @@ def preprocess_per_chunk(
     chunk_id: int,
 ) -> None:
     set_config(config)
-    metadata_config = get_config("pre_post_processor.config.metadata")
-    timeseries_config = get_config("pre_post_processor.config.timeseries")
+    metadata_config = get_config(
+        "pre_post_processor.config.metadata", path2="preprocess.metadata"
+    )
+    timeseries_config = get_config(
+        "pre_post_processor.config.timeseries", path2="preprocess.timeseries"
+    )
 
     df_per_chunk, new_metadata_list = apply_configuration_fields(
         original_df=df_per_chunk,

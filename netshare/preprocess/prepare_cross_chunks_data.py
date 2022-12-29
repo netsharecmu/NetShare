@@ -33,12 +33,17 @@ class CrossChunksData(NamedTuple):
 
 
 def get_flowkeys_chunkidx(df_chunks: List[pd.DataFrame]) -> Dict[str, List[int]]:
-    prepost_config = get_config("pre_post_processor.config", default_value={})
+    prepost_config = get_config(
+        "pre_post_processor.config", path2="preprocess", default_value={}
+    )
     logger.info("compute flowkey-chunk list from scratch")
     flow_chunkid_keys = {}
     for chunk_id, df_chunk in enumerate(df_chunks):
         gk = df_chunk.groupby([m.column for m in prepost_config["metadata"]])
         flow_keys = list(gk.groups.keys())
+        if len(prepost_config["metadata"]) == 1:
+            # Solving a gotcha in pandas groupby when grouping by a single column
+            flow_keys = [tuple([key]) for key in flow_keys]
         flow_keys = list(map(str, flow_keys))
         flow_chunkid_keys[chunk_id] = flow_keys
 
@@ -59,7 +64,9 @@ def get_flowkeys_chunkidx(df_chunks: List[pd.DataFrame]) -> Dict[str, List[int]]
 
 
 def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
-    prepost_config = get_config("pre_post_processor.config", default_value={})
+    prepost_config = get_config(
+        "pre_post_processor.config", path2="preprocess", default_value={}
+    )
     if prepost_config.get("max_flow_len"):
         return int(prepost_config["max_flow_len"])
 
@@ -75,10 +82,19 @@ def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
 
 
 def get_word2vec_model(df: pd.DataFrame) -> Optional[Word2Vec]:
-    prepost_config = get_config("pre_post_processor.config", default_value={})
+    word2vec_config = get_config(
+        "pre_post_processor.config", path2="preprocess.word2vec", default_value={}
+    )
+    if not word2vec_config:
+        logger.debug(
+            "No word2vec preprocess config found, skipping the embedding model"
+        )
+        return None
     word2vec_cols = [
         m
-        for m in (prepost_config["metadata"] + prepost_config["timeseries"])
+        for m in (
+            word2vec_config.get("metadata", []) + word2vec_config.get("timeseries", [])
+        )
         if "word2vec" in getattr(m, "encoding", "")
     ]
 
@@ -86,19 +102,19 @@ def get_word2vec_model(df: pd.DataFrame) -> Optional[Word2Vec]:
         logger.info("Skipping word2vec embedding: no word2vec columns")
         return None
 
-    if prepost_config["word2vec"]["pretrain_model_path"]:
+    if word2vec_config["word2vec"]["pretrain_model_path"]:
         logger.info("Word2vec: Loading pretrained model")
-        return Word2Vec.load(prepost_config["word2vec"]["pretrain_model_path"])
+        return Word2Vec.load(word2vec_config["word2vec"]["pretrain_model_path"])
 
     logger.info("Word2vec: training model")
     os.makedirs(get_preprocessed_data_folder(), exist_ok=True)
     word2vec_model_path = word2vec_train(
         df=df,
         out_dir=get_word2vec_model_directory(),
-        model_name=prepost_config["word2vec"]["model_name"],
+        model_name=word2vec_config["word2vec"]["model_name"],
         word2vec_cols=word2vec_cols,
-        word2vec_size=prepost_config["word2vec"]["vec_size"],
-        annoy_n_trees=prepost_config["word2vec"]["annoy_n_trees"],
+        word2vec_size=word2vec_config["word2vec"]["vec_size"],
+        annoy_n_trees=word2vec_config["word2vec"]["annoy_n_trees"],
     )
     return Word2Vec.load(word2vec_model_path)
 
@@ -188,11 +204,15 @@ def build_fields(
 
     metadata_fields: Dict[FieldKey, Field] = {
         field_config_to_key(field): build_field_from_config(field, df)
-        for field in get_config("pre_post_processor.config.metadata")
+        for field in get_config(
+            "pre_post_processor.config.metadata", path2="preprocess.metadata"
+        )
     }
     timeseries_fields: Dict[FieldKey, Field] = {
         field_config_to_key(field): build_field_from_config(field, df)
-        for field in get_config("pre_post_processor.config.timeseries")
+        for field in get_config(
+            "pre_post_processor.config.timeseries", path2="preprocess.timeseries"
+        )
     }
 
     if get_config("global_config.n_chunks", default_value=1) > 1:

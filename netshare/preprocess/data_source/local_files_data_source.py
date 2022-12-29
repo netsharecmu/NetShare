@@ -17,8 +17,14 @@ class LocalFilesDataSource(DataSource):
 
     def fetch_data(self) -> str:
         target_dir = tempfile.mkdtemp()
-        single_file = get_config("global_config.original_data_file", default_value=None)
+        single_file = get_config(
+            "global_config.original_data_file",
+            path2="preprocess.data_source.original_data_file",
+            default_value=None,
+        )
         if single_file:
+            if not os.path.exists(single_file):
+                raise ValueError(f"Input file {single_file} does not exist")
             shutil.copy(single_file, target_dir)
             return target_dir
 
@@ -30,7 +36,8 @@ class LocalFilesDataSource(DataSource):
             raise ValueError(
                 "Missing input location in the config (either original_data_folder or original_data_file)"
             )
-
+        if not os.path.exists(input_folder):
+            raise ValueError(f"Input directory {input_folder} does not exist")
         for root, dirs, files in os.walk(input_folder):
             for filename in files:
                 unique_filename = (

@@ -15,7 +15,7 @@ def build_model_manager_from_config() -> ModelManager:
     else:
         raise ValueError("Unknown model manager class")
     model_manager_config = Config(get_config("global_config"))
-    model_manager_config.update(get_config("model_manager.config"))
+    model_manager_config.update(get_config("model_manager.config", default_value={}))
     return model_manager_class(config=model_manager_config)  # type: ignore
 
 
