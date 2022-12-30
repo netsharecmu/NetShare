@@ -43,4 +43,4 @@ def get_config(
 
 def change_work_folder(work_folder: Optional[str]) -> None:
     if work_folder:
-        get_config()["work_folder"] = os.path.expanduser(work_folder)
+        get_config()["global_config"]["work_folder"] = os.path.expanduser(work_folder)

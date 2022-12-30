@@ -1,17 +1,14 @@
 from typing import Optional, Type
 
 import netshare.models as models
-from netshare.configs import change_work_folder, get_config, load_from_file
+import netshare.ray as ray
+from netshare.configs import change_work_folder, load_from_file
 from netshare.dashboard.visualize import visualize
-from netshare.model_managers import ModelManager, build_model_manager_from_config
+from netshare.model_managers import model_manager
 from netshare.models import Model
 from netshare.postprocess.postprocess import postprocess
 from netshare.preprocess.preprocess import preprocess
 from netshare.utils.paths import (
-    get_generated_data_folder,
-    get_generated_data_log_folder,
-    get_model_folder,
-    get_model_log_folder,
     get_postprocessed_data_folder,
     get_preprocessed_data_folder,
     get_visualization_folder,
@@ -21,35 +18,24 @@ from netshare.utils.paths import (
 class GeneratorV2(object):
     def __init__(self, config: str):
         load_from_file(config)
-        self._model_manager: ModelManager = build_model_manager_from_config()
+        ray.init(address="auto")
         self._model: Type[Model] = models.build_model_from_config()
 
     def generate(self, work_folder: Optional[str] = None) -> None:
         change_work_folder(work_folder)
-        self._model_manager.generate(
-            input_train_data_folder=get_preprocessed_data_folder(),
-            input_model_folder=get_model_folder(),
-            output_syn_data_folder=get_generated_data_folder(),
-            log_folder=get_generated_data_log_folder(),
-            create_new_model=self._model,
-            model_config=get_config("model.config"),
-        )
+        model_manager.generate(create_new_model=self._model)
         postprocess()
 
     def train(self, work_folder: Optional[str] = None) -> None:
         change_work_folder(work_folder)
         preprocess()
-        self._model_manager.train(
-            input_train_data_folder=get_preprocessed_data_folder(),
-            output_model_folder=get_model_folder(),
-            log_folder=get_model_log_folder(),
-            create_new_model=self._model,
-            model_config=get_config("model.config"),
-        )
+        model_manager.train(create_new_model=self._model)
 
     def train_and_generate(self, work_folder: Optional[str] = None) -> None:
+        ray.init(address="auto")
         self.train(work_folder)
         self.generate(work_folder)
+        ray.shutdown()
 
     def visualize(self, work_folder: Optional[str] = None) -> None:
         change_work_folder(work_folder)

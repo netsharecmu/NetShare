@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -25,6 +25,18 @@ def get_chunk_dir(chunk_id: Optional[int]) -> str:
     chunk_dir = os.path.join(get_preprocessed_data_folder(), f"chunkid-{chunk_id}")
     os.makedirs(chunk_dir, exist_ok=True)
     return chunk_dir
+
+
+def get_all_chunks_dirs() -> List[str]:
+    """
+    This function returns the directories of all the chunks.
+    """
+    if get_config("global_config.n_chunks", default_value=1) == 1:
+        return [get_preprocessed_data_folder()]
+    return [
+        os.path.join(get_preprocessed_data_folder(), f"chunkid-{chunk_id}")
+        for chunk_id in range(get_config("global_config.n_chunks"))
+    ]
 
 
 def get_word2vec_model_directory() -> str:

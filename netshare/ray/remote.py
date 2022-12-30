@@ -1,5 +1,7 @@
 import functools
-from .config import config as ray_config
+
+from netshare.configs import get_config, set_config
+from netshare.ray.ray_config import is_ray_enabled
 
 
 class ResultWrapper(object):
@@ -17,18 +19,33 @@ class RemoteFunctionWrapper(object):
         self._ray_kwargs = kwargs
 
     def __call__(self, *args, **kwargs):
-        raise TypeError('Remote functions cannot be called directly.')
+        raise TypeError("Remote functions cannot be called directly.")
 
     def remote(self, *args, **kwargs):
-        if ray_config.enabled:
+        if is_ray_enabled():
             if self._actual_remote_function is None:
+                original_func, *rest_args = self._ray_args
+
+                def load_config_and_call(*inner_args, **inner_kwargs):
+                    """
+                    In this function, we make sure that the new ray process will have
+                        the same config as the original process.
+                    """
+                    set_config(inner_kwargs.pop("local_config"))
+                    return original_func(*inner_args, **inner_kwargs)
+
+                self._ray_args = (load_config_and_call, *rest_args)
                 import ray
+
                 if len(self._ray_kwargs) == 0:
                     self._actual_remote_function = ray.remote(
-                        *self._ray_args, **self._ray_kwargs)
+                        *self._ray_args, **self._ray_kwargs
+                    )
                 else:
-                    self._actual_remote_function = ray.remote(
-                        **self._ray_kwargs)(*self._ray_args)
+                    self._actual_remote_function = ray.remote(**self._ray_kwargs)(
+                        *self._ray_args
+                    )
+            kwargs["local_config"] = get_config()
             return self._actual_remote_function.remote(*args, **kwargs)
         else:
             return ResultWrapper(self._ray_args[0](*args, **kwargs))
@@ -40,13 +57,14 @@ def remote(*args, **kwargs):
         # "args[0]" is the class or function under the decorator.
         return RemoteFunctionWrapper(args[0])
     if not (len(args) == 0 and len(kwargs) > 0):
-        raise ValueError('Error in the parameters of the decorator')
+        raise ValueError("Error in the parameters of the decorator")
     return functools.partial(RemoteFunctionWrapper, **kwargs)
 
 
 def get(object_refs, **kwargs):
-    if ray_config.enabled:
+    if is_ray_enabled():
         import ray
+
         return ray.get(object_refs, **kwargs)
     else:
         if isinstance(object_refs, ResultWrapper):

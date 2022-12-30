@@ -1,18 +1,29 @@
-from .config import config as ray_config
+from netshare.ray.ray_config import is_ray_enabled
+
+_is_ray_initialized = False
+
 
 def init(*args, **kwargs):
-    if ray_config.enabled:
-        print('Ray is enabled')
+    global _is_ray_initialized
+    if is_ray_enabled():
+        print("Ray is enabled")
         import ray
-        ray.init(*args, **kwargs)
+
+        if not _is_ray_initialized:
+            ray.init(*args, **kwargs)
+            _is_ray_initialized = True
     else:
-        print('Ray is disabled')
+        print("Ray is disabled")
 
 
 def shutdown(*args, **kargs):
-    if ray_config.enabled:
-        print('Ray is enabled')
+    global _is_ray_initialized
+    if is_ray_enabled():
+        print("Ray is enabled")
         import ray
-        ray.shutdown(*args, **kargs)
+
+        if _is_ray_initialized:
+            ray.shutdown(*args, **kargs)
+            _is_ray_initialized = False
     else:
         print("Ray is disabled")

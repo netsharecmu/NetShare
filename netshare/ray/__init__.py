@@ -1,6 +1,5 @@
-from .remote import remote, get
-from .config import config
+from .ray_config import config, is_ray_enabled
 from .ray_functions import init, shutdown
+from .remote import get, remote
 
-
-__all__ = ['config', 'init', 'shutdown', 'remote', 'get']
+__all__ = ["config", "is_ray_enabled", "init", "shutdown", "remote", "get"]

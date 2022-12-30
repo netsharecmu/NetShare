@@ -1,48 +1,69 @@
-from abc import ABC, abstractmethod
-import os
+import time
+from typing import Type
 
-from netshare.utils import Tee
+import netshare.ray as ray
+from netshare.logger import logger
+from netshare.model_managers.netshare_manager.generate_helper import (
+    generate_data,
+    merge_attr,
+)
+from netshare.model_managers.netshare_manager.netshare_util import (
+    create_chunks_configurations,
+)
+from netshare.model_managers.netshare_manager.train_helper import train_config_group
+from netshare.models import Model
 
 
-class ModelManager(ABC):
-    def __init__(self, config):
-        self._config = config
+def train(create_new_model: Type[Model]) -> None:
+    configs, config_group_list = create_chunks_configurations(generation_flag=False)
 
-    @abstractmethod
-    def _train(self, input_train_data_folder, output_model_folder,
-               log_folder, create_new_model, model_config):
-        ...
-
-    @abstractmethod
-    def _generate(self,
-                  input_train_data_folder, input_model_folder,
-                  output_syn_data_folder, log_folder,
-                  create_new_model, model_config):
-        ...
-
-    def train(self, input_train_data_folder, output_model_folder, log_folder,
-              create_new_model, model_config):
-        stdout_log_path = os.path.join(log_folder, 'train.stdout.log')
-        stderr_log_path = os.path.join(log_folder, 'train.stderr.log')
-        with Tee(stdout_path=stdout_log_path, stderr_path=stderr_log_path):
-            return self._train(
-                input_train_data_folder=input_train_data_folder,
-                output_model_folder=output_model_folder,
-                log_folder=log_folder,
+    ray.get(
+        [
+            train_config_group.remote(
                 create_new_model=create_new_model,
-                model_config=model_config)
+                config_group=config_group,
+                configs=configs,
+            )
+            for config_group in config_group_list
+        ]
+    )
 
-    def generate(self,
-                 input_train_data_folder, input_model_folder,
-                 output_syn_data_folder, log_folder,
-                 create_new_model, model_config):
-        stdout_log_path = os.path.join(log_folder, 'generate.stdout.log')
-        stderr_log_path = os.path.join(log_folder, 'generate.stderr.log')
-        with Tee(stdout_path=stdout_log_path, stderr_path=stderr_log_path):
-            return self._generate(
-                input_train_data_folder=input_train_data_folder,
-                input_model_folder=input_model_folder,
-                output_syn_data_folder=output_syn_data_folder,
-                log_folder=log_folder,
+
+def generate(create_new_model: Type[Model]) -> None:
+    configs, config_group_list = create_chunks_configurations(generation_flag=True)
+
+    logger.info("Start generating attributes")
+    ray.get(
+        [
+            generate_data.remote(
                 create_new_model=create_new_model,
-                model_config=model_config)
+                config=config,
+                given_data_attribute_flag=False,
+            )
+            for config in configs
+        ]
+    )
+    time.sleep(10)
+
+    # TODO: The below part didn't happen in dg. Why?
+    logger.info("Start merging attributes")
+    ray.get(
+        [
+            merge_attr.remote(config_group=config_group, configs=configs)
+            for config_group in config_group_list
+        ]
+    )
+    time.sleep(10)
+
+    logger.info("Start generating features given attributes")
+    ray.get(
+        [
+            generate_data.remote(
+                create_new_model=create_new_model,
+                config=config,
+                given_data_attribute_flag=True,
+            )
+            for config in configs
+        ]
+    )
+    time.sleep(10)

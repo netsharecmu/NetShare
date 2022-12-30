@@ -1,48 +1,48 @@
 import copy
-import subprocess
-import sys
-import time
 import os
-import json
-import importlib
-import random
-import pandas as pd
-import socket
-import struct
-import ipaddress
-import argparse
+from pathlib import Path
+from typing import Dict, List, Type
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 import netshare.ray as ray
-from pathlib import Path
-from tqdm import tqdm
-from scapy.all import IP, ICMP, TCP, UDP
-from scapy.all import wrpcap
-from scipy.stats import rankdata
-from pathlib import Path
+from netshare.configs import get_config
+from netshare.models import Model
+from netshare.utils.paths import get_generated_data_log_folder
 
 
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
-def _generate_attr(
-        create_new_model,
-        configs,
-        config_idx,
-        log_folder):
-    config = configs[config_idx]
-    config["given_data_attribute_flag"] = False
+def generate_data(
+    create_new_model: Type[Model],
+    config: dict,
+    given_data_attribute_flag: bool,
+) -> None:
+    config["given_data_attribute_flag"] = given_data_attribute_flag
+    if get_config("global_config.n_chunks", default_value=1) == 1:
+        config["save_without_chunk"] = True
     model = create_new_model(config)
     model.generate(
         input_train_data_folder=config["dataset"],
         input_model_folder=config["result_folder"],
         output_syn_data_folder=config["eval_root_folder"],
-        log_folder=log_folder)
+        log_folder=get_generated_data_log_folder(),
+    )
 
 
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
-def _merge_attr(attr_raw_npz_folder, word2vec_size,
-                pcap_interarrival, num_chunks):
+def merge_attr(config_group: dict, configs: List[dict]) -> None:
+    """
+    TODO: Can someone help me to doc this function?
+    """
+    chunk0_idx = config_group["config_ids"][0]
+    eval_root_folder = configs[chunk0_idx]["eval_root_folder"]
+    attr_raw_npz_folder = os.path.join(eval_root_folder, "attr_raw")
+    word2vec_size = configs[chunk0_idx]["word2vec_vecSize"]
+    pcap_interarrival = configs[chunk0_idx]["timestamp"] == "interarrival"
+    num_chunks = len(config_group["config_ids"])
+
     if not pcap_interarrival:
         bit_idx_flagstart = 128 + word2vec_size * 3
     else:
@@ -56,31 +56,25 @@ def _merge_attr(attr_raw_npz_folder, word2vec_size,
     )
     os.makedirs(attr_clean_npz_folder, exist_ok=True)
 
-    dict_chunkid_attr = {}
-    for chunkid in tqdm(range(num_chunks)):
+    dict_chunkid_attr: Dict[int, List[List[float]]] = {}
+    for chunkid in range(num_chunks):
         dict_chunkid_attr[chunkid] = []
 
     for chunkid in tqdm(range(num_chunks)):
         n_flows_startFromThisEpoch = 0
 
         if not os.path.exists(
-            os.path.join(
-                attr_raw_npz_folder,
-                "chunk_id-{}.npz".format(chunkid))
+            os.path.join(attr_raw_npz_folder, "chunk_id-{}.npz".format(chunkid))
         ):
             print(
                 "{} not exists...".format(
-                    os.path.join(
-                        attr_raw_npz_folder,
-                        "chunk_id-{}.npz".format(chunkid))
+                    os.path.join(attr_raw_npz_folder, "chunk_id-{}.npz".format(chunkid))
                 )
             )
             continue
 
         raw_attr_chunk = np.load(
-            os.path.join(
-                attr_raw_npz_folder,
-                "chunk_id-{}.npz".format(chunkid))
+            os.path.join(attr_raw_npz_folder, "chunk_id-{}.npz".format(chunkid))
         )["data_attribute"]
 
         if num_chunks > 1:
@@ -92,9 +86,7 @@ def _merge_attr(attr_raw_npz_folder, word2vec_size,
                     < row[bit_idx_flagstart + 2 * chunkid + 3]
                 ):
                     # this chunk
-                    row_this_chunk = list(
-                        copy.deepcopy(row)[
-                            :bit_idx_flagstart])
+                    row_this_chunk = list(copy.deepcopy(row)[:bit_idx_flagstart])
                     row_this_chunk += [0.0, 1.0]
                     row_this_chunk += [1.0, 0.0] * (chunkid + 1)
                     for i in range(chunkid + 1, num_chunks):
@@ -138,37 +130,20 @@ def _merge_attr(attr_raw_npz_folder, word2vec_size,
         print("chunk {}: {} flows".format(chunkid, len(attr_clean)))
         n_merged_attrs += len(attr_clean)
         np.savez(
-            os.path.join(
-                attr_clean_npz_folder,
-                "chunk_id-{}.npz".format(chunkid)),
+            os.path.join(attr_clean_npz_folder, "chunk_id-{}.npz".format(chunkid)),
             data_attribute=np.asarray(attr_clean),
         )
 
     print("n_merged_attrs:", n_merged_attrs)
 
 
-@ray.remote(scheduling_strategy="SPREAD", max_calls=1)
-# @ray.remote(scheduling_strategy="DEFAULT", max_calls=1)
-def _generate_given_attr(create_new_model, configs, config_idx,
-                         log_folder):
-
-    config = configs[config_idx]
-    config["given_data_attribute_flag"] = True
-    model = create_new_model(config)
-    model.generate(
-        input_train_data_folder=config["dataset"],
-        input_model_folder=config["result_folder"],
-        output_syn_data_folder=config["eval_root_folder"],
-        log_folder=log_folder)
-
 # ===================== TODO: move merge_syn_df to postprocess ================
 
 
-def get_per_chunk_df(chunk_folder):
+def get_per_chunk_df(chunk_folder: str) -> pd.DataFrame:
     '''chunk_folder: "chunk_id-0"'''
-    df_names = [file for file in os.listdir(
-        chunk_folder) if file.endswith(".csv")]
-    assert (len(df_names) > 0)
+    df_names = [file for file in os.listdir(chunk_folder) if file.endswith(".csv")]
+    assert len(df_names) > 0
     df = pd.read_csv(os.path.join(chunk_folder, df_names[0]))
 
     return df

@@ -24,10 +24,8 @@ class DuplicateWriter(object):
 
 class Tee(object):
     def __init__(self, stdout_path, stderr_path):
-        if not os.path.exists(os.path.dirname(stdout_path)):
-            os.makedirs(os.path.dirname(stdout_path))
-        if not os.path.exists(os.path.dirname(stderr_path)):
-            os.makedirs(os.path.dirname(stderr_path))
+        os.makedirs(os.path.dirname(stdout_path), exist_ok=True)
+        os.makedirs(os.path.dirname(stderr_path), exist_ok=True)
         self.stdout_file = open(stdout_path, "w")
         self.stderr_file = open(stderr_path, "w")
         self.stdout = sys.stdout

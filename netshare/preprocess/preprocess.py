@@ -84,7 +84,6 @@ def apply_distributed_chunk_logic(
     ray.get(
         [
             preprocess_per_chunk.remote(
-                config=get_config(),
                 cross_chunks_data=cross_chunks_data,
                 df_per_chunk=df_chunk.copy(),
                 chunk_id=chunk_id,

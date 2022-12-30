@@ -65,7 +65,7 @@ def apply_configuration_fields(
             new_df = pd.concat([new_df, this_df], axis=1)
 
         # Categorical field: (string | integer)
-        if "categorical" in getattr(field, "encoding", "") or field.type == "string":
+        if "categorical" in getattr(field, "encoding", ""):
             this_df = pd.DataFrame(
                 field_instance.normalize(original_df[field.column].to_numpy())
             )
@@ -289,12 +289,10 @@ def reduce_samples(
 
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
 def preprocess_per_chunk(
-    config: Config,
     cross_chunks_data: CrossChunksData,
     df_per_chunk: pd.DataFrame,
     chunk_id: int,
 ) -> None:
-    set_config(config)
     metadata_config = get_config(
         "pre_post_processor.config.metadata", path2="preprocess.metadata"
     )
