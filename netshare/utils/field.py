@@ -112,6 +112,18 @@ class DiscreteField(Field):
         return Output(type_=OutputType.DISCRETE, dim=len(self.choices))
 
 
+class RegexField(DiscreteField):
+    def __init__(self, regex, choices, *args, **kwargs):
+        super(RegexField, self).__init__(choices, *args, **kwargs)
+        self.regex = regex
+
+    def normalize(self, x):
+        x = pd.Series(x.reshape((x.shape[0],))).str.extract(self.regex, expand=False)
+        if not self.choices:
+            self.choices = list(pd.unique(x))
+        return super(RegexField, self).normalize(x.to_numpy())
+
+
 class BitField(Field):
     def __init__(self, num_bits, *args, **kwargs):
         super(BitField, self).__init__(*args, **kwargs)
@@ -169,7 +181,7 @@ class BitField(Field):
 
 def field_config_to_key(field: Config) -> FieldKey:
     return (
-        field.get("column") or str(field.columns),
+        field.get("name") or field.get("column") or str(field.columns),
         field.type,
         field.get("encoding", ""),
     )

@@ -39,8 +39,8 @@ def merge_attr(config_group: dict, configs: List[dict]) -> None:
     chunk0_idx = config_group["config_ids"][0]
     eval_root_folder = configs[chunk0_idx]["eval_root_folder"]
     attr_raw_npz_folder = os.path.join(eval_root_folder, "attr_raw")
-    word2vec_size = configs[chunk0_idx]["word2vec_vecSize"]
-    pcap_interarrival = configs[chunk0_idx]["timestamp"] == "interarrival"
+    word2vec_size = configs[chunk0_idx].get("word2vec_vecSize", 0)
+    pcap_interarrival = configs[chunk0_idx].get("timestamp") == "interarrival"
     num_chunks = len(config_group["config_ids"])
 
     if not pcap_interarrival:
@@ -77,7 +77,7 @@ def merge_attr(config_group: dict, configs: List[dict]) -> None:
             os.path.join(attr_raw_npz_folder, "chunk_id-{}.npz".format(chunkid))
         )["data_attribute"]
 
-        if num_chunks > 1:
+        if num_chunks > 1 and word2vec_size:
             for row in raw_attr_chunk:
                 # if row[bit_idx_flagstart] < row[bit_idx_flagstart+1]:
                 if (

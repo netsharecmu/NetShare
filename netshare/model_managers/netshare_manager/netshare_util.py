@@ -151,9 +151,7 @@ def create_chunks_configurations(
         if not config_group["pretrain"]:
             for config_id in config_group["config_ids"]:
                 configs[config_id]["restore"] = False
-                configs[config_id]["pretrain_dir"] = os.path.join(
-                    configs[config_id]["result_folder"], "checkpoint", "iteration_id-0"
-                )
+                configs[config_id]["pretrain_dir"] = configs[config_id]["result_folder"]
         else:
             if not config_group["dp"]:
                 for chunk_id, config_id in enumerate(config_group["config_ids"]):

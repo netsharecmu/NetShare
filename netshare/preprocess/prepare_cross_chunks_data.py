@@ -16,6 +16,7 @@ from netshare.utils.field import (
     Field,
     FieldKey,
     Normalization,
+    RegexField,
     field_config_to_key,
     key_from_field,
 )
@@ -174,6 +175,12 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
         if field.type not in ["string", "integer"]:
             raise ValueError(
                 '"encoding=cateogrical" can be only used for "type=(string | integer)"'
+            )
+        if "regex" in field:
+            return RegexField(
+                regex=field.regex,
+                choices=[],  # Note: it will be filled *per chunk* in the per-chunk preprocessing
+                name=field_name,
             )
         return DiscreteField(
             choices=list(pd.unique(this_df)),

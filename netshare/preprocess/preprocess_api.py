@@ -58,27 +58,30 @@ def write_raw_chunk(chunk: pd.DataFrame, chunk_id: int) -> None:
 
 
 def write_data_train_npz(
-    data_attribute: np.array,
-    data_gen_flag: np.array,
-    data_feature: np.array,
+    data_attribute: np.ndarray,
+    data_feature: np.ndarray,
     global_max_flow_len: int,
     chunk_id: int,
 ) -> None:
     """
-    TODO: Can someone help me document this function?
+    TODO: Can someone help me document this function? What are the types of the data inside each file?
     """
     data_out_dir = get_chunk_dir(chunk_id)
     num_rows = data_attribute.shape[0]
     os.makedirs(os.path.join(data_out_dir, "data_train_npz"), exist_ok=True)
     gt_lengths = []
     for row_id in range(num_rows):
-        gt_lengths.append(sum(data_gen_flag[row_id]))
+        gt_lengths.append(len(data_feature[row_id]))
         np.savez(
             os.path.join(data_out_dir, "data_train_npz", f"data_train_{row_id}.npz"),
             data_feature=data_feature[row_id],
             data_attribute=data_attribute[row_id],
-            data_gen_flag=data_gen_flag[row_id],
-            global_max_flow_len=[global_max_flow_len],
+            data_gen_flag=np.ones(len(data_feature[row_id])),
+            global_max_flow_len=[
+                global_max_flow_len
+                if global_max_flow_len != 1
+                else len(data_feature[row_id])
+            ],
         )
     np.save(os.path.join(data_out_dir, "gt_lengths"), gt_lengths)
 

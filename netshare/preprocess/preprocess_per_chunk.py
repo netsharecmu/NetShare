@@ -82,12 +82,17 @@ def apply_configuration_fields(
                 new_field_list.append(column)
 
         if "regex" in field:
-            # TODO: regex should be a Field
             for column in field.get("columns") or [field.column]:
-                new_df[column] = original_df[column].str.extract(
-                    field.regex, expand=False
+                normalized_df = pd.DataFrame(
+                    field_instance.normalize(
+                        original_df[column].to_numpy().reshape(-1, 1)
+                    )
                 )
-                new_field_list.append(column)
+                normalized_df.columns = [
+                    f"{field_instance.name}_{i}" for i in range(normalized_df.shape[1])
+                ]
+                new_field_list += list(normalized_df.columns)
+                new_df = pd.concat([new_df, normalized_df], axis=1)
 
     return new_df, new_field_list
 
@@ -96,7 +101,6 @@ def write_chunk_data(
     df_per_chunk: pd.DataFrame,
     cross_chunks_data: CrossChunksData,
     data_attribute: np.array,
-    data_gen_flag: np.array,
     data_feature: np.array,
     chunk_id: int,
 ) -> None:
@@ -110,7 +114,6 @@ def write_chunk_data(
     preprocess_api.write_raw_chunk(df_per_chunk, chunk_id)
     preprocess_api.write_data_train_npz(
         data_attribute,
-        data_gen_flag,
         data_feature,
         cross_chunks_data.global_max_flow_len,
         chunk_id,
@@ -279,11 +282,20 @@ def reduce_samples(
     samples = get_config(
         "pre_post_processor.config.num_train_samples", default_value=False
     )
-    if samples:
+    # TODO: I use the should_sample because the old code expecting different data
+    #   formats between the different PrePostProcessor
+    should_sample = (
+        get_config("pre_post_processor.class", default_value="")
+        == "DGRowPerSamplePrePostProcessor"
+    )
+    if samples and should_sample:
         np.random.seed(get_config("global_config.seed", default_value=0))
         ids = np.random.permutation(data_attribute.shape[0])
         data_attribute = data_attribute[ids[:samples]]
-        data_feature = data_feature[ids[:samples]]
+        data_feature = np.concatenate(data_feature)[ids[:samples]]
+        data_feature = data_feature.reshape(
+            (data_feature.shape[0], data_feature.shape[1], 1)
+        )
     return data_attribute, data_feature
 
 
@@ -319,32 +331,39 @@ def preprocess_per_chunk(
     )
 
     gk = df_per_chunk.groupby(new_metadata_list)
-    data_attribute: np.array = np.array(list(gk.groups.keys()))
-    data_feature: List[np.ndarray] = []
-    data_gen_flag: List[List[float]] = []
+    data_feature_list: List[np.ndarray] = []
     flow_tags: List[List[float]] = []
-    for group_name, df_group in tqdm(gk):
+    for group_name, df_group in gk:
         df_group = df_group.reset_index(
             drop=True
         )  # reset index to make it start from zero
-        data_feature.append(df_group[new_timeseries_list].to_numpy())
-        data_gen_flag.append([1.0] * len(df_group))
+        data_feature_list.append(df_group[new_timeseries_list].to_numpy())
         attr_per_row = apply_cross_chunk_mechanism(
             df_group=df_group, cross_chunks_data=cross_chunks_data, chunk_id=chunk_id
         )
         if attr_per_row:
             flow_tags.append(attr_per_row)
 
-    if flow_tags:
-        data_attribute = np.concatenate((data_attribute, np.array(flow_tags)), axis=1)
-    if len(timestamp_generation_attributes) > 0:
-        data_attribute = np.concatenate(
-            (data_attribute, timestamp_generation_attributes), axis=1
-        )
+    data_attribute: np.array
+    if (
+        get_config("preprocess.attributes_from_data", default_value=False)
+        or get_config("pre_post_processor.class", default_value="")
+        == "DGRowPerSamplePrePostProcessor"
+    ):
+        data_attribute = df_per_chunk[new_metadata_list].to_numpy()
+    else:
+        data_attribute = np.array(list(gk.groups.keys()))
+        if flow_tags:
+            data_attribute = np.concatenate(
+                (data_attribute, np.array(flow_tags)), axis=1
+            )
+        if len(timestamp_generation_attributes) > 0:
+            data_attribute = np.concatenate(
+                (data_attribute, timestamp_generation_attributes), axis=1
+            )
 
     data_attribute = np.asarray(data_attribute)
-    data_feature = np.asarray(data_feature)
-    data_gen_flag = np.asarray(data_gen_flag)
+    data_feature = np.asarray(data_feature_list)
 
     data_attribute, data_feature = reduce_samples(data_attribute, data_feature)
 
@@ -352,7 +371,6 @@ def preprocess_per_chunk(
         df_per_chunk=df_per_chunk,
         cross_chunks_data=cross_chunks_data,
         data_attribute=data_attribute,
-        data_gen_flag=data_gen_flag,
         data_feature=data_feature,
         chunk_id=chunk_id,
     )
