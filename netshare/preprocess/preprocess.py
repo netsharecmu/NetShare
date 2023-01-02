@@ -80,7 +80,7 @@ def apply_distributed_chunk_logic(
     df_chunks: List[pd.DataFrame],
     cross_chunks_data: CrossChunksData,
 ) -> None:
-    logger.info("Waiting for all chunks to be processed...")
+    logger.info(f"Waiting for all chunks to be preprocessed ({len(df_chunks)} chunks)")
     ray.get(
         [
             preprocess_per_chunk.remote(

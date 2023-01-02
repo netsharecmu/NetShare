@@ -1,11 +1,6 @@
-import netshare.ray as ray
 from netshare import GeneratorV2
 
 if __name__ == "__main__":
-    # Change to False if you would not like to use Ray
-    ray.config.enabled = False
-    ray.init(address="auto")
-
     # configuration file
     generator = GeneratorV2(
         config="../examples/netflow/config_example_netflow_nodp.json"
@@ -17,5 +12,3 @@ if __name__ == "__main__":
     # since Ray has bugs when dealing with relative paths.
     generator.train_and_generate(work_folder="~/results/test_ugr16")
     # generator.generate(work_folder='../results/test_ugr16')
-
-    ray.shutdown()

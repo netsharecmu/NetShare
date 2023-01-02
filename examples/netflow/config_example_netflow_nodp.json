@@ -17,7 +17,8 @@
             "bit",
             "word2vec_port",
             "word2vec_proto"
-        ]
+        ],
+        "ray_enabled": true
     },
     "default": "netflow.json",
     "pre_post_processor": {

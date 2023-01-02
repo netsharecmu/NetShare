@@ -1,7 +1,11 @@
 {
     "global_config": {
         "overwrite": true,
-        "original_data_file": "../../traces/wiki/train_1.csv"
+        "original_data_file": "../../traces/wiki/train_1.csv",
+        "ray_enabled": false
+    },
+    "preprocess": {
+        "attributes_from_data": true
     },
     "default": "dg_table_row_per_sample.json",
     "pre_post_processor": {
