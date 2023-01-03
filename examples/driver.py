@@ -1,12 +1,12 @@
 import netshare.ray as ray
-from netshare import GeneratorV2
+from netshare import Generator
 
 if __name__ == "__main__":
     ray.config.enabled = True
     ray.init(address="auto")
 
     # configuration file
-    generator = GeneratorV2(config="pcap/config_example_pcap_nodp.json")
+    generator = Generator(config="pcap/config_example_pcap_nodp.json")
 
     # `work_folder` should not exist o/w an overwrite error will be thrown.
     # Please set the `worker_folder` as *absolute path*

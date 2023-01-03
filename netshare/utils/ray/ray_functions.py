@@ -1,4 +1,4 @@
-from netshare.ray.ray_config import is_ray_enabled
+from netshare.utils.ray.ray_config import is_ray_enabled
 
 _is_ray_initialized = False
 

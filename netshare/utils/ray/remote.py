@@ -1,7 +1,7 @@
 import functools
 
 from netshare.configs import get_config, set_config
-from netshare.ray.ray_config import is_ray_enabled
+from netshare.utils.ray.ray_config import is_ray_enabled
 
 
 class ResultWrapper(object):

@@ -1,18 +1,17 @@
-import enum
-import os
-import math
 import copy
-from more_itertools import sample
+import enum
+import math
+import os
+
 import numpy as np
+from more_itertools import sample
+from multiprocess import Manager, Pool, Queue, Value
 from tqdm import tqdm
 
-import netshare.ray as ray
+from .util import add_gen_flag, normalize_per_sample
 
 # from ray.util.multiprocessing import Pool
 # from ray.util.queue import Queue
-
-from .util import add_gen_flag, normalize_per_sample
-from multiprocess import Pool, Value, Manager, Queue
 
 
 class NetShareDataset(object):
@@ -25,7 +24,7 @@ class NetShareDataset(object):
         buffer_size=1000,
         num_processes=10,
         *args,
-        **kwargs
+        **kwargs,
     ):
         self.config = config
         self.data_attribute_outputs_orig = data_attribute_outputs  # immutable
@@ -101,13 +100,11 @@ class NetShareDataset(object):
         # pad to multiple of sample_len
         max_flow_len = image["global_max_flow_len"][0]
         ceil_timeseries_len = (
-            math.ceil(
-                max_flow_len / config["sample_len"]) * config["sample_len"]
+            math.ceil(max_flow_len / config["sample_len"]) * config["sample_len"]
         )
         data_feature = np.pad(
             data_feature,
-            pad_width=(
-                (0, ceil_timeseries_len - data_feature.shape[0]), (0, 0)),
+            pad_width=((0, ceil_timeseries_len - data_feature.shape[0]), (0, 0)),
             mode="constant",
             constant_values=0,
         )
@@ -169,8 +166,7 @@ class NetShareDataset(object):
                 self.data_attribute_outputs_orig,
             )
         else:
-            self.real_attribute_mask = [True] * \
-                len(self.data_attribute_outputs_orig)
+            self.real_attribute_mask = [True] * len(self.data_attribute_outputs_orig)
             self.data_attribute_outputs_train = copy.deepcopy(
                 self.data_attribute_outputs_orig
             )
@@ -180,10 +176,7 @@ class NetShareDataset(object):
             self.data_feature_outputs_train = copy.deepcopy(
                 self.data_feature_outputs_orig
             )
-            self.gt_lengths = np.load(
-                os.path.join(
-                    self.root,
-                    "gt_lengths.npy"))
+            self.gt_lengths = np.load(os.path.join(self.root, "gt_lengths.npy"))
         else:
             data_feature, self.data_feature_outputs_train = add_gen_flag(
                 data_feature, data_gen_flag, self.data_feature_outputs_orig, sample_len
@@ -228,8 +221,7 @@ class NetShareDataset(object):
                 self.data_attribute_outputs_orig,
             )
         else:
-            self.real_attribute_mask = [True] * \
-                len(self.data_attribute_outputs_orig)
+            self.real_attribute_mask = [True] * len(self.data_attribute_outputs_orig)
             self.data_attribute_outputs_train = copy.deepcopy(
                 self.data_attribute_outputs_orig
             )
@@ -239,10 +231,7 @@ class NetShareDataset(object):
             self.data_feature_outputs_train = copy.deepcopy(
                 self.data_feature_outputs_orig
             )
-            self.gt_lengths = np.load(
-                os.path.join(
-                    self.root,
-                    "gt_lengths.npy"))
+            self.gt_lengths = np.load(os.path.join(self.root, "gt_lengths.npy"))
         else:
             data_feature, self.data_feature_outputs_train = add_gen_flag(
                 data_feature, data_gen_flag, self.data_feature_outputs_orig, sample_len

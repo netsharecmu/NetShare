@@ -1,10 +1,8 @@
-from netshare import GeneratorV2
+from netshare import Generator
 
 if __name__ == "__main__":
     # configuration file
-    generator = GeneratorV2(
-        config="../examples/netflow/config_example_netflow_nodp.json"
-    )
+    generator = Generator(config="../examples/netflow/config_example_netflow_nodp.json")
 
     # `work_folder` should not exist o/w an overwrite error will be thrown.
     # Please set the `worker_folder` as *absolute path*

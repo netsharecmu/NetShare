@@ -1,21 +1,23 @@
 import inspect
-
-import os
-import sys
 import json
-import copy
+import os
 import pickle
-import tensorflow as tf
+
 import numpy as np
+import tensorflow as tf
 
-import netshare.ray as ray
+import netshare.utils.ray as ray
 
-from .model import Model
-from .doppelganger_tf.doppelganger import DoppelGANger
-from .doppelganger_tf.util import add_gen_flag, normalize_per_sample, estimate_flowlen_dp, renormalize_per_sample
-from .doppelganger_tf.load_data import load_data
-from .doppelganger_tf.network import DoppelGANgerGenerator, Discriminator, AttrDiscriminator, RNNInitialStateType
 from .doppelganger_tf.dataset import NetShareDataset
+from .doppelganger_tf.doppelganger import DoppelGANger
+from .doppelganger_tf.network import (
+    AttrDiscriminator,
+    Discriminator,
+    DoppelGANgerGenerator,
+    RNNInitialStateType,
+)
+from .doppelganger_tf.util import estimate_flowlen_dp, renormalize_per_sample
+from .model import Model
 
 
 class DoppelGANgerTFModel(Model):
@@ -23,9 +25,11 @@ class DoppelGANgerTFModel(Model):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
         self._config["result_folder"] = getattr(
-            self._config, "result_folder", output_model_folder)
+            self._config, "result_folder", output_model_folder
+        )
         self._config["dataset"] = getattr(
-            self._config, "dataset", input_train_data_folder)
+            self._config, "dataset", input_train_data_folder
+        )
 
         # If Ray is disabled, reset TF graph
         if not ray.config.enabled:
@@ -34,41 +38,41 @@ class DoppelGANgerTFModel(Model):
         print("Currently training with config:", self._config)
 
         # save config to the result folder
-        with open(os.path.join(
-                self._config["result_folder"],
-                "config.json"), 'w') as fout:
+        with open(
+            os.path.join(self._config["result_folder"], "config.json"), "w"
+        ) as fout:
             json.dump(self._config, fout)
 
         # load data
         data_in_dir = self._config["dataset"]
 
-        with open(os.path.join(
-                data_in_dir,
-                "data_feature_output.pkl"), "rb") as f:
+        with open(os.path.join(data_in_dir, "data_feature_output.pkl"), "rb") as f:
             data_feature_outputs = pickle.load(f)
-        with open(os.path.join(
-                data_in_dir,
-                "data_attribute_output.pkl"), "rb") as f:
+        with open(os.path.join(data_in_dir, "data_attribute_output.pkl"), "rb") as f:
             data_attribute_outputs = pickle.load(f)
 
         dataset = NetShareDataset(
             root=data_in_dir,
             config=self._config,
             data_attribute_outputs=data_attribute_outputs,
-            data_feature_outputs=data_feature_outputs)
+            data_feature_outputs=data_feature_outputs,
+        )
 
         # Run dataset.sample_batch() once to intialize data_attribute_outputs
         # and data_feature_outputs
         dataset.sample_batch(self._config["batch_size"])
-        if (dataset.data_attribute_outputs_train is None) \
-                or (dataset.data_feature_outputs_train is None) \
-                or (dataset.real_attribute_mask is None):
+        if (
+            (dataset.data_attribute_outputs_train is None)
+            or (dataset.data_feature_outputs_train is None)
+            or (dataset.real_attribute_mask is None)
+        ):
             print(dataset.data_attribute_outputs_train)
             print(dataset.data_feature_outputs_train)
             print(dataset.real_attribute_mask)
             raise Exception(
                 "Dataset variables are not initialized "
-                "properly for training purposes!")
+                "properly for training purposes!"
+            )
 
         sample_len = self._config["sample_len"]
         data_attribute_outputs = dataset.data_attribute_outputs_train
@@ -102,23 +106,25 @@ class DoppelGANgerTFModel(Model):
             rnn_mlp_num_layers=self._config["rnn_mlp_num_layers"],
             initial_state=initial_state,
             gt_lengths=gt_lengths,
-            use_uniform_lengths=self._config["use_uniform_lengths"])
+            use_uniform_lengths=self._config["use_uniform_lengths"],
+        )
         discriminator = Discriminator(
             scale=self._config["scale"],
             sn_mode=self._config["sn_mode"],
             num_layers=self._config["disc_num_layers"],
             num_units=self._config["disc_num_units"],
-            leaky_relu=self._config["leaky_relu"])
+            leaky_relu=self._config["leaky_relu"],
+        )
         if self._config["aux_disc"]:
             attr_discriminator = AttrDiscriminator(
                 scale=self._config["scale"],
                 sn_mode=self._config["sn_mode"],
                 num_layers=self._config["attr_disc_num_layers"],
                 num_units=self._config["attr_disc_num_units"],
-                leaky_relu=self._config["leaky_relu"])
+                leaky_relu=self._config["leaky_relu"],
+            )
 
-        checkpoint_dir = os.path.join(
-            self._config["result_folder"], "checkpoint")
+        checkpoint_dir = os.path.join(self._config["result_folder"], "checkpoint")
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
         sample_dir = os.path.join(self._config["result_folder"], "sample")
@@ -127,14 +133,15 @@ class DoppelGANgerTFModel(Model):
         time_path = os.path.join(self._config["result_folder"], "time.txt")
 
         if self._config["num_cores"] is None:
-            run_config = tf.ConfigProto(device_count={'GPU': 0})
+            run_config = tf.ConfigProto(device_count={"GPU": 0})
         else:
             num_cores = self._config["num_cores"]  # it means number of cores
             run_config = tf.ConfigProto(
                 intra_op_parallelism_threads=num_cores,
                 inter_op_parallelism_threads=num_cores,
                 allow_soft_placement=True,
-                device_count={'CPU': num_cores})
+                device_count={"CPU": num_cores},
+            )
 
         with tf.Session(config=run_config) as sess:
             gan = DoppelGANger(
@@ -154,33 +161,34 @@ class DoppelGANgerTFModel(Model):
                 vis_num_sample=self._config["vis_num_sample"],
                 generator=generator,
                 discriminator=discriminator,
-                attr_discriminator=(attr_discriminator
-                                    if self._config["aux_disc"] else None),
+                attr_discriminator=(
+                    attr_discriminator if self._config["aux_disc"] else None
+                ),
                 d_gp_coe=self._config["d_gp_coe"],
-                attr_d_gp_coe=(self._config["attr_d_gp_coe"]
-                               if self._config["aux_disc"] else 0.0),
-                g_attr_d_coe=(self._config["g_attr_d_coe"]
-                              if self._config["aux_disc"] else 0.0),
+                attr_d_gp_coe=(
+                    self._config["attr_d_gp_coe"] if self._config["aux_disc"] else 0.0
+                ),
+                g_attr_d_coe=(
+                    self._config["g_attr_d_coe"] if self._config["aux_disc"] else 0.0
+                ),
                 d_rounds=self._config["d_rounds"],
                 g_rounds=self._config["g_rounds"],
                 fix_feature_network=self._config["fix_feature_network"],
                 g_lr=self._config["g_lr"],
                 d_lr=self._config["d_lr"],
-                attr_d_lr=(self._config["attr_d_lr"]
-                           if self._config["aux_disc"] else 0.0),
+                attr_d_lr=(
+                    self._config["attr_d_lr"] if self._config["aux_disc"] else 0.0
+                ),
                 extra_checkpoint_freq=self._config["extra_checkpoint_freq"],
                 epoch_checkpoint_freq=self._config["epoch_checkpoint_freq"],
                 num_packing=self._config["num_packing"],
-
                 debug=self._config["debug"],
                 combined_disc=self._config["combined_disc"],
-
                 # DP-related
                 dp_noise_multiplier=self._config["dp_noise_multiplier"],
                 dp_l2_norm_clip=self._config["dp_l2_norm_clip"],
-
                 # SN-related
-                sn_mode=self._config["sn_mode"]
+                sn_mode=self._config["sn_mode"],
             )
 
             gan.build()
@@ -189,14 +197,21 @@ class DoppelGANgerTFModel(Model):
         dataset.stop_data_loader()
         return True
 
-    def _generate(self, input_train_data_folder,
-                  input_model_folder, output_syn_data_folder, log_folder):
+    def _generate(
+        self,
+        input_train_data_folder,
+        input_model_folder,
+        output_syn_data_folder,
+        log_folder,
+    ):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
         self._config["result_folder"] = getattr(
-            self._config, "result_folder", input_model_folder)
+            self._config, "result_folder", input_model_folder
+        )
         self._config["dataset"] = getattr(
-            self._config, "dataset", input_train_data_folder)
+            self._config, "dataset", input_train_data_folder
+        )
 
         # If Ray is disabled, reset TF graph
         if not ray.config.enabled:
@@ -209,13 +224,12 @@ class DoppelGANgerTFModel(Model):
             given_attr_npz_file = os.path.join(
                 output_syn_data_folder,
                 "attr_clean",
-                "chunk_id-{}.npz".format(self._config["chunk_id"]))
+                "chunk_id-{}.npz".format(self._config["chunk_id"]),
+            )
 
             if not os.path.exists(given_attr_npz_file):
-                raise ValueError(
-                    f"Given data attribute file {given_attr_npz_file}")
-            given_data_attribute = np.load(given_attr_npz_file)[
-                "data_attribute"]
+                raise ValueError(f"Given data attribute file {given_attr_npz_file}")
+            given_data_attribute = np.load(given_attr_npz_file)["data_attribute"]
             print("given_data_attribute:", given_data_attribute.shape)
         else:
             print("Generating w/o given data attribute!")
@@ -241,48 +255,49 @@ class DoppelGANgerTFModel(Model):
             num_real_samples += int(estimate_flowlen_dp([num_real_samples])[0])
 
         print("num_real_samples:", num_real_samples)
-        self._config["dataset_type"] = getattr(
-            self._config, "dataset_type", None)
+        self._config["dataset_type"] = getattr(self._config, "dataset_type", None)
         if self._config["dataset_type"] == "netflow":
-            self._config["generate_num_train_sample"] = int(
-                1.25 * num_real_samples)
+            self._config["generate_num_train_sample"] = int(1.25 * num_real_samples)
             self._config["generate_num_test_sample"] = 0
         elif self._config["dataset_type"] == "pcap":
             self._config["generate_num_train_sample"] = num_real_samples
             self._config["generate_num_test_sample"] = 0
         elif self._config["dataset_type"] == "zeeklog":
-            self._config["generate_num_train_sample"] = int(
-                1.25 * num_real_samples)
+            self._config["generate_num_train_sample"] = int(1.25 * num_real_samples)
             self._config["generate_num_test_sample"] = 0
         else:
             self._config["generate_num_train_sample"] = getattr(
-                self._config,
-                "generate_num_train_sample",
-                num_real_samples)
+                self._config, "generate_num_train_sample", num_real_samples
+            )
             self._config["generate_num_test_sample"] = 0
 
         if self._config["given_data_attribute_flag"]:
-            self._config["generate_num_train_sample"] = \
-                np.shape(given_data_attribute)[0]
+            self._config["generate_num_train_sample"] = np.shape(given_data_attribute)[
+                0
+            ]
             self._config["generate_num_test_sample"] = 0
 
         dataset = NetShareDataset(
             root=data_in_dir,
             config=self._config,
             data_attribute_outputs=data_attribute_outputs,
-            data_feature_outputs=data_feature_outputs)
+            data_feature_outputs=data_feature_outputs,
+        )
         # Run dataset.sample_batch() once to intialize data_attribute_outputs
         # and data_feature_outputs
         print("Prepare sample batch")
         dataset.sample_batch(self._config["batch_size"])
-        if (dataset.data_attribute_outputs_train is None) or (
-                dataset.data_feature_outputs_train is None) or (
-                dataset.real_attribute_mask is None):
+        if (
+            (dataset.data_attribute_outputs_train is None)
+            or (dataset.data_feature_outputs_train is None)
+            or (dataset.real_attribute_mask is None)
+        ):
             print(dataset.data_attribute_outputs_train)
             print(dataset.data_feature_outputs_train)
             print(dataset.real_attribute_mask)
             raise Exception(
-                "Dataset variables are not initialized properly for training purposes!")
+                "Dataset variables are not initialized properly for training purposes!"
+            )
         print("finished")
 
         sample_len = self._config["sample_len"]
@@ -317,20 +332,23 @@ class DoppelGANgerTFModel(Model):
             rnn_mlp_num_layers=self._config["rnn_mlp_num_layers"],
             initial_state=initial_state,
             gt_lengths=gt_lengths,
-            use_uniform_lengths=self._config["use_uniform_lengths"])
+            use_uniform_lengths=self._config["use_uniform_lengths"],
+        )
         discriminator = Discriminator(
             scale=self._config["scale"],
             sn_mode=self._config["sn_mode"],
             num_layers=self._config["disc_num_layers"],
             num_units=self._config["disc_num_units"],
-            leaky_relu=self._config["leaky_relu"])
+            leaky_relu=self._config["leaky_relu"],
+        )
         if self._config["aux_disc"]:
             attr_discriminator = AttrDiscriminator(
                 scale=self._config["scale"],
                 sn_mode=self._config["sn_mode"],
                 num_layers=self._config["attr_disc_num_layers"],
                 num_units=self._config["attr_disc_num_units"],
-                leaky_relu=self._config["leaky_relu"])
+                leaky_relu=self._config["leaky_relu"],
+            )
 
         checkpoint_dir = os.path.join(input_model_folder, "checkpoint")
         if not os.path.exists(checkpoint_dir):
@@ -346,10 +364,12 @@ class DoppelGANgerTFModel(Model):
             run_config = tf.ConfigProto()
         else:
             num_cores = self._config["num_cores"]  # it means number of cores
-            run_config = tf.ConfigProto(intra_op_parallelism_threads=num_cores,
-                                        inter_op_parallelism_threads=num_cores,
-                                        allow_soft_placement=True,
-                                        device_count={'CPU': num_cores})
+            run_config = tf.ConfigProto(
+                intra_op_parallelism_threads=num_cores,
+                inter_op_parallelism_threads=num_cores,
+                allow_soft_placement=True,
+                device_count={"CPU": num_cores},
+            )
 
         with tf.Session(config=run_config) as sess:
             gan = DoppelGANger(
@@ -369,43 +389,46 @@ class DoppelGANgerTFModel(Model):
                 vis_num_sample=self._config["vis_num_sample"],
                 generator=generator,
                 discriminator=discriminator,
-                attr_discriminator=(attr_discriminator
-                                    if self._config["aux_disc"] else None),
+                attr_discriminator=(
+                    attr_discriminator if self._config["aux_disc"] else None
+                ),
                 d_gp_coe=self._config["d_gp_coe"],
-                attr_d_gp_coe=(self._config["attr_d_gp_coe"]
-                               if self._config["aux_disc"] else 0.0),
-                g_attr_d_coe=(self._config["g_attr_d_coe"]
-                              if self._config["aux_disc"] else 0.0),
+                attr_d_gp_coe=(
+                    self._config["attr_d_gp_coe"] if self._config["aux_disc"] else 0.0
+                ),
+                g_attr_d_coe=(
+                    self._config["g_attr_d_coe"] if self._config["aux_disc"] else 0.0
+                ),
                 d_rounds=self._config["d_rounds"],
                 g_rounds=self._config["g_rounds"],
                 fix_feature_network=self._config["fix_feature_network"],
                 g_lr=self._config["g_lr"],
                 d_lr=self._config["d_lr"],
-                attr_d_lr=(self._config["attr_d_lr"]
-                           if self._config["aux_disc"] else 0.0),
+                attr_d_lr=(
+                    self._config["attr_d_lr"] if self._config["aux_disc"] else 0.0
+                ),
                 extra_checkpoint_freq=self._config["extra_checkpoint_freq"],
                 epoch_checkpoint_freq=self._config["epoch_checkpoint_freq"],
                 num_packing=self._config["num_packing"],
-
                 debug=self._config["debug"],
                 combined_disc=self._config["combined_disc"],
-
                 # DP-related
                 dp_noise_multiplier=self._config["dp_noise_multiplier"],
                 dp_l2_norm_clip=self._config["dp_l2_norm_clip"],
-
                 # SN-related
-                sn_mode=self._config["sn_mode"]
+                sn_mode=self._config["sn_mode"],
             )
 
             gan.build()
 
             total_generate_num_sample = (
-                self._config["generate_num_train_sample"] +
-                self._config["generate_num_test_sample"]
+                self._config["generate_num_train_sample"]
+                + self._config["generate_num_test_sample"]
             )
-            print("self._config[generate_num_train_sample]",
-                  self._config["generate_num_train_sample"])
+            print(
+                "self._config[generate_num_train_sample]",
+                self._config["generate_num_train_sample"],
+            )
             print("total generated sample:", total_generate_num_sample)
 
             (
@@ -425,8 +448,7 @@ class DoppelGANgerTFModel(Model):
             feature_input_noise = gan.gen_feature_input_noise(
                 total_generate_num_sample, length
             )
-            input_data = gan.gen_feature_input_data_free(
-                total_generate_num_sample)
+            input_data = gan.gen_feature_input_data_free(total_generate_num_sample)
 
             last_iteration_found = False
             iteration_range = list(
@@ -505,52 +527,50 @@ class DoppelGANgerTFModel(Model):
 
                     if getattr(self._config, "save_without_chunk", False):
                         save_path = os.path.join(
-                            output_syn_data_folder,
-                            f"iteration_id-{iteration_id}")
+                            output_syn_data_folder, f"iteration_id-{iteration_id}"
+                        )
                         os.makedirs(save_path, exist_ok=True)
                         np.savez(
-                            os.path.join(
-                                save_path,
-                                "data.npz"),
+                            os.path.join(save_path, "data.npz"),
                             data_attribute=attributes,
                             data_feature=features,
-                            data_gen_flag=gen_flags)
+                            data_gen_flag=gen_flags,
+                        )
                     elif not self._config["given_data_attribute_flag"]:
-                        save_path = os.path.join(
-                            output_syn_data_folder, "attr_raw")
+                        save_path = os.path.join(output_syn_data_folder, "attr_raw")
                         os.makedirs(save_path, exist_ok=True)
                         np.savez(
                             os.path.join(
                                 save_path,
-                                "chunk_id-{}.npz".format(
-                                    self._config["chunk_id"])
+                                "chunk_id-{}.npz".format(self._config["chunk_id"]),
                             ),
                             data_attribute=attributes[0:split],
                         )
-                        print(os.path.join(
-                            save_path,
-                            "chunk_id-{}.npz".format(
-                                self._config["chunk_id"])
-                        ))
+                        print(
+                            os.path.join(
+                                save_path,
+                                "chunk_id-{}.npz".format(self._config["chunk_id"]),
+                            )
+                        )
                     else:
                         # save attributes/features/gen_flags/self._config to
                         # files
 
                         print("GENERATOR......")
                         print(output_syn_data_folder)
-                        save_path = os.path.join(
-                            output_syn_data_folder, "feat_raw")
+                        save_path = os.path.join(output_syn_data_folder, "feat_raw")
                         os.makedirs(save_path, exist_ok=True)
                         np.savez(
                             os.path.join(
                                 save_path,
                                 "chunk_id-{}_iteration_id-{}.npz".format(
-                                    self._config["chunk_id"], iteration_id)
+                                    self._config["chunk_id"], iteration_id
+                                ),
                             ),
                             data_attribute=attributes,
                             data_feature=features,
                             data_gen_flag=gen_flags,
-                            config=self._config
+                            config=self._config,
                         )
 
             print("Done")

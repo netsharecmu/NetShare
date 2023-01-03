@@ -1,11 +1,11 @@
 from typing import Optional, Type
 
 import netshare.models as models
-import netshare.ray as ray
+import netshare.utils.ray as ray
 from netshare.configs import change_work_folder, load_from_file
 from netshare.dashboard.visualize import visualize
-from netshare.model_managers import model_manager
 from netshare.models import Model
+from netshare.models.model_managers import model_manager
 from netshare.postprocess.postprocess import postprocess
 from netshare.preprocess.preprocess import preprocess
 from netshare.utils.paths import (
@@ -15,7 +15,7 @@ from netshare.utils.paths import (
 )
 
 
-class GeneratorV2(object):
+class Generator(object):
     def __init__(self, config: str):
         load_from_file(config)
         ray.init(address="auto")
@@ -28,7 +28,7 @@ class GeneratorV2(object):
 
     def generate(self, work_folder: Optional[str] = None) -> None:
         change_work_folder(work_folder)
-        # model_manager.generate(create_new_model=self._model)
+        model_manager.generate(create_new_model=self._model)
         postprocess()
 
     def train_and_generate(self, work_folder: Optional[str] = None) -> None:

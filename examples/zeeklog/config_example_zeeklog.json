@@ -1,9 +1,0 @@
-{
-    "global_config": {
-        "original_data_file": "../traces/zeek/raw.csv",
-        "dataset_type": "zeeklog",
-        "n_chunks": 2,
-        "dp": false
-    },
-    "default": "zeeklog.json"
-}

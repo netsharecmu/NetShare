@@ -5,8 +5,8 @@ from typing import Any, List, Tuple
 from config_io import Config
 
 from netshare.configs import get_config
-from netshare.logger import logger
 from netshare.preprocess import preprocess_api
+from netshare.utils.logger import logger
 from netshare.utils.paths import get_generated_data_folder, get_model_folder
 
 

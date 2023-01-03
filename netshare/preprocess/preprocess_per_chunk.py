@@ -6,13 +6,12 @@ import pandas as pd
 from config_io import Config
 from gensim.models import Word2Vec
 from pandas.core.groupby import DataFrameGroupBy
-from tqdm import tqdm
 
-import netshare.ray as ray
-from netshare.configs import get_config, set_config
-from netshare.pre_post_processors.netshare.embedding_helper import get_vector
+import netshare.utils.ray as ray
+from netshare.configs import get_config
 from netshare.preprocess import preprocess_api
 from netshare.preprocess.prepare_cross_chunks_data import CrossChunksData
+from netshare.preprocess.utils.embedding_helper import get_vector
 from netshare.utils.field import (
     ContinuousField,
     Field,

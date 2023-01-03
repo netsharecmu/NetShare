@@ -8,7 +8,7 @@ from netshare.dashboard.dist_metrics import (
     run_netflow_qualitative_plots_dashboard,
     run_pcap_qualitative_plots_dashboard,
 )
-from netshare.logger import logger
+from netshare.utils.logger import logger
 
 VISUALIZE_DIR = "tmp"
 

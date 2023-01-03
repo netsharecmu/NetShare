@@ -1,9 +1,9 @@
 import os
 from typing import List, Type
 
-import netshare.ray as ray
-from netshare.logger import logger
+import netshare.utils.ray as ray
 from netshare.models import Model
+from netshare.utils.logger import logger
 from netshare.utils.paths import (
     get_generated_data_folder,
     get_model_log_folder,

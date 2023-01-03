@@ -1,5 +1,5 @@
 from netshare.configs import get_config
-from netshare.logger import logger
+from netshare.utils.logger import logger
 
 from .base_format_normalizer import DataFormatNormalizer
 from .default_format_normalizer import CsvNormalizer

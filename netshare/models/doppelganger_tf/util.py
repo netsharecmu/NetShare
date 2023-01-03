@@ -1,45 +1,24 @@
-from netshare.utils import OutputType, Output, Normalization
-from ...pre_post_processors.netshare.embedding_helper import (
-    build_annoy_dictionary_word2vec,
-    get_original_obj
-)
-from pathlib import Path
-from tqdm import tqdm
-from multiprocessing import Process
-from collections import Counter, OrderedDict
-from scipy.stats import wasserstein_distance
-from scipy.spatial import distance
-import itertools
-import matplotlib.pyplot as plt
-import sys
-import configparser
-import json
-import subprocess
-import time
-import argparse
-import datetime
-import importlib
-import os
-import re
 import copy
-import pickle
-import math
-import random
-import warnings
-import tensorflow as tf
-import pandas as pd
-import numpy as np
+
 import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+from tqdm import tqdm
+
+from netshare.utils import Normalization, Output, OutputType
+
 matplotlib.use("Agg")
 
 
 try:
-    from tensorflow_privacy.privacy.optimizers import dp_optimizer
     from tensorflow_privacy.privacy.analysis.compute_dp_sgd_privacy_lib import (
         compute_dp_sgd_privacy,
     )
-    from tensorflow_privacy.privacy.analysis.rdp_accountant import compute_rdp
-    from tensorflow_privacy.privacy.analysis.rdp_accountant import get_privacy_spent
+    from tensorflow_privacy.privacy.analysis.rdp_accountant import (
+        compute_rdp,
+        get_privacy_spent,
+    )
+    from tensorflow_privacy.privacy.optimizers import dp_optimizer
 except BaseException:
     pass
 
@@ -67,7 +46,7 @@ def draw_attribute(data, outputs, path=None):
             plt.figure()
             for j in range(num_sample):
                 plt.scatter(
-                    j, np.argmax(data[j][id_: id_ + outputs[i].dim], axis=0), s=12
+                    j, np.argmax(data[j][id_ : id_ + outputs[i].dim], axis=0), s=12
                 )
             plt.xlabel("sample")
             if path is None:
@@ -111,8 +90,7 @@ def draw_feature(data, lengths, outputs, path=None):
                 plt.plot(
                     range(int(lengths[j])),
                     np.argmax(
-                        data[j][: int(lengths[j]), id_: id_ +
-                                outputs[i].dim], axis=1
+                        data[j][: int(lengths[j]), id_ : id_ + outputs[i].dim], axis=1
                     ),
                     "o-",
                     markersize=3,
@@ -206,10 +184,8 @@ def normalize_per_sample(
     # iterate over samples
     for i in range(data_feature.shape[0]):
         for k in range(data_feature.shape[2]):
-            data_feature_min[i][k] = np.min(
-                data_feature[i, : sample_length[i], k])
-            data_feature_max[i][k] = np.max(
-                data_feature[i, : sample_length[i], k])
+            data_feature_min[i][k] = np.min(data_feature[i, : sample_length[i], k])
+            data_feature_max[i][k] = np.max(data_feature[i, : sample_length[i], k])
 
     # print("After masking...")
     # print("data_feature_min_avg:", np.average(data_feature_min, axis=1))
@@ -251,8 +227,7 @@ def normalize_per_sample(
                     max_ - min_
                 )
                 if output.normalization == Normalization.MINUSONE_ONE:
-                    data_feature[:, :, dim] = data_feature[:,
-                                                           :, dim] * 2.0 - 1.0
+                    data_feature[:, :, dim] = data_feature[:, :, dim] * 2.0 - 1.0
 
                 dim += 1
         else:
@@ -270,22 +245,18 @@ def normalize_per_sample(
     )
 
     additional_attribute = np.stack(additional_attribute, axis=1)
-    data_attribute = np.concatenate(
-        [data_attribute, additional_attribute], axis=1)
+    data_attribute = np.concatenate([data_attribute, additional_attribute], axis=1)
     data_attribute_outputs.extend(additional_attribute_outputs)
 
     return data_feature, data_attribute, data_attribute_outputs, real_attribute_mask
 
 
-def add_gen_flag(data_feature, data_gen_flag,
-                 data_feature_outputs, sample_len):
+def add_gen_flag(data_feature, data_gen_flag, data_feature_outputs, sample_len):
     data_feature_outputs = copy.deepcopy(data_feature_outputs)
 
     for output in data_feature_outputs:
         if output.is_gen_flag:
-            raise Exception(
-                "is_gen_flag should be False for all"
-                "feature_outputs")
+            raise Exception("is_gen_flag should be False for all" "feature_outputs")
 
     if data_feature.shape[2] != np.sum([t.dim for t in data_feature_outputs]):
         raise Exception("feature dimension does not match feature_outputs")
@@ -417,15 +388,13 @@ def compute_dp_sgd_privacy_sum(
 
 def estimate_flowlen_dp(
     # len(n_samples_list) == n_chunks
-    n_samples_list, noise_multiplier_gen=1.0, seed=42
+    n_samples_list,
+    noise_multiplier_gen=1.0,
+    seed=42,
 ):
     np.random.seed(seed)
     flowlen_list_dp = []
     for chunkid, n_samples in enumerate(n_samples_list):
-        flowlen_list_dp.append(
-            n_samples +
-            np.random.normal(
-                0,
-                noise_multiplier_gen))
+        flowlen_list_dp.append(n_samples + np.random.normal(0, noise_multiplier_gen))
 
     return flowlen_list_dp

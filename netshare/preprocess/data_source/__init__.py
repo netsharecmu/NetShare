@@ -1,5 +1,5 @@
 from netshare.configs import get_config
-from netshare.logger import logger
+from netshare.utils.logger import logger
 
 from .base_data_source import DataSource
 from .local_files_data_source import LocalFilesDataSource

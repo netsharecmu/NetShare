@@ -166,7 +166,7 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 │   ├── preprocessor          # Preprocess data
 │   ├── model                 # Core of NetShare service (i.e, train/generate)
 │   ├── postprocessor         # Postprocess data
-│   ├── measurements          # visualization of real v.s. synthetic data
+│   ├── dashboards            # visualization of real v.s. synthetic data
 │   └── utils                 # Utility functions/common class definitions
 ├── traces                    # Traces/datasets
 └── util                      # MISC/setup scripts

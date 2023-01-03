@@ -1,13 +1,7 @@
-import os
-import tempfile
-from typing import List, Tuple
+from typing import List
 
 import pandas as pd
 
-from netshare import ray
-from netshare.configs import get_config
-from netshare.logger import logger
-from netshare.pre_post_processors.netshare.preprocess_helper import df2chunks
 from netshare.preprocess.data_source import fetch_data
 from netshare.preprocess.normalize_format_to_csv import normalize_files_format
 from netshare.preprocess.prepare_cross_chunks_data import (
@@ -15,6 +9,9 @@ from netshare.preprocess.prepare_cross_chunks_data import (
     prepare_cross_chunks_data,
 )
 from netshare.preprocess.preprocess_per_chunk import preprocess_per_chunk
+from netshare.preprocess.utils.dataframe_utils import load_dataframe_chunks
+from netshare.utils import ray
+from netshare.utils.logger import logger
 
 
 def preprocess() -> None:
@@ -39,41 +36,6 @@ def preprocess() -> None:
     df, df_chunks = load_dataframe_chunks(normalized_csv_dir)
     cross_chunks_data = prepare_cross_chunks_data(df, df_chunks)
     apply_distributed_chunk_logic(df_chunks, cross_chunks_data)
-
-
-def load_dataframe_chunks(csv_dir: str) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
-    """
-    This function load the CSV files into a pandas dataframe.
-    """
-    dfs = []
-    for filename in os.listdir(csv_dir):
-        df = pd.read_csv(os.path.join(csv_dir, filename), index_col=None, header=0)
-        df["filename"] = filename
-        dfs.append(df)
-    df = pd.concat(dfs, axis=0, ignore_index=True)
-    df.dropna(inplace=True)
-    if get_config("global_config.n_chunks", default_value=1) > 1:
-        config_timestamp = get_config(
-            "pre_post_processor.config.timestamp", path2="global_config.timestamp"
-        )
-        if not isinstance(config_timestamp, dict):
-            raise ValueError(
-                "The timestamp configuration is not a dictionary, please upgrade to the new format"
-            )
-        df_chunks, _ = df2chunks(
-            big_raw_df=df,
-            config_timestamp=config_timestamp,
-            split_type=get_config(
-                "pre_post_processor.config.df2chunks",
-                path2="global_config.df2chunks",
-                default_value=None,
-            )
-            or get_config("preprocess.chunk_split_type"),
-            n_chunks=get_config("global_config.n_chunks"),
-        )
-    else:
-        df_chunks = [df]
-    return df, df_chunks
 
 
 def apply_distributed_chunk_logic(

@@ -2,7 +2,7 @@ import os
 import shutil
 
 from netshare.configs import get_config
-from netshare.logger import logger
+from netshare.utils.logger import logger
 
 
 def get_preprocessed_data_folder() -> str:
@@ -56,5 +56,5 @@ def copy_files(source_dir: str, target_dir: str) -> None:
     This function copies all files from source_dir to target_dir.
     """
     if os.path.exists(target_dir):
-        os.rmdir(target_dir)
+        shutil.rmtree(target_dir)
     shutil.copytree(source_dir, target_dir)

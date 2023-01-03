@@ -3,7 +3,6 @@ from typing import Generator, Tuple
 
 import numpy as np
 
-from netshare.logger import logger
 from netshare.utils.paths import get_generated_data_folder
 
 

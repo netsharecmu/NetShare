@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 
 from netshare.configs import get_config
-from netshare.logger import logger
 from netshare.utils.field import BitField, Field, FieldKey
+from netshare.utils.logger import logger
 from netshare.utils.paths import get_preprocessed_data_folder
 
 

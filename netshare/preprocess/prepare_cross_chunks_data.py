@@ -6,9 +6,8 @@ from config_io import Config
 from gensim.models import Word2Vec
 
 from netshare.configs import get_config
-from netshare.logger import logger
-from netshare.pre_post_processors.netshare.word2vec_embedding import word2vec_train
 from netshare.preprocess.preprocess_api import get_word2vec_model_directory
+from netshare.preprocess.utils.word2vec_embedding import word2vec_train
 from netshare.utils.field import (
     BitField,
     ContinuousField,
@@ -20,6 +19,7 @@ from netshare.utils.field import (
     field_config_to_key,
     key_from_field,
 )
+from netshare.utils.logger import logger
 from netshare.utils.paths import get_preprocessed_data_folder
 
 EPS = 1e-8

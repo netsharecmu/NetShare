@@ -1,17 +1,14 @@
 import time
 from typing import Type
 
-import netshare.ray as ray
-from netshare.logger import logger
-from netshare.model_managers.netshare_manager.generate_helper import (
-    generate_data,
-    merge_attr,
-)
-from netshare.model_managers.netshare_manager.netshare_util import (
+import netshare.utils.ray as ray
+from netshare.models import Model
+from netshare.models.model_managers.generate_helper import generate_data, merge_attr
+from netshare.models.model_managers.model_manager_util import (
     create_chunks_configurations,
 )
-from netshare.model_managers.netshare_manager.train_helper import train_config_group
-from netshare.models import Model
+from netshare.models.model_managers.train_helper import train_config_group
+from netshare.utils.logger import logger
 
 
 def train(create_new_model: Type[Model]) -> None:
