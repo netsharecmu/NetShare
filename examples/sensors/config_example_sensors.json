@@ -1,6 +1,6 @@
 {
     "global_config": {
-        "work_folder": "/Users/saart/cmu/NetShare/results/sensors",
+        "work_folder": "~/results/sensors",
         "n_chunks": 1,
         "timestamp": {
             "column": "Unnamed: 0"
@@ -39,8 +39,14 @@
         "class": "DoppelGANgerTFModel",
         "config": {
             "batch_size": 100,
-            "sample_len": 5,
-            "iteration": 3,
+            "generate_num_train_sample": 1000,
+            "sample_len": [
+                1,
+                5,
+                10
+            ],
+            "sample_len_expand": true,
+            "iteration": 4,
             "vis_freq": 100000,
             "vis_num_sample": 5,
             "d_rounds": 5,
@@ -77,8 +83,8 @@
             "num_cores": null,
             "sn_mode": null,
             "scale": 1.0,
-            "extra_checkpoint_freq": 20000,
-            "epoch_checkpoint_freq": 1000,
+            "extra_checkpoint_freq": 1,
+            "epoch_checkpoint_freq": 1,
             "dp_noise_multiplier": null,
             "dp_l2_norm_clip": null
         }

@@ -8,7 +8,6 @@ import pandas as pd
 from tqdm import tqdm
 
 import netshare.ray as ray
-from netshare.configs import get_config
 from netshare.logger import logger
 from netshare.models import Model
 from netshare.utils.paths import get_generated_data_log_folder
@@ -21,8 +20,6 @@ def generate_data(
     given_data_attribute_flag: bool,
 ) -> None:
     config["given_data_attribute_flag"] = given_data_attribute_flag
-    if get_config("global_config.n_chunks", default_value=1) == 1:
-        config["save_without_chunk"] = True
     model = create_new_model(config)
     model.generate(
         input_train_data_folder=config["dataset"],

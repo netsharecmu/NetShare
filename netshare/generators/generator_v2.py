@@ -21,18 +21,17 @@ class GeneratorV2(object):
         ray.init(address="auto")
         self._model: Type[Model] = models.build_model_from_config()
 
-    def generate(self, work_folder: Optional[str] = None) -> None:
-        change_work_folder(work_folder)
-        model_manager.generate(create_new_model=self._model)
-        postprocess()
-
     def train(self, work_folder: Optional[str] = None) -> None:
         change_work_folder(work_folder)
         preprocess()
         model_manager.train(create_new_model=self._model)
 
+    def generate(self, work_folder: Optional[str] = None) -> None:
+        change_work_folder(work_folder)
+        # model_manager.generate(create_new_model=self._model)
+        postprocess()
+
     def train_and_generate(self, work_folder: Optional[str] = None) -> None:
-        ray.init(address="auto")
         self.train(work_folder)
         self.generate(work_folder)
         ray.shutdown()

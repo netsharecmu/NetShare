@@ -105,6 +105,7 @@ def _write_fields(
 def write_attributes(metadata_fields: Dict[FieldKey, Field], chunk_id: int) -> None:
     """
     This function stores the attributes fields in two pickle files: one for the output types and one for the fields.
+    # TODO: Attributes are cross-chunks, it doesn't make sense to have a chunk_id here.
     """
     _write_fields(field_type="attribute", fields=metadata_fields, chunk_id=chunk_id)
 
@@ -112,6 +113,7 @@ def write_attributes(metadata_fields: Dict[FieldKey, Field], chunk_id: int) -> N
 def write_features(timeseries_fields: Dict[FieldKey, Field], chunk_id: int) -> None:
     """
     Similar to write_attributes, but for the features.
+    # TODO: Features are cross-chunks, it doesn't make sense to have a chunk_id here.
     """
     _write_fields(field_type="feature", fields=timeseries_fields, chunk_id=chunk_id)
 
@@ -129,6 +131,7 @@ def get_fields(field_type: str, chunk_id: Optional[int]) -> Dict[FieldKey, Field
 def get_attributes_fields(chunk_id: Optional[int] = None) -> Dict[FieldKey, Field]:
     """
     This function returns the attributes fields that were stored in the preprocess phase.
+    # TODO: Attributes are cross-chunks, it doesn't make sense to have a chunk_id here.
     """
     return get_fields("attribute", chunk_id)
 
@@ -136,5 +139,6 @@ def get_attributes_fields(chunk_id: Optional[int] = None) -> Dict[FieldKey, Fiel
 def get_feature_fields(chunk_id: Optional[int] = None) -> Dict[FieldKey, Field]:
     """
     Similar to get_attributes_fields, but for the features.
+    # TODO: Features are cross-chunks, it doesn't make sense to have a chunk_id here.
     """
     return get_fields("feature", chunk_id)

@@ -6,8 +6,8 @@
     "pre_post_processor": {
         "class": "DGRowPerSamplePrePostProcessor",
         "config": {
-            "num_train_samples": 50,
-            "num_test_samples": 50,
+            "num_train_samples": 50000,
+            "num_test_samples": 50000,
             "metadata": [
             ],
             "timeseries": [
@@ -24,7 +24,7 @@
         "config": {
             "batch_size": 100,
             "sample_len": 10,
-            "iteration": 100,
+            "iteration": 200000,
             "vis_freq": 100000,
             "vis_num_sample": 5,
             "d_rounds": 1,
