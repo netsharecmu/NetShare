@@ -35,6 +35,7 @@ setup(
     },
     install_requires=[
         "tensorflow==1.15",
+        "numpy==1.19.5",
         "tensorflow-privacy==0.5.0",
         "tqdm",
         "matplotlib",
@@ -49,7 +50,7 @@ setup(
         "gdown",
         "annoy",
         "pyshark",
-        "scapy",
+        "scapy==2.5.0",
         "ray",
         "ray[default]",
         "multiprocess",

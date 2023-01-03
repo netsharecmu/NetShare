@@ -7,7 +7,7 @@ from config_io import Config
 from netshare.configs import get_config
 from netshare.logger import logger
 from netshare.preprocess import preprocess_api
-from netshare.utils.paths import get_generated_data_folder
+from netshare.utils.paths import get_generated_data_folder, get_model_folder
 
 
 def validate_config_format(config_: dict) -> None:
@@ -76,9 +76,7 @@ def _load_config() -> List[Config]:
             ),
         )
         config_["sub_result_folder"] = sub_result_folder
-        config_["result_folder"] = os.path.join(
-            get_generated_data_folder(), sub_result_folder
-        )
+        config_["result_folder"] = os.path.join(get_model_folder(), sub_result_folder)
 
         validate_config_format(config_)
 
