@@ -24,6 +24,9 @@ class Field(object):
     def getOutputType(self):
         raise NotImplementedError
 
+    def getOutputDim(self) -> int:
+        raise NotImplementedError
+
 
 class ContinuousField(Field):
     def __init__(self, norm_option, min_x=None, max_x=None, dim_x=1, *args, **kwargs):
@@ -57,6 +60,8 @@ class ContinuousField(Field):
             raise Exception("Not valid normalization option!")
 
     def denormalize(self, norm_x):
+        if not self.max_x or not self.min_x:
+            return norm_x  # This is a word2vec field
         if norm_x.shape[-1] != self.dim_x:
             raise ValueError(
                 f"Dimension is {norm_x.shape[-1]}. Expected dimension is {self.dim_x}"
@@ -79,6 +84,9 @@ class ContinuousField(Field):
         return Output(
             type_=OutputType.CONTINUOUS, dim=self.dim_x, normalization=self.norm_option
         )
+
+    def getOutputDim(self) -> int:
+        return self.dim_x  # type: ignore
 
 
 class DiscreteField(Field):
@@ -110,6 +118,9 @@ class DiscreteField(Field):
 
     def getOutputType(self):
         return Output(type_=OutputType.DISCRETE, dim=len(self.choices))
+
+    def getOutputDim(self) -> int:
+        return len(self.choices)
 
 
 class RegexField(DiscreteField):
@@ -147,12 +158,7 @@ class BitField(Field):
 
         return bits
 
-    def denormalize(self, bin_x):
-        if not isinstance(bin_x, list):
-            raise Exception("Bit array should be a list")
-
-        assert len(bin_x) == 2 * self.num_bits, "length of bit array is wrong!"
-
+    def _denormalize(self, bin_x):
         bits = "0b"
         for i in range(self.num_bits):
             index = np.argmax(bin_x[2 * i : 2 * (i + 1)])
@@ -170,13 +176,19 @@ class BitField(Field):
 
         return decimal_x
 
+    def denormalize(self, bin_x):
+        return np.array([self._denormalize(b) for b in bin_x])
+
     def getOutputType(self):
         outputs = []
 
         for i in range(self.num_bits):
             outputs.append(Output(type_=OutputType.DISCRETE, dim=2))
 
-        return outputs
+        return np.asarray(outputs)
+
+    def getOutputDim(self) -> int:
+        return 2 * self.num_bits  # type: ignore
 
 
 def field_config_to_key(field: Config) -> FieldKey:

@@ -21,14 +21,14 @@ def _denormalize_by_fields_list(
     dim = 0
     for field in fields_list:
         if is_metadata:
-            sub_data = normalized_data[:, dim : dim + field.getOutputType().dim]
+            sub_data = normalized_data[:, dim : dim + field.getOutputDim()]
         else:
-            sub_data = normalized_data[:, :, dim : dim + field.getOutputType().dim]
+            sub_data = normalized_data[:, :, dim : dim + field.getOutputDim()]
         sub_data = field.denormalize(sub_data)
         if isinstance(field, ContinuousField):
             sub_data = sub_data[:, 0] if is_metadata else sub_data[:, :, 0]
         denormalized_data.append(sub_data)
-        dim += field.getOutputType().dim
+        dim += field.getOutputDim()
     return denormalized_data
 
 
@@ -43,7 +43,7 @@ def write_to_csv(
     """
     This function dumps the given data to the given directory as a csv format.
     """
-    os.makedirs(csv_folder)
+    os.makedirs(csv_folder, exist_ok=True)
     csv_path = os.path.join(csv_folder, f"data_{random.random()}.csv")
     with open(csv_path, "w") as f:
         writer = csv.writer(f)

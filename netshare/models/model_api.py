@@ -11,9 +11,13 @@ def get_generated_data() -> Generator[
 ]:
     sub_folders = os.listdir(get_generated_data_folder())
     for sub_folder in sub_folders:
-        for file in os.listdir(os.path.join(get_generated_data_folder(), sub_folder)):
+        for file in os.listdir(
+            os.path.join(get_generated_data_folder(), sub_folder, "feat_raw")
+        ):
             if file.endswith(".npz"):
-                data_path = os.path.join(get_generated_data_folder(), sub_folder, file)
+                data_path = os.path.join(
+                    get_generated_data_folder(), sub_folder, "feat_raw", file
+                )
                 data = np.load(data_path)
                 unnormalized_timeseries = data["data_feature"]
                 unnormalized_metadata = data["data_attribute"]
