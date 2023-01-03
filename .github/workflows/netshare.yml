@@ -12,7 +12,7 @@ jobs:
           python-version: "3.6"
           cache: 'pip'  # Cache the dependencies installation
           cache-dependency-path: setup.py
-      - uses: awalsh128/cache-apt-pkgs-action@latest  # Install linux dependencies for pcap header files
+      - uses: awalsh128/cache-apt-pkgs-action@v1.2.1  # Install linux dependencies for pcap header files
         with:
           packages: libpcap-dev
           version: 1.0

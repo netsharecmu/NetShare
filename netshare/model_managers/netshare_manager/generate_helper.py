@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 import netshare.ray as ray
 from netshare.configs import get_config
+from netshare.logger import logger
 from netshare.models import Model
 from netshare.utils.paths import get_generated_data_log_folder
 
@@ -48,9 +49,6 @@ def merge_attr(config_group: dict, configs: List[dict]) -> None:
     else:
         bit_idx_flagstart = 128 + word2vec_size * 3 + 1
 
-    print("PCAP_INTERARRIVAL:", pcap_interarrival)
-    print("bit_idx_flagstart:", bit_idx_flagstart)
-
     attr_clean_npz_folder = os.path.join(
         str(Path(attr_raw_npz_folder).parents[0]), "attr_clean"
     )
@@ -66,8 +64,8 @@ def merge_attr(config_group: dict, configs: List[dict]) -> None:
         if not os.path.exists(
             os.path.join(attr_raw_npz_folder, "chunk_id-{}.npz".format(chunkid))
         ):
-            print(
-                "{} not exists...".format(
+            logger.info(
+                "Generation error: Not saving attr_raw data: {} not exists".format(
                     os.path.join(attr_raw_npz_folder, "chunk_id-{}.npz".format(chunkid))
                 )
             )
@@ -118,23 +116,20 @@ def merge_attr(config_group: dict, configs: List[dict]) -> None:
         else:
             dict_chunkid_attr[chunkid] = raw_attr_chunk
 
-        print(
+        logger.debug(
             "n_flows_startFromThisEpoch / total flows: {}/{}".format(
                 n_flows_startFromThisEpoch, raw_attr_chunk.shape[0]
             )
         )
 
-    print("Saving merged attrs...")
+    logger.debug("Saving merged attributes")
     n_merged_attrs = 0
     for chunkid, attr_clean in dict_chunkid_attr.items():
-        print("chunk {}: {} flows".format(chunkid, len(attr_clean)))
         n_merged_attrs += len(attr_clean)
         np.savez(
             os.path.join(attr_clean_npz_folder, "chunk_id-{}.npz".format(chunkid)),
             data_attribute=np.asarray(attr_clean),
         )
-
-    print("n_merged_attrs:", n_merged_attrs)
 
 
 # ===================== TODO: move merge_syn_df to postprocess ================

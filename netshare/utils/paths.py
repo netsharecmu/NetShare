@@ -55,5 +55,6 @@ def copy_files(source_dir: str, target_dir: str) -> None:
     """
     This function copies all files from source_dir to target_dir.
     """
-    os.rmdir(target_dir)
+    if os.path.exists(target_dir):
+        os.rmdir(target_dir)
     shutil.copytree(source_dir, target_dir)
