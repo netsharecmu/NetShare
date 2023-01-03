@@ -185,7 +185,7 @@ class BitField(Field):
         for i in range(self.num_bits):
             outputs.append(Output(type_=OutputType.DISCRETE, dim=2))
 
-        return np.asarray(outputs)
+        return outputs
 
     def getOutputDim(self) -> int:
         return 2 * self.num_bits  # type: ignore
