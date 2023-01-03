@@ -2,8 +2,8 @@ import ctypes
 import os
 import tempfile
 
-import netshare.preprocess.normalize_format_to_csv.pcap_c_files
-from netshare.preprocess.normalize_format_to_csv.base_format_normalizer import (
+import netshare.preprocess.normalize_format_to_canonical.pcap_c_files
+from netshare.preprocess.normalize_format_to_canonical.base_format_normalizer import (
     DataFormatNormalizer,
 )
 from netshare.utils import exec_cmd
@@ -18,7 +18,7 @@ class PcapNormalizer(DataFormatNormalizer):
         target_dir = tempfile.mkdtemp()
         cwd = os.path.dirname(
             os.path.abspath(
-                netshare.preprocess.normalize_format_to_csv.pcap_c_files.__file__
+                netshare.preprocess.normalize_format_to_canonical.pcap_c_files.__file__
             )
         )
         cmd = f"cd {cwd} && ./sharedlib.sh"

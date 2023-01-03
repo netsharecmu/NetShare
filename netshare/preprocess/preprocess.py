@@ -3,7 +3,7 @@ from typing import List
 import pandas as pd
 
 from netshare.preprocess.data_source import fetch_data
-from netshare.preprocess.normalize_format_to_csv import normalize_files_format
+from netshare.preprocess.normalize_format_to_canonical import normalize_files_format
 from netshare.preprocess.prepare_cross_chunks_data import (
     CrossChunksData,
     prepare_cross_chunks_data,

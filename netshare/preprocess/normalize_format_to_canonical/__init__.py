@@ -2,7 +2,7 @@ from netshare.configs import get_config
 from netshare.utils.logger import logger
 
 from .base_format_normalizer import DataFormatNormalizer
-from .default_format_normalizer import CsvNormalizer
+from .csv_normalizer import CsvNormalizer
 from .pcap_format_normalizer import PcapNormalizer
 
 
