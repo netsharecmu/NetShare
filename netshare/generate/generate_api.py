@@ -41,9 +41,9 @@ def get_raw_generated_data() -> Generator[
                     if file.endswith(".npz"):
                         data = np.load(os.path.join(feat_raw_dir, file))
                         unnormalized_timeseries = data["data_feature"]
-                        unnormalized_metadata = data["data_attribute"]
+                        unnormalized_session_key = data["data_attribute"]
                         data_gen_flag = data["data_gen_flag"]
                         subdir = feat_raw_dir[
                             len(get_generated_data_folder()) + 1 : -len("feat_raw")
                         ]
-                        yield unnormalized_timeseries, unnormalized_metadata, data_gen_flag, subdir
+                        yield unnormalized_timeseries, unnormalized_session_key, data_gen_flag, subdir

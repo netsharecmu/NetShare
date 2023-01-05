@@ -117,7 +117,7 @@ def write_chunk_data(
         cross_chunks_data.global_max_flow_len,
         chunk_id,
     )
-    learn_api.write_attributes(cross_chunks_data.metadata_fields, chunk_id)
+    learn_api.write_attributes(cross_chunks_data.session_key_fields, chunk_id)
     learn_api.write_features(cross_chunks_data.timeseries_fields, chunk_id)
 
 
@@ -132,11 +132,11 @@ def apply_timestamp_generation(
 
     There are two types of timestamp generation:
     1. encoding = raw: Taking a specific column as another timestamp column. TODO: I don't understand why this is needed.
-    2. encoding = interarrival: For each tuple of metadata, we take the start time of the flow a metadata column,
+    2. encoding = interarrival: For each tuple of session_key (old term: metadata), we take the start time of the flow a metadata column,
         and also take the diff between every packet to the previous one as a feature column.
     """
-    metadata_config = get_config(
-        "pre_post_processor.config.metadata", path2="learn.metadata"
+    session_key_config = get_config(
+        "pre_post_processor.config.metadata", path2="learn.session_key"
     )
     timestamp_config = get_config(
         "pre_post_processor.config.timestamp",
@@ -144,7 +144,7 @@ def apply_timestamp_generation(
         default_value={},
     )
 
-    metadata_cols = [m for m in metadata_config]
+    session_key_cols = [m for m in session_key_config]
 
     additional_data_attributes = np.array([])
 
@@ -155,19 +155,19 @@ def apply_timestamp_generation(
         time_col = timestamp_config["column"]
 
         if timestamp_config["encoding"] == "interarrival":
-            gk = df_per_chunk.groupby([m.column for m in metadata_cols])
+            gk = df_per_chunk.groupby([m.column for m in session_key_cols])
             flow_start_list = list(gk.first()[time_col])
-            flow_start_metadata_field = ContinuousField(
+            flow_start_session_key_field = ContinuousField(
                 name="flow_start",
                 norm_option=getattr(Normalization, timestamp_config.normalization),
                 min_x=min(flow_start_list),
                 max_x=max(flow_start_list),
             )
 
-            cross_chunks_data.metadata_fields[
-                key_from_field(flow_start_metadata_field)
-            ] = flow_start_metadata_field
-            flow_start_list = flow_start_metadata_field.normalize(
+            cross_chunks_data.session_key_fields[
+                key_from_field(flow_start_session_key_field)
+            ] = flow_start_session_key_field
+            flow_start_list = flow_start_session_key_field.normalize(
                 np.array(flow_start_list).reshape(-1, 1)
             )
             additional_data_attributes = np.array(flow_start_list).reshape(-1, 1)
@@ -217,7 +217,7 @@ def apply_cross_chunk_mechanism(
 ) -> List[float]:
     """
     This function executes the cross-chunk mechanism (if global_config.n_chunks > 1) for
-        the given group of metadata attributes.
+        the given group of session_key (old term: metadata) attributes.
     In this mechanism, we use the data in cross_chunks_data.flowkeys_chunkidx to compute the
         flow-tags attributes for the given group, and return it.
 
@@ -225,8 +225,8 @@ def apply_cross_chunk_mechanism(
         Maybe we can spare performance here?
         Note the signature of this function - it doesn't get the data of the current chunk...
     """
-    metadata_config = get_config(
-        "pre_post_processor.config.metadata", path2="learn.metadata"
+    session_key_config = get_config(
+        "pre_post_processor.config.metadata", path2="learn.session_key"
     )
 
     attr_per_row: List[float] = []
@@ -238,7 +238,7 @@ def apply_cross_chunk_mechanism(
             raise ValueError(
                 "Internal error: cross-chunk data is missing is the per-chunk processing!"
             )
-        ori_group_name = tuple(df_group.iloc[0][[m.column for m in metadata_config]])
+        ori_group_name = tuple(df_group.iloc[0][[m.column for m in session_key_config]])
         chunk_indexes = cross_chunks_data.flowkeys_chunkidx.get(str(ori_group_name))
 
         # MULTI-CHUNK TAGS: TO BE OPTIMIZED FOR PERFORMANCE
@@ -304,17 +304,17 @@ def setup_per_chunk(
     df_per_chunk: pd.DataFrame,
     chunk_id: int,
 ) -> None:
-    metadata_config = get_config(
-        "pre_post_processor.config.metadata", path2="learn.metadata"
+    session_key_config = get_config(
+        "pre_post_processor.config.metadata", path2="learn.session_key"
     )
     timeseries_config = get_config(
         "pre_post_processor.config.timeseries", path2="learn.timeseries"
     )
 
-    df_per_chunk, new_metadata_list = apply_configuration_fields(
+    df_per_chunk, new_session_key_list = apply_configuration_fields(
         original_df=df_per_chunk,
-        config_fields=metadata_config,
-        field_instances=cross_chunks_data.metadata_fields,
+        config_fields=session_key_config,
+        field_instances=cross_chunks_data.session_key_fields,
         embed_model=cross_chunks_data.embed_model,
     )
 
@@ -329,7 +329,7 @@ def setup_per_chunk(
         df_per_chunk, cross_chunks_data, new_timeseries_list
     )
 
-    gk = df_per_chunk.groupby(new_metadata_list)
+    gk = df_per_chunk.groupby(new_session_key_list)
     data_feature_list: List[np.ndarray] = []
     flow_tags: List[List[float]] = []
     for group_name, df_group in gk:
@@ -349,7 +349,7 @@ def setup_per_chunk(
         or get_config("pre_post_processor.class", default_value="")
         == "DGRowPerSamplePrePostProcessor"
     ):
-        data_attribute = df_per_chunk[new_metadata_list].to_numpy()
+        data_attribute = df_per_chunk[new_session_key_list].to_numpy()
     else:
         data_attribute = np.array(list(gk.groups.keys()))
         if flow_tags:

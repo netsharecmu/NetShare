@@ -29,7 +29,7 @@ class CrossChunksData(NamedTuple):
     embed_model: Optional[Word2Vec]
     flowkeys_chunkidx: Optional[dict]
     global_max_flow_len: int
-    metadata_fields: Dict[FieldKey, Field]
+    session_key_fields: Dict[FieldKey, Field]
     timeseries_fields: Dict[FieldKey, Field]
 
 
@@ -38,11 +38,12 @@ def get_flowkeys_chunkidx(df_chunks: List[pd.DataFrame]) -> Dict[str, List[int]]
         "pre_post_processor.config", path2="learn", default_value={}
     )
     logger.info("compute flowkey-chunk list from scratch")
+    session_key_config = prepost_config.get("session_key") or prepost_config["metadata"]
     flow_chunkid_keys = {}
     for chunk_id, df_chunk in enumerate(df_chunks):
-        gk = df_chunk.groupby([m.column for m in prepost_config["metadata"]])
+        gk = df_chunk.groupby([m.column for m in session_key_config])
         flow_keys = list(gk.groups.keys())
-        if len(prepost_config["metadata"]) == 1:
+        if len(session_key_config) == 1:
             # Solving a gotcha in pandas groupby when grouping by a single column
             flow_keys = [tuple([key]) for key in flow_keys]
         flow_keys = list(map(str, flow_keys))
@@ -68,6 +69,7 @@ def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
     prepost_config = get_config(
         "pre_post_processor.config", path2="learn", default_value={}
     )
+    session_key_config = prepost_config.get("session_key") or prepost_config["metadata"]
     if prepost_config.get("max_flow_len"):
         return int(prepost_config["max_flow_len"])
 
@@ -76,7 +78,7 @@ def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
         # corner case: skip for empty df_chunk
         if len(df_chunk) == 0:
             continue
-        gk_chunk = df_chunk.groupby(by=[m.column for m in prepost_config["metadata"]])
+        gk_chunk = df_chunk.groupby(by=[m.column for m in session_key_config])
         max_flow_lens.append(max(gk_chunk.size().values))
 
     return max(max_flow_lens)
@@ -89,11 +91,12 @@ def get_word2vec_model(df: pd.DataFrame) -> Optional[Word2Vec]:
     if not word2vec_config:
         logger.debug("No learn.word2vec config found, skipping the embedding model")
         return None
+    session_key_fields = word2vec_config.get(
+        "session_key", word2vec_config.get("metadata", [])
+    )
     word2vec_cols = [
         m
-        for m in (
-            word2vec_config.get("metadata", []) + word2vec_config.get("timeseries", [])
-        )
+        for m in (session_key_fields + word2vec_config.get("timeseries", []))
         if "word2vec" in getattr(m, "encoding", "")
     ]
 
@@ -207,10 +210,10 @@ def build_fields(
     df: pd.DataFrame,
 ) -> Tuple[Dict[FieldKey, Field], Dict[FieldKey, Field]]:
 
-    metadata_fields: Dict[FieldKey, Field] = {
+    session_key_fields: Dict[FieldKey, Field] = {
         field_config_to_key(field): build_field_from_config(field, df)
         for field in get_config(
-            "pre_post_processor.config.metadata", path2="learn.metadata"
+            "pre_post_processor.config.metadata", path2="learn.session_key"
         )
     }
     timeseries_fields: Dict[FieldKey, Field] = {
@@ -222,15 +225,15 @@ def build_fields(
 
     if get_config("global_config.n_chunks", default_value=1) > 1:
         new_field = DiscreteField(name="startFromThisChunk", choices=[0.0, 1.0])
-        metadata_fields[key_from_field(new_field)] = new_field
+        session_key_fields[key_from_field(new_field)] = new_field
 
         for chunk_id in range(get_config("global_config.n_chunks")):
             new_field = DiscreteField(
                 name="chunk_{}".format(chunk_id), choices=[0.0, 1.0]
             )
-            metadata_fields[key_from_field(new_field)] = new_field
+            session_key_fields[key_from_field(new_field)] = new_field
 
-    return metadata_fields, timeseries_fields
+    return session_key_fields, timeseries_fields
 
 
 def setup_cross_chunks_data(
@@ -240,7 +243,7 @@ def setup_cross_chunks_data(
     This function splits the input data into chunks, and compute the .
     """
     embed_model = get_word2vec_model(big_df)
-    metadata_fields, timeseries_fields = build_fields(big_df)
+    session_key_fields, timeseries_fields = build_fields(big_df)
     flowkeys_chunkidx = get_flowkeys_chunkidx(df_chunks)
     global_max_flow_len = get_global_max_flow_len(df_chunks)
 
@@ -248,6 +251,6 @@ def setup_cross_chunks_data(
         embed_model=embed_model,
         flowkeys_chunkidx=flowkeys_chunkidx,
         global_max_flow_len=global_max_flow_len,
-        metadata_fields=metadata_fields,
+        session_key_fields=session_key_fields,
         timeseries_fields=timeseries_fields,
     )

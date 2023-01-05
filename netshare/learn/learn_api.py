@@ -102,12 +102,12 @@ def _write_fields(
         pickle.dump(fields, f)
 
 
-def write_attributes(metadata_fields: Dict[FieldKey, Field], chunk_id: int) -> None:
+def write_attributes(session_key_fields: Dict[FieldKey, Field], chunk_id: int) -> None:
     """
     This function stores the attributes fields in two pickle files: one for the output types and one for the fields.
     # TODO: Attributes are cross-chunks, it doesn't make sense to have a chunk_id here.
     """
-    _write_fields(field_type="attribute", fields=metadata_fields, chunk_id=chunk_id)
+    _write_fields(field_type="attribute", fields=session_key_fields, chunk_id=chunk_id)
 
 
 def write_features(timeseries_fields: Dict[FieldKey, Field], chunk_id: int) -> None:

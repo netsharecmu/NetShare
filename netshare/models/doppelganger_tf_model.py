@@ -570,8 +570,6 @@ class DoppelGANgerTFModel(Model):
                             config=self._config,
                         )
 
-            print("Done")
-
         dataset.stop_data_loader()
 
         return True

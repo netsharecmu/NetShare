@@ -122,15 +122,12 @@ class NetShareDataset(object):
         return image_
 
     def stop_data_loader(self):
-        print("Stop")
         self.running_flag.value = 0
         for idx, res in enumerate(self.results):
             try:
                 print(f"Stop data_loader #{idx}: {res.get(timeout=5)}")
             except:
                 print(f"Stop data_loader #{idx} failed within timeout!")
-
-        print("-------------")
 
         self.pool.close()
         self.pool.join()

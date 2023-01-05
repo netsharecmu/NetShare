@@ -3,6 +3,8 @@ from typing import Any, Optional, Union
 
 from config_io import Config
 
+from netshare.utils.logger import logger
+
 from .default import __path__ as defaults_path
 
 _config: Optional[Config] = None
@@ -45,4 +47,5 @@ def change_work_folder(work_folder: Optional[str]) -> None:
     abs_path = os.path.expanduser(
         os.path.abspath(work_folder or get_config("global_config.work_folder"))
     )
+    logger.info(f"Using work folder: {abs_path}")
     get_config()["global_config"]["work_folder"] = abs_path

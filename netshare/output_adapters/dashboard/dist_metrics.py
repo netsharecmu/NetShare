@@ -571,8 +571,8 @@ def compute_port_proto_distance(
 def get_flowduration(df):
     df = df.sort_values("time")
 
-    metadata = ["srcip", "dstip", "srcport", "dstport", "proto"]
-    gk = df.groupby(by=metadata)
+    session_key = ["srcip", "dstip", "srcport", "dstport", "proto"]
+    gk = df.groupby(by=session_key)
 
     flow_duration_list = []
 
@@ -601,39 +601,6 @@ def compute_metrics_netflow(raw_df, syn_df):
         metrics_dict[metric] = wasserstein_distance(
             list(raw_df[metric]), list(syn_df[metric])
         )
-
-    return metrics_dict
-
-
-def compute_metrics_pcap(raw_df, syn_df):
-    metrics_dict = {}
-
-    # IP popularity rank
-    for metric in ["srcip", "dstip"]:
-        metrics_dict[metric] = compute_IP_rank_distance(raw_df[metric], syn_df[metric])
-
-    # TV distance for port/protocol
-    for metric in ["srcport", "dstport", "proto"]:
-        metrics_dict[metric] = compute_port_proto_distance(
-            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=False
-        )
-
-    # pkt_len
-    for metric in ["pkt_len"]:
-        metrics_dict[metric] = wasserstein_distance(
-            list(raw_df[metric]), list(syn_df[metric])
-        )
-
-    # flow size distribution
-    metadata = ["srcip", "dstip", "srcport", "dstport", "proto"]
-    raw_gk = raw_df.groupby(by=metadata)
-    syn_gk = syn_df.groupby(by=metadata)
-
-    raw_flowsize_list = list(raw_gk.size().values)
-    syn_flowsize_list = list(syn_gk.size().values)
-    metrics_dict["flow_size"] = wasserstein_distance(
-        raw_flowsize_list, syn_flowsize_list
-    )
 
     return metrics_dict
 
@@ -746,9 +713,9 @@ def compute_metrics_pcap_v2(raw_df, syn_df):
     # metrics_dict["IAT"] = jsd(list(np.diff(raw_df["time"])), list(np.diff(syn_df["time"])), type="continuous")
 
     # flow size distribution
-    metadata = ["srcip", "dstip", "srcport", "dstport", "proto"]
-    raw_gk = raw_df.groupby(by=metadata)
-    syn_gk = syn_df.groupby(by=metadata)
+    session_key = ["srcip", "dstip", "srcport", "dstport", "proto"]
+    raw_gk = raw_df.groupby(by=session_key)
+    syn_gk = syn_df.groupby(by=session_key)
 
     raw_flowsize_list = list(raw_gk.size().values)
     syn_flowsize_list = list(syn_gk.size().values)
@@ -806,9 +773,9 @@ def compute_metrics_pcap_v3(raw_df, syn_df):
     # metrics_dict["PIAT"] = wasserstein_distance(list(np.diff(raw_df["time"])), list(np.diff(syn_df["time"])))
 
     # flow size distribution
-    metadata = ["srcip", "dstip", "srcport", "dstport", "proto"]
-    raw_gk = raw_df.groupby(by=metadata)
-    syn_gk = syn_df.groupby(by=metadata)
+    session_key = ["srcip", "dstip", "srcport", "dstport", "proto"]
+    raw_gk = raw_df.groupby(by=session_key)
+    syn_gk = syn_df.groupby(by=session_key)
 
     raw_flowsize_list = list(raw_gk.size().values)
     syn_flowsize_list = list(syn_gk.size().values)
