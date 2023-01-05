@@ -1,6 +1,6 @@
-import tensorflow as tf
 import warnings
 
+import tensorflow as tf
 
 NO_OPS = "NO_OPS"
 
@@ -16,7 +16,7 @@ def spectral_normed_weight(
     W_shape = W.shape.as_list()
     W_reshaped = tf.reshape(W, [-1, W_shape[-1]])
     if u is None:
-        u = tf.get_variable(
+        u = tf.compat.v1.get_variable(
             "u",
             [1, W_shape[-1]],
             initializer=tf.truncated_normal_initializer(),
@@ -34,9 +34,7 @@ def spectral_normed_weight(
         loop_vars=(
             tf.constant(0, dtype=tf.int32),
             u,
-            tf.zeros(
-                dtype=tf.float32, shape=[
-                    1, W_reshaped.shape.as_list()[0]]),
+            tf.zeros(dtype=tf.float32, shape=[1, W_reshaped.shape.as_list()[0]]),
         ),
     )
     if update_collection is None:
@@ -44,25 +42,13 @@ def spectral_normed_weight(
             "Setting update_collection to None will make u being updated every W execution. This maybe undesirable"
             ". Please consider using a update collection instead."
         )
-        sigma = tf.matmul(
-            tf.matmul(
-                v_final,
-                W_reshaped),
-            tf.transpose(u_final))[
-            0,
-            0]
+        sigma = tf.matmul(tf.matmul(v_final, W_reshaped), tf.transpose(u_final))[0, 0]
         # sigma = tf.reduce_sum(tf.matmul(u_final, tf.transpose(W_reshaped)) * v_final)
         W_bar = W_reshaped / sigma
         with tf.control_dependencies([u.assign(u_final)]):
             W_bar = tf.reshape(W_bar, W_shape)
     else:
-        sigma = tf.matmul(
-            tf.matmul(
-                v_final,
-                W_reshaped),
-            tf.transpose(u_final))[
-            0,
-            0]
+        sigma = tf.matmul(tf.matmul(v_final, W_reshaped), tf.transpose(u_final))[0, 0]
         # sigma = tf.reduce_sum(tf.matmul(u_final, tf.transpose(W_reshaped)) * v_final)
         W_bar = W_reshaped / sigma
         W_bar = tf.reshape(W_bar, W_shape)

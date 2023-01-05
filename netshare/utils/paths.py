@@ -9,10 +9,6 @@ def get_preprocessed_data_folder() -> str:
     return os.path.join(get_config("global_config.work_folder"), "pre_processed_data")
 
 
-def get_postprocessed_data_folder() -> str:
-    return os.path.join(get_config("global_config.work_folder"), "post_processed_data")
-
-
 def get_generated_data_folder() -> str:
     return os.path.join(get_config("global_config.work_folder"), "generated_data")
 

@@ -1,9 +1,14 @@
-import tensorflow as tf
-from .op import linear, batch_norm, flatten
-from netshare.utils import OutputType, Normalization
-import numpy as np
-from enum import Enum
+# type: ignore
+
 import os
+from enum import Enum
+
+import numpy as np
+import tensorflow as tf
+
+from netshare.utils import Normalization, OutputType
+
+from .op import batch_norm, flatten, linear
 
 
 class Network(object):
@@ -15,13 +20,14 @@ class Network(object):
 
     @property
     def all_vars(self):
-        return tf.get_collection(
-            tf.GraphKeys.GLOBAL_VARIABLES, scope=self.scope_name)
+        return tf.compat.v1.get_collection(
+            tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, scope=self.scope_name
+        )
 
     @property
     def trainable_vars(self):
-        return tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.scope_name
+        return tf.compat.v1.get_collection(
+            tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, scope=self.scope_name
         )
 
     def print_layers(self):
@@ -29,12 +35,12 @@ class Network(object):
         print(self.all_vars)
 
     def save(self, sess, folder):
-        saver = tf.train.Saver(self.all_vars)
+        saver = tf.compat.v1.train.Saver(self.all_vars)
         path = os.path.join(folder, "model.ckpt")
         saver.save(sess, path)
 
     def load(self, sess, folder):
-        saver = tf.train.Saver(self.all_vars)
+        saver = tf.compat.v1.train.Saver(self.all_vars)
         path = os.path.join(folder, "model.ckpt")
         saver.restore(sess, path)
 
@@ -52,13 +58,7 @@ class Discriminator(Network):
         *args,
         **kwargs
     ):
-        super(
-            Discriminator,
-            self).__init__(
-            scope_name=scope_name,
-            *
-            args,
-            **kwargs)
+        super(Discriminator, self).__init__(scope_name=scope_name, *args, **kwargs)
         self.num_layers = num_layers
         self.num_units = num_units
         self.leaky_relu = leaky_relu
@@ -66,14 +66,16 @@ class Discriminator(Network):
         self.sn_mode = sn_mode
 
     def build(self, input_feature, input_attribute, train, sn_op=None):
-        with tf.variable_scope(self.scope_name, reuse=tf.AUTO_REUSE):
+        with tf.compat.v1.variable_scope(
+            self.scope_name, reuse=tf.compat.v1.AUTO_REUSE
+        ):
             input_feature = flatten(input_feature)
             input_attribute = flatten(input_attribute)
             input_ = tf.concat([input_feature, input_attribute], 1)
             layers = [input_feature, input_attribute, input_]
             sigmas = []
             for i in range(self.num_layers - 1):
-                with tf.variable_scope("layer{}".format(i)):
+                with tf.compat.v1.variable_scope("layer{}".format(i)):
 
                     # w/o SN
                     if self.sn_mode is None:
@@ -97,7 +99,7 @@ class Discriminator(Network):
 
                     # if (i > 0):
                     #    layers.append(batch_norm()(layers[-1], train=train))
-            with tf.variable_scope("layer{}".format(self.num_layers - 1)):
+            with tf.compat.v1.variable_scope("layer{}".format(self.num_layers - 1)):
                 # w/o SN
                 if self.sn_mode is None:
                     layers.append(linear(layers[-1], 1))
@@ -130,13 +132,7 @@ class AttrDiscriminator(Network):
         *args,
         **kwargs
     ):
-        super(
-            AttrDiscriminator,
-            self).__init__(
-            scope_name=scope_name,
-            *
-            args,
-            **kwargs)
+        super(AttrDiscriminator, self).__init__(scope_name=scope_name, *args, **kwargs)
         self.num_layers = num_layers
         self.num_units = num_units
         self.leaky_relu = leaky_relu
@@ -144,12 +140,14 @@ class AttrDiscriminator(Network):
         self.sn_mode = sn_mode
 
     def build(self, input_attribute, train, sn_op=None):
-        with tf.variable_scope(self.scope_name, reuse=tf.AUTO_REUSE):
+        with tf.compat.v1.variable_scope(
+            self.scope_name, reuse=tf.compat.v1.AUTO_REUSE
+        ):
             input_attribute = flatten(input_attribute)
             layers = [input_attribute]
             sigmas = []
             for i in range(self.num_layers - 1):
-                with tf.variable_scope("layer{}".format(i)):
+                with tf.compat.v1.variable_scope("layer{}".format(i)):
                     # layers.append(linear(layers[-1], self.num_units))
 
                     # w/o SN
@@ -174,7 +172,7 @@ class AttrDiscriminator(Network):
 
                     # if (i > 0):
                     #    layers.append(batch_norm()(layers[-1], train=train))
-            with tf.variable_scope("layer{}".format(self.num_layers - 1)):
+            with tf.compat.v1.variable_scope("layer{}".format(self.num_layers - 1)):
                 # w/o SN
                 if self.sn_mode is None:
                     layers.append(linear(layers[-1], 1))
@@ -242,9 +240,7 @@ class DoppelGANgerGenerator(Network):
         self.sample_len = sample_len
         self.gt_lengths = gt_lengths
         if self.gt_lengths is not None:
-            self.gt_lengths = np.append(
-                [0], np.sort(gt_lengths)).astype(
-                np.float32)
+            self.gt_lengths = np.append([0], np.sort(gt_lengths)).astype(np.float32)
         self.use_uniform_lengths = use_uniform_lengths
         self.initial_state = initial_state
         self.initial_stddev = initial_stddev
@@ -253,9 +249,7 @@ class DoppelGANgerGenerator(Network):
         )
         self.attribute_out_dim = np.sum([t.dim for t in attribute_outputs])
         if not self.noise and not self.feed_back:
-            raise Exception(
-                "noise and feed_back should have at least "
-                "one True")
+            raise Exception("noise and feed_back should have at least " "one True")
 
         self.real_attribute_outputs = []
         self.addi_attribute_outputs = []
@@ -286,9 +280,7 @@ class DoppelGANgerGenerator(Network):
                 raise Exception("gen flag output's dim should be 2")
 
         if (self.gen_flag_id is None) == (self.gt_lengths is None):
-            raise Exception(
-                "only one of gen_flag and gt_lengths should "
-                "be true")
+            raise Exception("only one of gen_flag and gt_lengths should " "be true")
 
         self.STR_REAL = "real"
         self.STR_ADDI = "addi"
@@ -302,7 +294,9 @@ class DoppelGANgerGenerator(Network):
         train,
         attribute=None,
     ):
-        with tf.variable_scope(self.scope_name, reuse=tf.AUTO_REUSE):
+        with tf.compat.v1.variable_scope(
+            self.scope_name, reuse=tf.compat.v1.AUTO_REUSE
+        ):
             batch_size = tf.shape(feature_input_noise)[0]
 
             # Generate length.
@@ -310,8 +304,7 @@ class DoppelGANgerGenerator(Network):
                 target_length_uniform = tf.random.uniform(
                     [batch_size], minval=0.0, maxval=1.0
                 )
-                length_idx_float = target_length_uniform * \
-                    (len(self.gt_lengths) - 1)
+                length_idx_float = target_length_uniform * (len(self.gt_lengths) - 1)
                 length_idx = tf.to_int32(length_idx_float)
                 length_idx_plus_one = length_idx + 1
                 length_min = tf.gather(self.gt_lengths, length_idx)
@@ -374,9 +367,9 @@ class DoppelGANgerGenerator(Network):
                 # print("\n\n\n all_attribute: {}\n\n\n".format(all_attribute.shape))
 
             for part_i in range(len(all_attribute_input_noise)):
-                with tf.variable_scope(
+                with tf.compat.v1.variable_scope(
                     "attribute_{}".format(all_attribute_part_name[part_i]),
-                    reuse=tf.AUTO_REUSE,
+                    reuse=tf.compat.v1.AUTO_REUSE,
                 ):
 
                     if len(all_discrete_attribute) > 0:
@@ -392,26 +385,23 @@ class DoppelGANgerGenerator(Network):
 
                     if target_lengths is not None:
                         layers.append(
-                            tf.concat(
-                                [layers[-1], target_lengths_feature], axis=1)
+                            tf.concat([layers[-1], target_lengths_feature], axis=1)
                         )
 
                     for i in range(self.attribute_num_layers - 1):
-                        with tf.variable_scope("layer{}".format(i)):
-                            layers.append(
-                                linear(layers[-1], self.attribute_num_units))
+                        with tf.compat.v1.variable_scope("layer{}".format(i)):
+                            layers.append(linear(layers[-1], self.attribute_num_units))
                             layers.append(tf.nn.relu(layers[-1]))
-                            layers.append(batch_norm()(
-                                layers[-1], train=train))
-                    with tf.variable_scope(
+                            layers.append(batch_norm()(layers[-1], train=train))
+                    with tf.compat.v1.variable_scope(
                         "layer{}".format(self.attribute_num_layers - 1),
-                        reuse=tf.AUTO_REUSE,
+                        reuse=tf.compat.v1.AUTO_REUSE,
                     ):
                         part_attribute = []
                         part_discrete_attribute = []
                         for i in range(len(all_attribute_outputs[part_i])):
-                            with tf.variable_scope(
-                                "output{}".format(i), reuse=tf.AUTO_REUSE
+                            with tf.compat.v1.variable_scope(
+                                "output{}".format(i), reuse=tf.compat.v1.AUTO_REUSE
                             ):
                                 output = all_attribute_outputs[part_i][i]
 
@@ -419,34 +409,29 @@ class DoppelGANgerGenerator(Network):
                                 if output.type_ == OutputType.DISCRETE:
                                     sub_output = tf.nn.softmax(sub_output_ori)
                                     sub_output_discrete = tf.one_hot(
-                                        tf.argmax(
-                                            sub_output, axis=1), output.dim
+                                        tf.argmax(sub_output, axis=1), output.dim
                                     )
                                 elif output.type_ == OutputType.CONTINUOUS:
                                     if output.normalization == Normalization.ZERO_ONE:
-                                        sub_output = tf.nn.sigmoid(
-                                            sub_output_ori)
+                                        sub_output = tf.nn.sigmoid(sub_output_ori)
                                     elif (
                                         output.normalization
                                         == Normalization.MINUSONE_ONE
                                     ):
                                         sub_output = tf.nn.tanh(sub_output_ori)
                                     else:
-                                        raise Exception(
-                                            "unknown normalization type")
+                                        raise Exception("unknown normalization type")
                                     sub_output_discrete = sub_output
                                 else:
                                     raise Exception("unknown output type")
                                 part_attribute.append(sub_output)
-                                part_discrete_attribute.append(
-                                    sub_output_discrete)
+                                part_discrete_attribute.append(sub_output_discrete)
                         part_attribute = tf.concat(part_attribute, axis=1)
                         part_discrete_attribute = tf.concat(
                             part_discrete_attribute, axis=1
                         )
                         part_attribute = tf.reshape(
-                            part_attribute, [
-                                batch_size, all_attribute_out_dim[part_i]]
+                            part_attribute, [batch_size, all_attribute_out_dim[part_i]]
                         )
                         part_discrete_attribute = tf.reshape(
                             part_discrete_attribute,
@@ -454,8 +439,7 @@ class DoppelGANgerGenerator(Network):
                         )
                         # batch_size * dim
 
-                    part_discrete_attribute = tf.stop_gradient(
-                        part_discrete_attribute)
+                    part_discrete_attribute = tf.stop_gradient(part_discrete_attribute)
 
                     all_attribute.append(part_attribute)
                     all_discrete_attribute.append(part_discrete_attribute)
@@ -472,18 +456,19 @@ class DoppelGANgerGenerator(Network):
                 all_discrete_attribute, [batch_size, self.attribute_out_dim]
             )
 
-            with tf.variable_scope("feature", reuse=tf.AUTO_REUSE):
+            with tf.compat.v1.variable_scope("feature", reuse=tf.compat.v1.AUTO_REUSE):
                 all_cell = []
                 for i in range(self.feature_num_layers):
-                    with tf.variable_scope("unit{}".format(i), reuse=tf.AUTO_REUSE):
+                    with tf.compat.v1.variable_scope(
+                        "unit{}".format(i), reuse=tf.compat.v1.AUTO_REUSE
+                    ):
                         cell = tf.nn.rnn_cell.LSTMCell(
                             num_units=self.feature_num_units, state_is_tuple=True
                         )
                         all_cell.append(cell)
-                rnn_network = tf.nn.rnn_cell.MultiRNNCell(all_cell)
+                rnn_network = tf.keras.layers.StackedRNNCells(all_cell)
 
-                feature_input_data_dim = len(
-                    feature_input_data.get_shape().as_list())
+                feature_input_data_dim = len(feature_input_data.get_shape().as_list())
                 if feature_input_data_dim == 3:
                     feature_input_data_reshape = tf.transpose(
                         feature_input_data, [1, 0, 2]
@@ -494,10 +479,9 @@ class DoppelGANgerGenerator(Network):
                 # time * batch_size * ?
 
                 if self.initial_state == RNNInitialStateType.ZERO:
-                    initial_state = rnn_network.zero_state(
-                        batch_size, tf.float32)
+                    initial_state = rnn_network.zero_state(batch_size, tf.float32)
                 elif self.initial_state == RNNInitialStateType.RANDOM:
-                    initial_state = tf.random_normal(
+                    initial_state = tf.random.normal(
                         shape=(
                             self.feature_num_layers,
                             2,
@@ -510,7 +494,7 @@ class DoppelGANgerGenerator(Network):
                     initial_state = tf.unstack(initial_state, axis=0)
                     initial_state = tuple(
                         [
-                            tf.nn.rnn_cell.LSTMStateTuple(
+                            tf.compat.v1.nn.rnn_cell.LSTMStateTuple(
                                 initial_state[idx][0], initial_state[idx][1]
                             )
                             for idx in range(self.feature_num_layers)
@@ -519,27 +503,27 @@ class DoppelGANgerGenerator(Network):
                 elif self.initial_state == RNNInitialStateType.VARIABLE:
                     initial_state = []
                     for i in range(self.feature_num_layers):
-                        sub_initial_state1 = tf.get_variable(
+                        sub_initial_state1 = tf.compat.v1.get_variable(
                             "layer{}_initial_state1".format(i),
                             (1, self.feature_num_units),
-                            initializer=tf.random_normal_initializer(
+                            initializer=tf.random.normal_initializer(
                                 stddev=self.initial_stddev
                             ),
                         )
                         sub_initial_state1 = tf.tile(
                             sub_initial_state1, (batch_size, 1)
                         )
-                        sub_initial_state2 = tf.get_variable(
+                        sub_initial_state2 = tf.compat.v1.get_variable(
                             "layer{}_initial_state2".format(i),
                             (1, self.feature_num_units),
-                            initializer=tf.random_normal_initializer(
+                            initializer=tf.random.normal_initializer(
                                 stddev=self.initial_stddev
                             ),
                         )
                         sub_initial_state2 = tf.tile(
                             sub_initial_state2, (batch_size, 1)
                         )
-                        sub_initial_state = tf.nn.rnn_cell.LSTMStateTuple(
+                        sub_initial_state = tf.compat.v1.nn.rnn_cell.LSTMStateTuple(
                             sub_initial_state1, sub_initial_state2
                         )
                         initial_state.append(sub_initial_state)
@@ -578,8 +562,8 @@ class DoppelGANgerGenerator(Network):
                     id_ = 0
                     for j in range(self.sample_len):
                         for k in range(len(self.feature_outputs)):
-                            with tf.variable_scope(
-                                "output{}".format(id_), reuse=tf.AUTO_REUSE
+                            with tf.compat.v1.variable_scope(
+                                "output{}".format(id_), reuse=tf.compat.v1.AUTO_REUSE
                             ):
                                 output = self.feature_outputs[k]
 
@@ -587,9 +571,8 @@ class DoppelGANgerGenerator(Network):
                                 # generator
                                 RNN_MLPs = [cell_new_output]
 
-                                for rnn_mlp_id in range(
-                                        self.rnn_mlp_num_layers):
-                                    with tf.variable_scope(
+                                for rnn_mlp_id in range(self.rnn_mlp_num_layers):
+                                    with tf.compat.v1.variable_scope(
                                         "MLP_layer{}".format(rnn_mlp_id)
                                     ):
                                         RNN_MLPs.append(
@@ -597,11 +580,9 @@ class DoppelGANgerGenerator(Network):
                                                 RNN_MLPs[-1], self.attribute_num_units
                                             )
                                         )
+                                        RNN_MLPs.append(tf.nn.relu(RNN_MLPs[-1]))
                                         RNN_MLPs.append(
-                                            tf.nn.relu(RNN_MLPs[-1]))
-                                        RNN_MLPs.append(
-                                            batch_norm()(
-                                                RNN_MLPs[-1], train=train)
+                                            batch_norm()(RNN_MLPs[-1], train=train)
                                         )
 
                                 sub_output = linear(RNN_MLPs[-1], output.dim)
@@ -620,8 +601,7 @@ class DoppelGANgerGenerator(Network):
                                     ):
                                         sub_output = tf.nn.tanh(sub_output)
                                     else:
-                                        raise Exception(
-                                            "unknown normalization" " type")
+                                        raise Exception("unknown normalization" " type")
                                 else:
                                     raise Exception("unknown output type")
                                 new_output_all.append(sub_output)
@@ -633,7 +613,7 @@ class DoppelGANgerGenerator(Network):
                             i * self.sample_len + j, gen_flag
                         )
                         if target_lengths is None:
-                            cur_gen_flag = tf.to_float(
+                            cur_gen_flag = tf.dtypes.cast(
                                 tf.equal(
                                     tf.argmax(
                                         new_output_all[
@@ -645,12 +625,13 @@ class DoppelGANgerGenerator(Network):
                                         axis=1,
                                     ),
                                     0,
-                                )
+                                ),
+                                tf.float32,
                             )
                             cur_gen_flag = tf.reshape(cur_gen_flag, [-1, 1])
                             all_cur_argmax = all_cur_argmax.write(
                                 i * self.sample_len + j,
-                                tf.to_int32(
+                                tf.dtypes.cast(
                                     tf.argmax(
                                         new_output_all[
                                             (
@@ -659,7 +640,8 @@ class DoppelGANgerGenerator(Network):
                                             )
                                         ],
                                         axis=1,
-                                    )
+                                    ),
+                                    tf.int32,
                                 ),
                             )
                         else:
@@ -751,12 +733,11 @@ class DoppelGANgerGenerator(Network):
 
                 feature = tf.transpose(feature, [1, 0, 2])
                 # batch_size * time * (dim * sample_len)
-                gen_flag_t = tf.reshape(
-                    gen_flag, [batch_size, time, self.sample_len])
+                gen_flag_t = tf.reshape(gen_flag, [batch_size, time, self.sample_len])
                 # batch_size * time * sample_len
                 gen_flag_t = tf.reduce_sum(gen_flag_t, [2])
                 # batch_size * time
-                gen_flag_t = tf.to_float(gen_flag_t > 0.5)
+                gen_flag_t = tf.cast(gen_flag_t > 0.5, tf.float32)
                 gen_flag_t = tf.expand_dims(gen_flag_t, 2)
                 # batch_size * time * 1
                 gen_flag_t = tf.tile(gen_flag_t, [1, 1, self.feature_out_dim])

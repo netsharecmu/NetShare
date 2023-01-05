@@ -124,7 +124,6 @@ class NetShareDataset(object):
     def stop_data_loader(self):
         print("Stop")
         self.running_flag.value = 0
-        print(self.running_flag.value)
         for idx, res in enumerate(self.results):
             try:
                 print(f"Stop data_loader #{idx}: {res.get(timeout=5)}")
@@ -141,7 +140,6 @@ class NetShareDataset(object):
         data_feature = []
         data_gen_flag = []
         # Don't use busy waiting to check if queue is full.
-        print(self.image_buffer.qsize())
         for i in range(batch_size):
             image = self.image_buffer.get()
             data_attribute.append(image["data_attribute"])

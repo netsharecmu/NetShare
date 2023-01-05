@@ -1,20 +1,22 @@
 {
     "global_config": {
-        "work_folder": "~/results/sensors",
+        "work_folder": "../../results/sensors",
         "n_chunks": 1,
         "timestamp": {
             "column": "Unnamed: 0"
         },
         "ray_enabled": false
     },
-    "preprocess": {
-        "data_source" : {
+    "input_adapters": {
+        "data_source": {
             "type": "local_files",
             "input_folder": "../../traces/sensors/A_DeviceMotion_data/A_DeviceMotion_data/dws_1/"
         },
         "format_normalizer": {
             "dataset_type": "csv"
-        },
+        }
+    },
+    "learn": {
         "metadata": [
             {
                 "column": "filename",

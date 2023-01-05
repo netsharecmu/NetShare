@@ -163,10 +163,10 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 ├── examples                  # Examples of using NetShare on different datasets
 ├── netshare                  # NetShare source code
 │   ├── api                   # The interface to use NetSahre
-│   ├── preprocessor          # Preprocess data
-│   ├── model                 # Core of NetShare service (i.e, train/generate)
-│   ├── postprocessor         # Postprocess data
-│   ├── dashboards            # visualization of real v.s. synthetic data
+│   ├── input_adapter         # Fetch and normalize the data from different data sources and data format
+│   ├── learn                 # Core learn process of NetShare service
+│   ├── generate              # Core generation of NetShare service
+│   ├── output_adapters       # Output the generated data to different data stores and format
 │   └── utils                 # Utility functions/common class definitions
 ├── traces                    # Traces/datasets
 └── util                      # MISC/setup scripts

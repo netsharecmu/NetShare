@@ -1,3 +1,5 @@
+# type: ignore
+
 import inspect
 import json
 import os
@@ -7,17 +9,19 @@ import numpy as np
 import tensorflow as tf
 
 import netshare.utils.ray as ray
-
-from .doppelganger_tf.dataset import NetShareDataset
-from .doppelganger_tf.doppelganger import DoppelGANger
-from .doppelganger_tf.network import (
+from netshare.models.doppelganger_tf.dataset import NetShareDataset
+from netshare.models.doppelganger_tf.doppelganger import DoppelGANger
+from netshare.models.doppelganger_tf.network import (
     AttrDiscriminator,
     Discriminator,
     DoppelGANgerGenerator,
     RNNInitialStateType,
 )
-from .doppelganger_tf.util import estimate_flowlen_dp, renormalize_per_sample
-from .model import Model
+from netshare.models.doppelganger_tf.util import (
+    estimate_flowlen_dp,
+    renormalize_per_sample,
+)
+from netshare.models.model import Model
 
 
 class DoppelGANgerTFModel(Model):
@@ -33,7 +37,7 @@ class DoppelGANgerTFModel(Model):
 
         # If Ray is disabled, reset TF graph
         if not ray.config.enabled:
-            tf.reset_default_graph()
+            tf.compat.v1.reset_default_graph()
 
         print("Currently training with config:", self._config)
 
@@ -66,9 +70,6 @@ class DoppelGANgerTFModel(Model):
             or (dataset.data_feature_outputs_train is None)
             or (dataset.real_attribute_mask is None)
         ):
-            print(dataset.data_attribute_outputs_train)
-            print(dataset.data_feature_outputs_train)
-            print(dataset.real_attribute_mask)
             raise Exception(
                 "Dataset variables are not initialized "
                 "properly for training purposes!"
@@ -133,17 +134,17 @@ class DoppelGANgerTFModel(Model):
         time_path = os.path.join(self._config["result_folder"], "time.txt")
 
         if self._config["num_cores"] is None:
-            run_config = tf.ConfigProto(device_count={"GPU": 0})
+            run_config = tf.compat.v1.ConfigProto(device_count={"GPU": 0})
         else:
             num_cores = self._config["num_cores"]  # it means number of cores
-            run_config = tf.ConfigProto(
+            run_config = tf.compat.v1.ConfigProto(
                 intra_op_parallelism_threads=num_cores,
                 inter_op_parallelism_threads=num_cores,
                 allow_soft_placement=True,
                 device_count={"CPU": num_cores},
             )
 
-        with tf.Session(config=run_config) as sess:
+        with tf.compat.v1.Session(config=run_config) as sess:
             gan = DoppelGANger(
                 sess=sess,
                 checkpoint_dir=checkpoint_dir,
@@ -215,7 +216,7 @@ class DoppelGANgerTFModel(Model):
 
         # If Ray is disabled, reset TF graph
         if not ray.config.enabled:
-            tf.reset_default_graph()
+            tf.compat.v1.reset_default_graph()
 
         print("Currently generating with config:", self._config)
 
@@ -298,7 +299,7 @@ class DoppelGANgerTFModel(Model):
             raise Exception(
                 "Dataset variables are not initialized properly for training purposes!"
             )
-        print("finished")
+        print("finished preparing sample batch")
 
         sample_len = self._config["sample_len"]
         data_attribute_outputs = dataset.data_attribute_outputs_train
@@ -361,17 +362,17 @@ class DoppelGANgerTFModel(Model):
         time_path = os.path.join(input_model_folder, "time.txt")
 
         if self._config["num_cores"] is None:
-            run_config = tf.ConfigProto()
+            run_config = tf.compat.v1.ConfigProto()
         else:
             num_cores = self._config["num_cores"]  # it means number of cores
-            run_config = tf.ConfigProto(
+            run_config = tf.compat.v1.ConfigProto(
                 intra_op_parallelism_threads=num_cores,
                 inter_op_parallelism_threads=num_cores,
                 allow_soft_placement=True,
                 device_count={"CPU": num_cores},
             )
 
-        with tf.Session(config=run_config) as sess:
+        with tf.compat.v1.Session(config=run_config) as sess:
             gan = DoppelGANger(
                 sess=sess,
                 checkpoint_dir=checkpoint_dir,
@@ -424,10 +425,6 @@ class DoppelGANgerTFModel(Model):
             total_generate_num_sample = (
                 self._config["generate_num_train_sample"]
                 + self._config["generate_num_test_sample"]
-            )
-            print(
-                "self._config[generate_num_train_sample]",
-                self._config["generate_num_train_sample"],
             )
             print("total generated sample:", total_generate_num_sample)
 

@@ -1,21 +1,23 @@
-import tensorflow as tf
-import numpy as np
-from tqdm import tqdm
-import datetime
-import os
-import math
-import sys
-import copy
-import time as tm
+# type: ignore
 
+import datetime
+import math
+import os
+import sys
+
+import numpy as np
+import tensorflow as tf
+from tqdm import tqdm
+
+from ...configs import get_config
 from .sn import NO_OPS
-from .util import draw_feature, draw_attribute, normalize_per_sample, add_gen_flag
+from .util import add_gen_flag, draw_attribute, draw_feature, normalize_per_sample
 
 try:
-    from tensorflow_privacy.privacy.optimizers import dp_optimizer
     from tensorflow_privacy.privacy.analysis.compute_dp_sgd_privacy_lib import (
         compute_dp_sgd_privacy,
     )
+    from tensorflow_privacy.privacy.optimizers import dp_optimizer
 except BaseException:
     pass
 
@@ -278,10 +280,8 @@ class DoppelGANger(object):
                 break
             dim += output.dim
 
-        if data_feature.shape[2] != np.sum(
-                [t.dim for t in self.data_feature_outputs]):
-            raise Exception(
-                "feature dimension does not match data_feature_outputs")
+        if data_feature.shape[2] != np.sum([t.dim for t in self.data_feature_outputs]):
+            raise Exception("feature dimension does not match data_feature_outputs")
 
         if len(data_gen_flag.shape) != 3:
             raise Exception("Expanded data_gen_flag should be 3 dimension")
@@ -292,14 +292,14 @@ class DoppelGANger(object):
         self.build_connection()
         self.build_loss()
         self.build_summary()
-        self.saver = tf.train.Saver()
+        self.saver = tf.compat.v1.train.Saver()
 
     def build_connection(self):
         # build connections for train-fake
         self.g_feature_input_noise_train_pl_l = []
         for i in range(self.num_packing):
             self.g_feature_input_noise_train_pl_l.append(
-                tf.placeholder(
+                tf.compat.v1.placeholder(
                     tf.float32,
                     [None, self.sample_time, self.feature_latent_dim],
                     name="g_feature_input_noise_train_{}".format(i),
@@ -308,7 +308,7 @@ class DoppelGANger(object):
         self.g_real_attribute_input_noise_train_pl_l = []
         for i in range(self.num_packing):
             self.g_real_attribute_input_noise_train_pl_l.append(
-                tf.placeholder(
+                tf.compat.v1.placeholder(
                     tf.float32,
                     [None, self.attribute_latent_dim],
                     name="g_real_attribute_input_noise_train_{}".format(i),
@@ -317,7 +317,7 @@ class DoppelGANger(object):
         self.g_addi_attribute_input_noise_train_pl_l = []
         for i in range(self.num_packing):
             self.g_addi_attribute_input_noise_train_pl_l.append(
-                tf.placeholder(
+                tf.compat.v1.placeholder(
                     tf.float32,
                     [None, self.attribute_latent_dim],
                     name=("g_addi_attribute_input_noise_train_{}".format(i)),
@@ -326,7 +326,7 @@ class DoppelGANger(object):
         self.g_feature_input_data_train_pl_l = []
         for i in range(self.num_packing):
             self.g_feature_input_data_train_pl_l.append(
-                tf.placeholder(
+                tf.compat.v1.placeholder(
                     tf.float32,
                     [None, self.sample_len * self.sample_feature_dim],
                     name="g_feature_input_data_train_{}".format(i),
@@ -374,17 +374,13 @@ class DoppelGANger(object):
             # g_output_gen_flag_train_tf: batch_size * (time * sample_len) * 1
             # g_output_length_train_tf: batch_size
             if self.fix_feature_network:
-                g_output_feature_train_tf = tf.zeros_like(
-                    g_output_feature_train_tf)
-                g_output_gen_flag_train_tf = tf.zeros_like(
-                    g_output_gen_flag_train_tf)
+                g_output_feature_train_tf = tf.zeros_like(g_output_feature_train_tf)
+                g_output_gen_flag_train_tf = tf.zeros_like(g_output_gen_flag_train_tf)
                 g_output_attribute_train_tf *= self.real_attribute_mask_tensor
 
             self.g_output_feature_train_tf_l.append(g_output_feature_train_tf)
-            self.g_output_attribute_train_tf_l.append(
-                g_output_attribute_train_tf)
-            self.g_output_gen_flag_train_tf_l.append(
-                g_output_gen_flag_train_tf)
+            self.g_output_attribute_train_tf_l.append(g_output_attribute_train_tf)
+            self.g_output_gen_flag_train_tf_l.append(g_output_gen_flag_train_tf)
             self.g_output_length_train_tf_l.append(g_output_length_train_tf)
             self.g_output_argmax_train_tf_l.append(g_output_argmax_train_tf)
         self.g_output_feature_train_tf = tf.concat(
@@ -408,7 +404,7 @@ class DoppelGANger(object):
 
         self.real_feature_pl_l = []
         for i in range(self.num_packing):
-            real_feature_pl = tf.placeholder(
+            real_feature_pl = tf.compat.v1.placeholder(
                 tf.float32,
                 [None, self.sample_time * self.sample_len, self.sample_feature_dim],
                 name="real_feature_{}".format(i),
@@ -416,7 +412,7 @@ class DoppelGANger(object):
             self.real_feature_pl_l.append(real_feature_pl)
         self.real_attribute_pl_l = []
         for i in range(self.num_packing):
-            real_attribute_pl = tf.placeholder(
+            real_attribute_pl = tf.compat.v1.placeholder(
                 tf.float32,
                 [None, self.sample_attribute_dim],
                 name="real_attribute_{}".format(i),
@@ -447,23 +443,23 @@ class DoppelGANger(object):
                 self.real_attribute_pl, train=True, sn_op=NO_OPS
             )
 
-        self.g_real_attribute_input_noise_test_pl = tf.placeholder(
+        self.g_real_attribute_input_noise_test_pl = tf.compat.v1.placeholder(
             tf.float32,
             [None, self.attribute_latent_dim],
             name="g_real_attribute_input_noise_test",
         )
-        self.g_addi_attribute_input_noise_test_pl = tf.placeholder(
+        self.g_addi_attribute_input_noise_test_pl = tf.compat.v1.placeholder(
             tf.float32,
             [None, self.attribute_latent_dim],
             name="g_addi_attribute_input_noise_test",
         )
-        self.g_feature_input_noise_test_pl = tf.placeholder(
+        self.g_feature_input_noise_test_pl = tf.compat.v1.placeholder(
             tf.float32,
             [None, None, self.feature_latent_dim],
             name="g_feature_input_noise_test",
         )
 
-        self.g_feature_input_data_test_teacher_pl = tf.placeholder(
+        self.g_feature_input_data_test_teacher_pl = tf.compat.v1.placeholder(
             tf.float32,
             [None, None, self.sample_len * self.sample_feature_dim],
             name="g_feature_input_data_test_teacher",
@@ -482,7 +478,7 @@ class DoppelGANger(object):
             train=False,
         )
 
-        self.g_feature_input_data_test_free_pl = tf.placeholder(
+        self.g_feature_input_data_test_free_pl = tf.compat.v1.placeholder(
             tf.float32,
             [None, self.sample_len * self.sample_feature_dim],
             name="g_feature_input_data_test_free",
@@ -501,7 +497,7 @@ class DoppelGANger(object):
             train=False,
         )
 
-        self.given_attribute_attribute_pl = tf.placeholder(
+        self.given_attribute_attribute_pl = tf.compat.v1.placeholder(
             tf.float32, [None, self.sample_real_attribute_dim], name="given_attribute"
         )
         (
@@ -519,10 +515,11 @@ class DoppelGANger(object):
             attribute=self.given_attribute_attribute_pl,
         )
 
-        self.generator.print_layers()
-        self.discriminator.print_layers()
-        if self.attr_discriminator is not None:
-            self.attr_discriminator.print_layers()
+        if get_config("model.should_print_layers", default_value=False):
+            self.generator.print_layers()
+            self.discriminator.print_layers()
+            if self.attr_discriminator is not None:
+                self.attr_discriminator.print_layers()
 
     def build_loss(self):
         batch_size = tf.shape(self.g_feature_input_noise_train_pl_l[0])[0]
@@ -550,20 +547,15 @@ class DoppelGANger(object):
         # w/ SN
         # hinge loss
         elif self.sn_mode == "SN":
-            self.d_loss_fake = tf.reduce_mean(
-                tf.nn.relu(1.0 + self.d_fake_train_tf))
-            self.d_loss_fake_unflattened = tf.nn.relu(
-                1.0 + self.d_fake_train_tf)
-            self.d_loss_real = tf.reduce_mean(
-                tf.nn.relu(1.0 - self.d_real_train_tf))
-            self.d_loss_real_unflattened = tf.nn.relu(
-                1.0 - self.d_real_train_tf)
+            self.d_loss_fake = tf.reduce_mean(tf.nn.relu(1.0 + self.d_fake_train_tf))
+            self.d_loss_fake_unflattened = tf.nn.relu(1.0 + self.d_fake_train_tf)
+            self.d_loss_real = tf.reduce_mean(tf.nn.relu(1.0 - self.d_real_train_tf))
+            self.d_loss_real_unflattened = tf.nn.relu(1.0 - self.d_real_train_tf)
 
         else:
             raise ValueError("Unknown SN mode!")
 
-        alpha_dim2 = tf.random_uniform(
-            shape=[batch_size, 1], minval=0.0, maxval=1.0)
+        alpha_dim2 = tf.random.uniform(shape=[batch_size, 1], minval=0.0, maxval=1.0)
         alpha_dim3 = tf.expand_dims(alpha_dim2, 2)
         differences_input_feature = (
             self.g_output_feature_train_tf - self.real_feature_pl
@@ -595,12 +587,7 @@ class DoppelGANger(object):
             )[0],
             [interpolates_input_feature, interpolates_input_attribute],
         )
-        slopes1 = tf.reduce_sum(
-            tf.square(
-                gradients[0]),
-            reduction_indices=[
-                1,
-                2])
+        slopes1 = tf.reduce_sum(tf.square(gradients[0]), reduction_indices=[1, 2])
         slopes2 = tf.reduce_sum(tf.square(gradients[1]), reduction_indices=[1])
 
         self.d_slopes1 = slopes1
@@ -629,11 +616,9 @@ class DoppelGANger(object):
         if self.attr_discriminator is not None:
             # w/o SN
             if self.sn_mode is None:
-                self.attr_d_loss_fake = tf.reduce_mean(
-                    self.attr_d_fake_train_tf)
+                self.attr_d_loss_fake = tf.reduce_mean(self.attr_d_fake_train_tf)
                 self.attr_d_loss_fake_unflattened = self.attr_d_fake_train_tf
-                self.attr_d_loss_real = - \
-                    tf.reduce_mean(self.attr_d_real_train_tf)
+                self.attr_d_loss_real = -tf.reduce_mean(self.attr_d_real_train_tf)
                 self.attr_d_loss_real_unflattened = -self.attr_d_real_train_tf
 
             # w/ SN
@@ -655,7 +640,7 @@ class DoppelGANger(object):
             else:
                 raise ValueError("Unknown SN mode!")
 
-            alpha_dim2 = tf.random_uniform(
+            alpha_dim2 = tf.random.uniform(
                 shape=[batch_size, 1], minval=0.0, maxval=1.0
             )
             differences_input_attribute = (
@@ -679,10 +664,7 @@ class DoppelGANger(object):
                 [interpolates_input_attribute],
             )
 
-            slopes1 = tf.reduce_sum(
-                tf.square(
-                    gradients[0]),
-                reduction_indices=[1])
+            slopes1 = tf.reduce_sum(tf.square(gradients[0]), reduction_indices=[1])
             slopes = tf.sqrt(slopes1 + self.EPS)
 
             self.attr_d_slopes = slopes
@@ -704,7 +686,7 @@ class DoppelGANger(object):
                 + self.attr_d_gp_coe * self.attr_d_loss_gp_unflattened
             )
 
-        self.g_op = tf.train.AdamOptimizer(self.g_lr, self.g_beta1).minimize(
+        self.g_op = tf.compat.v1.train.AdamOptimizer(self.g_lr, self.g_beta1).minimize(
             self.g_loss, var_list=self.generator.trainable_vars
         )
 
@@ -721,9 +703,9 @@ class DoppelGANger(object):
             )
 
         else:
-            self.d_op = tf.train.AdamOptimizer(self.d_lr, self.d_beta1).minimize(
-                self.d_loss, var_list=self.discriminator.trainable_vars
-            )
+            self.d_op = tf.compat.v1.train.AdamOptimizer(
+                self.d_lr, self.d_beta1
+            ).minimize(self.d_loss, var_list=self.discriminator.trainable_vars)
 
         """
         zinan debug
@@ -754,14 +736,14 @@ class DoppelGANger(object):
                     var_list=self.attr_discriminator.trainable_vars,
                 )
             else:
-                self.attr_d_op = tf.train.AdamOptimizer(
+                self.attr_d_op = tf.compat.v1.train.AdamOptimizer(
                     self.attr_d_lr, self.attr_d_beta1
                 ).minimize(
                     self.attr_d_loss, var_list=self.attr_discriminator.trainable_vars
                 )
 
         if self.sn_mode == "SN":
-            self.spectral_norm_update_ops = tf.get_collection(self.SN_OP)
+            self.spectral_norm_update_ops = tf.compat.v1.get_collection(self.SN_OP)
         elif self.sn_mode is None:
             pass
         else:
@@ -769,66 +751,64 @@ class DoppelGANger(object):
 
     def build_summary(self):
         self.g_summary = []
-        self.g_summary.append(tf.summary.scalar("loss/g/d", self.g_loss_d))
+        self.g_summary.append(tf.compat.v1.summary.scalar("loss/g/d", self.g_loss_d))
         if self.attr_discriminator is not None:
             self.g_summary.append(
-                tf.summary.scalar("loss/g/attr_d", self.g_loss_attr_d)
+                tf.compat.v1.summary.scalar("loss/g/attr_d", self.g_loss_attr_d)
             )
-        self.g_summary.append(tf.summary.scalar("loss/g", self.g_loss))
-        self.g_summary = tf.summary.merge(self.g_summary)
+        self.g_summary.append(tf.compat.v1.summary.scalar("loss/g", self.g_loss))
+        self.g_summary = tf.compat.v1.summary.merge(self.g_summary)
 
         self.d_summary = []
         self.d_summary.append(
-            tf.summary.scalar(
-                "loss/d/fake",
-                self.d_loss_fake))
-        self.d_summary.append(
-            tf.summary.scalar(
-                "loss/d/real",
-                self.d_loss_real))
-        self.d_summary.append(tf.summary.scalar("loss/d/gp", self.d_loss_gp))
-        self.d_summary.append(tf.summary.scalar("loss/d", self.d_loss))
-        self.d_summary.append(
-            tf.summary.scalar("d/fake", tf.reduce_mean(self.d_fake_train_tf))
+            tf.compat.v1.summary.scalar("loss/d/fake", self.d_loss_fake)
         )
         self.d_summary.append(
-            tf.summary.scalar("d/real", tf.reduce_mean(self.d_real_train_tf))
+            tf.compat.v1.summary.scalar("loss/d/real", self.d_loss_real)
+        )
+        self.d_summary.append(tf.compat.v1.summary.scalar("loss/d/gp", self.d_loss_gp))
+        self.d_summary.append(tf.compat.v1.summary.scalar("loss/d", self.d_loss))
+        self.d_summary.append(
+            tf.compat.v1.summary.scalar("d/fake", tf.reduce_mean(self.d_fake_train_tf))
+        )
+        self.d_summary.append(
+            tf.compat.v1.summary.scalar("d/real", tf.reduce_mean(self.d_real_train_tf))
         )
         for i in range(len(self.d_sigmas)):
             if isinstance(self.d_sigmas[i], list):
                 for j in range(len(self.d_sigmas[i])):
                     self.d_summary.append(
-                        tf.summary.scalar(
+                        tf.compat.v1.summary.scalar(
                             "d/sigma{}_{}".format(i, j), self.d_sigmas[i][j]
                         )
                     )
             else:
                 self.d_summary.append(
-                    tf.summary.scalar("d/sigma{}".format(i), self.d_sigmas[i])
+                    tf.compat.v1.summary.scalar("d/sigma{}".format(i), self.d_sigmas[i])
                 )
-        self.d_summary = tf.summary.merge(self.d_summary)
+        self.d_summary = tf.compat.v1.summary.merge(self.d_summary)
 
         if self.attr_discriminator is not None:
             self.attr_d_summary = []
             self.attr_d_summary.append(
-                tf.summary.scalar("loss/attr_d/fake", self.attr_d_loss_fake)
+                tf.compat.v1.summary.scalar("loss/attr_d/fake", self.attr_d_loss_fake)
             )
             self.attr_d_summary.append(
-                tf.summary.scalar("loss/attr_d/real", self.attr_d_loss_real)
+                tf.compat.v1.summary.scalar("loss/attr_d/real", self.attr_d_loss_real)
             )
             self.attr_d_summary.append(
-                tf.summary.scalar("loss/attr_d/gp", self.attr_d_loss_gp)
+                tf.compat.v1.summary.scalar("loss/attr_d/gp", self.attr_d_loss_gp)
             )
             self.attr_d_summary.append(
-                tf.summary.scalar("loss/attr_d", self.attr_d_loss)
+                tf.compat.v1.summary.scalar("loss/attr_d", self.attr_d_loss)
             )
             self.attr_d_summary.append(
-                tf.summary.scalar(
+                tf.compat.v1.summary.scalar(
                     "attr_d/fake", tf.reduce_mean(self.attr_d_fake_train_tf)
                 )
             )
             self.attr_d_summary.append(
-                tf.summary.scalar(
+                tf.compat.v1.summary.scalar(
                     "attr_d/real", tf.reduce_mean(self.attr_d_real_train_tf)
                 )
             )
@@ -836,18 +816,18 @@ class DoppelGANger(object):
                 if isinstance(self.attr_d_sigmas[i], list):
                     for j in range(len(self.attr_d_sigmas[i])):
                         self.attr_d_summary.append(
-                            tf.summary.scalar(
+                            tf.compat.v1.summary.scalar(
                                 "attr_d/sigma{}_{}".format(i, j),
                                 self.attr_d_sigmas[i][j],
                             )
                         )
                 else:
                     self.attr_d_summary.append(
-                        tf.summary.scalar(
+                        tf.compat.v1.summary.scalar(
                             "attr_d/sigma{}".format(i), self.attr_d_sigmas[i]
                         )
                     )
-            self.attr_d_summary = tf.summary.merge(self.attr_d_summary)
+            self.attr_d_summary = tf.compat.v1.summary.merge(self.attr_d_summary)
 
     def save(self, global_id, saver=None, checkpoint_dir=None):
         if saver is None:
@@ -869,7 +849,7 @@ class DoppelGANger(object):
         # get the model name and then recontruct path using checkpoint_dir
         ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
         self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
-        global_id = int(ckpt_name[len(self.MODEL_NAME) + 1:])
+        global_id = int(ckpt_name[len(self.MODEL_NAME) + 1 :])
         return global_id
 
     # load pre-trained model
@@ -885,25 +865,20 @@ class DoppelGANger(object):
 
     def discriminate_from(self, real_features, real_attributes):
         results = []
-        round_ = int(
-            math.ceil(
-                float(
-                    real_features[0].shape[0]) /
-                self.batch_size))
+        round_ = int(math.ceil(float(real_features[0].shape[0]) / self.batch_size))
         for i in range(round_):
             feed_dict = {}
             for j in range(self.num_packing):
                 batch_data_feature = real_features[j][
-                    i * self.batch_size: (i + 1) * self.batch_size
+                    i * self.batch_size : (i + 1) * self.batch_size
                 ]
                 batch_data_attribute = real_attributes[j][
-                    i * self.batch_size: (i + 1) * self.batch_size
+                    i * self.batch_size : (i + 1) * self.batch_size
                 ]
 
                 feed_dict[self.real_feature_pl_l[j]] = batch_data_feature
                 feed_dict[self.real_attribute_pl_l[j]] = batch_data_attribute
-            sub_results = self.sess.run(
-                self.d_real_test_tf, feed_dict=feed_dict)
+            sub_results = self.sess.run(self.d_real_test_tf, feed_dict=feed_dict)
             results.append(sub_results)
 
         results = np.concatenate(results, axis=0)
@@ -922,11 +897,7 @@ class DoppelGANger(object):
         attributes = []
         gen_flags = []
         lengths = []
-        round_ = int(
-            math.ceil(
-                float(
-                    feature_input_noise.shape[0]) /
-                self.batch_size))
+        round_ = int(math.ceil(float(feature_input_noise.shape[0]) / self.batch_size))
         for i in range(round_):
             if given_attribute is None:
                 if feature_input_data.ndim == 2:
@@ -944,16 +915,16 @@ class DoppelGANger(object):
                         ],
                         feed_dict={
                             self.g_real_attribute_input_noise_test_pl: real_attribute_input_noise[
-                                i * self.batch_size: (i + 1) * self.batch_size
+                                i * self.batch_size : (i + 1) * self.batch_size
                             ],
                             self.g_addi_attribute_input_noise_test_pl: addi_attribute_input_noise[
-                                i * self.batch_size: (i + 1) * self.batch_size
+                                i * self.batch_size : (i + 1) * self.batch_size
                             ],
                             self.g_feature_input_noise_test_pl: feature_input_noise[
-                                i * self.batch_size: (i + 1) * self.batch_size
+                                i * self.batch_size : (i + 1) * self.batch_size
                             ],
                             self.g_feature_input_data_test_free_pl: feature_input_data[
-                                i * self.batch_size: (i + 1) * self.batch_size
+                                i * self.batch_size : (i + 1) * self.batch_size
                             ],
                         },
                     )
@@ -972,16 +943,16 @@ class DoppelGANger(object):
                         ],
                         feed_dict={
                             self.g_real_attribute_input_noise_test_pl: real_attribute_input_noise[
-                                i * self.batch_size: (i + 1) * self.batch_size
+                                i * self.batch_size : (i + 1) * self.batch_size
                             ],
                             self.g_addi_attribute_input_noise_test_pl: addi_attribute_input_noise[
-                                i * self.batch_size: (i + 1) * self.batch_size
+                                i * self.batch_size : (i + 1) * self.batch_size
                             ],
                             self.g_feature_input_noise_test_pl: feature_input_noise[
-                                i * self.batch_size: (i + 1) * self.batch_size
+                                i * self.batch_size : (i + 1) * self.batch_size
                             ],
                             self.g_feature_input_data_test_teacher_pl: feature_input_data[
-                                i * self.batch_size: (i + 1) * self.batch_size
+                                i * self.batch_size : (i + 1) * self.batch_size
                             ],
                         },
                     )
@@ -1000,16 +971,16 @@ class DoppelGANger(object):
                     ],
                     feed_dict={
                         self.g_addi_attribute_input_noise_test_pl: addi_attribute_input_noise[
-                            i * self.batch_size: (i + 1) * self.batch_size
+                            i * self.batch_size : (i + 1) * self.batch_size
                         ],
                         self.g_feature_input_noise_test_pl: feature_input_noise[
-                            i * self.batch_size: (i + 1) * self.batch_size
+                            i * self.batch_size : (i + 1) * self.batch_size
                         ],
                         self.g_feature_input_data_test_free_pl: feature_input_data[
-                            i * self.batch_size: (i + 1) * self.batch_size
+                            i * self.batch_size : (i + 1) * self.batch_size
                         ],
                         self.given_attribute_attribute_pl: given_attribute[
-                            i * self.batch_size: (i + 1) * self.batch_size
+                            i * self.batch_size : (i + 1) * self.batch_size
                         ],
                     },
                 )
@@ -1036,11 +1007,9 @@ class DoppelGANger(object):
         # print("Attribute noise type:", self.generator.attr_noise_type)
 
         if self.generator.attr_noise_type == "normal":
-            return np.random.normal(
-                size=[num_sample, self.attribute_latent_dim])
+            return np.random.normal(size=[num_sample, self.attribute_latent_dim])
         elif self.generator.attr_noise_type == "uniform":
-            return np.random.uniform(
-                size=[num_sample, self.attribute_latent_dim])
+            return np.random.uniform(size=[num_sample, self.attribute_latent_dim])
         else:
             raise ValueError("Unknown attribute noise type!")
 
@@ -1048,11 +1017,9 @@ class DoppelGANger(object):
         # print("Feature noise type:", self.generator.feature_noise_type)
 
         if self.generator.feature_noise_type == "normal":
-            return np.random.normal(
-                size=[num_sample, length, self.feature_latent_dim])
+            return np.random.normal(size=[num_sample, length, self.feature_latent_dim])
         elif self.generator.feature_noise_type == "uniform":
-            return np.random.uniform(
-                size=[num_sample, length, self.feature_latent_dim])
+            return np.random.uniform(size=[num_sample, length, self.feature_latent_dim])
         else:
             raise ValueError("Unknown feature noise type!")
 
@@ -1062,10 +1029,7 @@ class DoppelGANger(object):
         )
 
     def gen_feature_input_data_teacher(self, num_sample):
-        id_ = np.random.choice(
-            self.data_feature.shape[0],
-            num_sample,
-            replace=False)
+        id_ = np.random.choice(self.data_feature.shape[0], num_sample, replace=False)
         data_feature_ori = self.data_feature[id_, :, :]
         data_feature = np.reshape(
             data_feature_ori,
@@ -1082,8 +1046,7 @@ class DoppelGANger(object):
             axis=1,
         )
         ground_truth_feature = data_feature_ori
-        ground_truth_length = np.sum(
-            self.data_gen_flag[id_, :, :], axis=(1, 2))
+        ground_truth_length = np.sum(self.data_gen_flag[id_, :, :], axis=(1, 2))
         ground_truth_attribute = self.data_attribute[id_, :]
         return (
             input_,
@@ -1125,11 +1088,7 @@ class DoppelGANger(object):
                 ),
             )
             if ground_truth_features is None:
-                draw_feature(
-                    features,
-                    lengths,
-                    self.data_feature_outputs,
-                    file_path)
+                draw_feature(features, lengths, self.data_feature_outputs, file_path)
             else:
                 draw_feature(
                     np.concatenate([features, ground_truth_features], axis=0),
@@ -1145,28 +1104,21 @@ class DoppelGANger(object):
                 ),
             )
             if ground_truth_features is None:
-                draw_attribute(
-                    attributes,
-                    self.data_attribute_outputs,
-                    file_path)
+                draw_attribute(attributes, self.data_attribute_outputs, file_path)
             else:
                 draw_attribute(
-                    np.concatenate(
-                        [attributes, ground_truth_attributes], axis=0),
+                    np.concatenate([attributes, ground_truth_attributes], axis=0),
                     self.data_attribute_outputs,
                     file_path,
                 )
 
-        real_attribute_input_noise = self.gen_attribute_input_noise(
-            self.vis_num_sample)
-        addi_attribute_input_noise = self.gen_attribute_input_noise(
-            self.vis_num_sample)
+        real_attribute_input_noise = self.gen_attribute_input_noise(self.vis_num_sample)
+        addi_attribute_input_noise = self.gen_attribute_input_noise(self.vis_num_sample)
         feature_input_noise = self.gen_feature_input_noise(
             self.vis_num_sample, self.sample_time
         )
 
-        feature_input_data = self.gen_feature_input_data_free(
-            self.vis_num_sample)
+        feature_input_data = self.gen_feature_input_data_free(self.vis_num_sample)
         features, attributes, gen_flags, lengths = self.sample_from(
             real_attribute_input_noise,
             addi_attribute_input_noise,
@@ -1206,8 +1158,8 @@ class DoppelGANger(object):
     def train(self, feature_network_checkpoint_path=None, restore=False):
         # This function prevents data loader (from another distributed process) having stdout.
         # Have no idea about the reason
-        # tf.global_variables_initializer().run()
-        init = tf.global_variables_initializer()
+        # tf.compat.v1.global_variables_initializer().run()
+        init = tf.compat.v1.global_variables_initializer()
         self.sess.run(init)
 
         # TEMPORARY CHANGE: USE RESTORE TO LOAD PRETRAINED MODEL
@@ -1225,25 +1177,23 @@ class DoppelGANger(object):
 
         if feature_network_checkpoint_path is not None:
             # feature
-            variables = tf.get_collection(
-                tf.GraphKeys.GLOBAL_VARIABLES,
+            variables = tf.compat.v1.get_collection(
+                tf.compat.v1.GraphKeys.GLOBAL_VARIABLES,
                 scope=self.generator.scope_name + "/feature",
             )
-            print(variables)
-            saver = tf.train.Saver(variables)
+            saver = tf.compat.v1.train.Saver(variables)
             saver.restore(self.sess, feature_network_checkpoint_path)
 
             # min max
-            variables = tf.get_collection(
-                tf.GraphKeys.GLOBAL_VARIABLES,
+            variables = tf.compat.v1.get_collection(
+                tf.compat.v1.GraphKeys.GLOBAL_VARIABLES,
                 scope=self.generator.scope_name + "/attribute_addi",
             )
-            print(variables)
             if len(variables) > 0:
-                saver = tf.train.Saver(variables)
+                saver = tf.compat.v1.train.Saver(variables)
                 saver.restore(self.sess, feature_network_checkpoint_path)
 
-        self.summary_writer = tf.summary.FileWriter(
+        self.summary_writer = tf.compat.v1.summary.FileWriter(
             self.checkpoint_dir, self.sess.graph
         )
 
@@ -1302,10 +1252,6 @@ class DoppelGANger(object):
                     batch_data_feature,
                     batch_data_gen_flag,
                 ) = self.dataset.sample_batch(self.batch_size)
-
-                print("batch_data_attribute:", batch_data_attribute.shape)
-                print("batch_data_feature:", batch_data_feature.shape)
-                print("batch_data_gen_flag:", batch_data_gen_flag.shape)
 
                 batch_real_attribute_input_noise = self.gen_attribute_input_noise(
                     self.batch_size
@@ -1398,7 +1344,7 @@ class DoppelGANger(object):
                         )
 
                 if (batch_id + 1) % self.extra_checkpoint_freq == 0:
-                    saver = tf.train.Saver()
+                    saver = tf.compat.v1.train.Saver()
                     checkpoint_dir = os.path.join(
                         self.checkpoint_dir, "iteration_id-{}".format(batch_id)
                     )

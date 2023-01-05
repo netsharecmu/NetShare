@@ -1,5 +1,6 @@
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
+
 from .sn import spectral_normed_weight
 
 
@@ -13,13 +14,12 @@ def linear(
     with_sigma=False,
     scale=None,
 ):
-    with tf.variable_scope(scope_name):
-        input_ = tf.reshape(
-            input_, [-1, np.prod(input_.get_shape().as_list()[1:])])
+    with tf.compat.v1.variable_scope(scope_name):
+        input_ = tf.reshape(input_, [-1, np.prod(input_.get_shape().as_list()[1:])])
         # output = tf.layers.dense(
         #    input_,
         #    output_size)
-        matrix = tf.get_variable(
+        matrix = tf.compat.v1.get_variable(
             "matrix",
             [input_.get_shape().as_list()[1], output_size],
             tf.float32,
@@ -35,7 +35,7 @@ def linear(
         if scale is not None:
             matrix = matrix * scale
 
-        bias = tf.get_variable(
+        bias = tf.compat.v1.get_variable(
             "bias", [output_size], initializer=tf.constant_initializer(bias_start)
         )
         output = tf.matmul(input_, matrix) + bias
@@ -47,9 +47,8 @@ def linear(
 
 
 def flatten(input_, scope_name="flatten"):
-    with tf.variable_scope(scope_name):
-        output = tf.reshape(
-            input_, [-1, np.prod(input_.get_shape().as_list()[1:])])
+    with tf.compat.v1.variable_scope(scope_name):
+        output = tf.reshape(input_, [-1, np.prod(input_.get_shape().as_list()[1:])])
         return output
 
 
@@ -57,7 +56,7 @@ class batch_norm(object):
     # Code from:
     # https://github.com/carpedm20/DCGAN-tensorflow
     def __init__(self, epsilon=1e-5, momentum=0.9, name="batch_norm"):
-        with tf.variable_scope(name):
+        with tf.compat.v1.variable_scope(name):
             self.epsilon = epsilon
             self.momentum = momentum
             self.name = name
@@ -87,12 +86,12 @@ def deconv2d(
 ):
     # Code from:
     # https://github.com/carpedm20/DCGAN-tensorflow
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         # filter : [height, width, output_channels, in_channels]
-        w = tf.get_variable(
+        w = tf.compat.v1.get_variable(
             "w",
             [k_h, k_w, output_shape[-1], input_.get_shape()[-1]],
-            initializer=tf.random_normal_initializer(stddev=stddev),
+            initializer=tf.random.normal_initializer(stddev=stddev),
         )
 
         try:
@@ -106,7 +105,7 @@ def deconv2d(
                 input_, w, output_shape=output_shape, strides=[1, d_h, d_w, 1]
             )
 
-        biases = tf.get_variable(
+        biases = tf.compat.v1.get_variable(
             "biases", [output_shape[-1]], initializer=tf.constant_initializer(0.0)
         )
         deconv = tf.reshape(tf.nn.bias_add(deconv, biases), output_shape)
@@ -114,21 +113,18 @@ def deconv2d(
         return deconv
 
 
-def conv2d(input_, output_dim, k_h=5, k_w=5, d_h=2,
-           d_w=2, stddev=0.02, name="conv2d"):
+def conv2d(input_, output_dim, k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02, name="conv2d"):
     # Code from:
     # https://github.com/carpedm20/DCGAN-tensorflow
-    with tf.variable_scope(name):
-        w = tf.get_variable(
+    with tf.compat.v1.variable_scope(name):
+        w = tf.compat.v1.get_variable(
             "w",
             [k_h, k_w, input_.get_shape()[-1], output_dim],
             initializer=tf.truncated_normal_initializer(stddev=stddev),
         )
-        conv = tf.nn.conv2d(
-            input_, w, strides=[
-                1, d_h, d_w, 1], padding="SAME")
+        conv = tf.nn.conv2d(input_, w, strides=[1, d_h, d_w, 1], padding="SAME")
 
-        biases = tf.get_variable(
+        biases = tf.compat.v1.get_variable(
             "biases", [output_dim], initializer=tf.constant_initializer(0.0)
         )
         conv = tf.reshape(
