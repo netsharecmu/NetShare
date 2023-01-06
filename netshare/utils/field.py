@@ -53,7 +53,7 @@ class ContinuousField(Field):
 
         # [-1, 1] normalization
         elif self.norm_option == Normalization.MINUSONE_ONE:
-            if self.max_x - self.min_x - 1 == 0:
+            if self.max_x - self.min_x == 0:
                 raise Exception("Not enough data to proceed!")
             return np.asarray(2 * (x - self.min_x) / (self.max_x - self.min_x) - 1)
         else:
