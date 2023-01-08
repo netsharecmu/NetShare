@@ -11,6 +11,19 @@ from netshare.learn import learn_api
 from netshare.utils.field import ContinuousField, Field
 
 
+def _get_fields_names(fields_list: List[Field]) -> List[str]:
+    """
+    This function returns the names of the given fields.
+    """
+    field_names = []
+    for field in fields_list:
+        if isinstance(field.name, list):
+            field_names.extend(field.name)
+        else:
+            field_names.append(field.name)
+    return field_names
+
+
 def _denormalize_by_fields_list(
     normalized_data: np.ndarray, fields_list: List[Field], is_session_key: bool
 ) -> List[np.ndarray]:
@@ -47,19 +60,18 @@ def write_to_csv(
     csv_path = os.path.join(csv_folder, f"data_{random.random()}.csv")
     with open(csv_path, "w") as f:
         writer = csv.writer(f)
-        writer.writerow(
-            [field.name for field in session_key_fields]
-            + [column_name for field in timeseries_fields for column_name in field.name]
-        )
+        session_titles = _get_fields_names(session_key_fields)
+        timeseries_titles = _get_fields_names(timeseries_fields)
+        writer.writerow(session_titles + timeseries_titles)
+
         for i in range(session_key[0].shape[0]):
-            writer.writerow(
-                [d[i] for d in session_key]
-                + [
-                    sd
-                    for d in timeseries
-                    for sd in d[i][: int(np.sum(data_gen_flag[i]))]
-                ]
-            )
+            session_data = [d[i] for d in session_key]
+            # this if is here in parallel to the if in `reduce_samples`. It supports old flows.
+            if len(timeseries) == 1:
+                timeseries_data = timeseries[0][i].tolist()
+            else:
+                timeseries_data = [d[i][0] for d in timeseries]
+            writer.writerow(session_data + timeseries_data)
 
 
 def denormalize_fields() -> str:
