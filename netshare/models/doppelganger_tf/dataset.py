@@ -1,17 +1,14 @@
 import copy
-import enum
 import math
 import os
+import time
 
 import numpy as np
-from more_itertools import sample
-from multiprocess import Manager, Pool, Queue, Value
-from tqdm import tqdm
+from ray.util.multiprocessing import Pool
+from ray.util.queue import Queue
 
-from .util import add_gen_flag, normalize_per_sample
-
-# from ray.util.multiprocessing import Pool
-# from ray.util.queue import Queue
+from netshare.models.doppelganger_tf.util import add_gen_flag, normalize_per_sample
+from netshare.utils.logger import logger
 
 
 class NetShareDataset(object):
@@ -22,7 +19,7 @@ class NetShareDataset(object):
         data_attribute_outputs,
         data_feature_outputs,
         buffer_size=1000,
-        num_processes=10,
+        num_processes=3,
         *args,
         **kwargs,
     ):
@@ -39,17 +36,15 @@ class NetShareDataset(object):
         self.buffer_size = buffer_size
         self.num_processes = num_processes
 
-        self.manager = Manager()
-        self.running_flag = self.manager.Value("i", 1)
-        self.image_buffer = self.manager.Queue(maxsize=buffer_size)
-        self.files = self.manager.list(
-            [
-                os.path.join(root, "data_train_npz", file)
-                for file in os.listdir(os.path.join(root, "data_train_npz"))
-                if file.endswith(".npz")
-            ]
-        )
-        self.config_mp = self.manager.dict(config)
+        self.running_flag = Queue(maxsize=1)
+        self.image_buffer = Queue(maxsize=buffer_size)
+        self.files = [
+            os.path.join(root, "data_train_npz", file)
+            for file in os.listdir(os.path.join(root, "data_train_npz"))
+            if file.endswith(".npz")
+        ]
+
+        self.config_mp = config
 
         self.pool = Pool(num_processes)
         print("prepared to start data loader")
@@ -72,7 +67,10 @@ class NetShareDataset(object):
         np.random.seed(os.getpid())
         print("In data loader")
         print("-------------")
-        while running_flag.value == 1:
+        while running_flag.empty():
+            if not image_buffer.empty():
+                time.sleep(0.5)
+                continue
             file_id = np.random.choice(len(files))
             image = np.load(files[file_id])
             image_ = {}
@@ -122,15 +120,16 @@ class NetShareDataset(object):
         return image_
 
     def stop_data_loader(self):
-        self.running_flag.value = 0
+        self.running_flag.put({"stop": True})
         for idx, res in enumerate(self.results):
             try:
-                print(f"Stop data_loader #{idx}: {res.get(timeout=5)}")
+                logger.debug(f"Stop data_loader #{idx}: {res.get(timeout=5)}")
             except:
-                print(f"Stop data_loader #{idx} failed within timeout!")
+                logger.debug(f"Stop data_loader #{idx} failed within timeout!")
 
         self.pool.close()
         self.pool.join()
+        logger.debug("data loader stopped successfully")
 
     def sample_batch(self, batch_size):
         data_attribute = []

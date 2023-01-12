@@ -36,8 +36,7 @@ def split_dataframe_to_chunks(
 
     dfs = []
     if split_type == "fixed_size":
-        chunk_size = math.ceil(big_raw_df.shape[0] / n_chunks)
-        dfs = np.array_split(big_raw_df, chunk_size)
+        dfs = np.array_split(big_raw_df, n_chunks)
         return dfs
 
     elif split_type == "fixed_time":

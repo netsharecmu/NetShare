@@ -53,7 +53,6 @@ setup(
         "scapy==2.5.0",
         "ray",
         "ray[default]",
-        "multiprocess",
         "addict",
         "config_io==0.4.0",
         "flask",

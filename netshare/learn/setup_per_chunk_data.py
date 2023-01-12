@@ -20,6 +20,7 @@ from netshare.utils.field import (
     field_config_to_key,
     key_from_field,
 )
+from netshare.utils.logger import logger
 
 
 def apply_configuration_fields(
@@ -232,7 +233,9 @@ def apply_cross_chunk_mechanism(
     attr_per_row: List[float] = []
     if get_config("global_config.n_chunks", default_value=1) > 1:
         split_name = get_config(
-            "pre_post_processor.config.split_name", path2="learn.split_name"
+            "pre_post_processor.config.split_name",
+            path2="learn.split_name",
+            default_value="multichunk_dep_v2",
         )
         if cross_chunks_data.flowkeys_chunkidx is None:
             raise ValueError(
@@ -304,6 +307,7 @@ def setup_per_chunk(
     df_per_chunk: pd.DataFrame,
     chunk_id: int,
 ) -> None:
+    logger.debug(f"setup_per_chunk (chunk_id={chunk_id}): Started")
     session_key_config = get_config(
         "pre_post_processor.config.metadata", path2="learn.session_key"
     )
@@ -373,3 +377,4 @@ def setup_per_chunk(
         data_feature=data_feature,
         chunk_id=chunk_id,
     )
+    logger.debug(f"setup_per_chunk (chunk_id={chunk_id}): Ended")
