@@ -9,7 +9,9 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-from ...configs import get_config
+from netshare.configs import get_config
+from netshare.utils.logger import TqdmToLogger
+
 from .sn import NO_OPS
 from .util import add_gen_flag, draw_attribute, draw_feature, normalize_per_sample
 
@@ -1223,7 +1225,7 @@ class DoppelGANger(object):
             #     self.dp_delta)
             # sys.stdout.flush()
 
-        for batch_id in tqdm(range(self.iteration)):
+        for batch_id in tqdm(range(self.iteration), file=TqdmToLogger()):
 
             # batch_data_id_ = np.random.choice(
             #     self.data_feature.shape[0],

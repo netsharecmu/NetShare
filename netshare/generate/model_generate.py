@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 import netshare.utils.ray as ray
 from netshare import models
-from netshare.utils.logger import logger
+from netshare.utils.logger import TqdmToLogger, logger
 from netshare.utils.model_configuration import create_chunks_configurations
 from netshare.utils.paths import get_generated_data_log_folder
 
@@ -94,7 +94,7 @@ def merge_attr(config_group: dict, configs: List[dict]) -> None:
     for chunkid in range(num_chunks):
         dict_chunkid_attr[chunkid] = []
 
-    for chunkid in tqdm(range(num_chunks)):
+    for chunkid in tqdm(range(num_chunks), file=TqdmToLogger()):
         n_flows_startFromThisEpoch = 0
 
         if not os.path.exists(

@@ -20,7 +20,7 @@ def get_chunk_dir(chunk_id: Optional[int]) -> str:
                 f"Internal error: shouldn't have chunk_id={chunk_id} in this configuration"
             )
     if chunk_id is None:
-        logger.warning("chunk_id is None, moved to a fallback chunk_id=0")
+        logger.debug("chunk_id is None, moved to a fallback chunk_id=0")
         chunk_id = 0
     chunk_dir = os.path.join(get_preprocessed_data_folder(), f"chunkid-{chunk_id}")
     os.makedirs(chunk_dir, exist_ok=True)

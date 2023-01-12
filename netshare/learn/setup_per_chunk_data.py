@@ -307,7 +307,7 @@ def setup_per_chunk(
     df_per_chunk: pd.DataFrame,
     chunk_id: int,
 ) -> None:
-    logger.debug(f"setup_per_chunk (chunk_id={chunk_id}): Started")
+    logger.debug(f"chunk_id={chunk_id}: Started")
     session_key_config = get_config(
         "pre_post_processor.config.metadata", path2="learn.session_key"
     )
@@ -377,4 +377,4 @@ def setup_per_chunk(
         data_feature=data_feature,
         chunk_id=chunk_id,
     )
-    logger.debug(f"setup_per_chunk (chunk_id={chunk_id}): Ended")
+    logger.debug(f"chunk_id={chunk_id}: Ended")

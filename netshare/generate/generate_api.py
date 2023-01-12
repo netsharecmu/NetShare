@@ -44,6 +44,8 @@ def get_raw_generated_data() -> Generator[
                         unnormalized_session_key = data["data_attribute"]
                         data_gen_flag = data["data_gen_flag"]
                         subdir = feat_raw_dir[
-                            len(get_generated_data_folder()) + 1 : -len("feat_raw")
+                            len(get_generated_data_folder()) : -len("feat_raw")
                         ]
+                        if subdir.startswith("pre_processed_data"):
+                            continue
                         yield unnormalized_timeseries, unnormalized_session_key, data_gen_flag, subdir

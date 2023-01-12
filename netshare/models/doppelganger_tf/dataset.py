@@ -70,8 +70,7 @@ class NetShareDataset(object):
     @staticmethod
     def data_loader(image_buffer, running_flag, files, transform, config):
         np.random.seed(os.getpid())
-        print("In data loader")
-        print("-------------")
+        logger.debug("In data loader")
         while running_flag.empty():
             if not image_buffer.empty():
                 time.sleep(0.5)
@@ -87,8 +86,7 @@ class NetShareDataset(object):
             except BaseException:
                 pass
 
-        print("data loader ended")
-        print("-------------")
+        logger.debug("data loader ended")
         return True
 
     # append to global_max_flow_len
@@ -128,9 +126,9 @@ class NetShareDataset(object):
         self.running_flag.put({"stop": True})
         for idx, res in enumerate(self.results):
             try:
-                logger.debug(f"Stop data_loader #{idx}: {res.get(timeout=5)}")
+                logger.debug(f"chunk #{idx}: {res.get(timeout=5)}")
             except:
-                logger.debug(f"Stop data_loader #{idx} failed within timeout!")
+                logger.debug(f"chunk #{idx} failed within timeout!")
 
         self.pool.close()
         self.pool.join()
