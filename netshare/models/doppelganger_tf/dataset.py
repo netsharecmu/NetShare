@@ -52,7 +52,7 @@ class NetShareDataset(object):
         self.config_mp = config
 
         self.pool = pool_class(num_processes)
-        print("prepared to start data loader")
+        logger.debug("prepared to start data loader")
         self.results = [
             self.pool.apply_async(
                 self.data_loader,
@@ -139,7 +139,6 @@ class NetShareDataset(object):
         data_feature = []
         data_gen_flag = []
         # Don't use busy waiting to check if queue is full.
-        logger.debug("Start waiting to data loading")
         for i in range(batch_size):
             image = self.image_buffer.get()
             data_attribute.append(image["data_attribute"])

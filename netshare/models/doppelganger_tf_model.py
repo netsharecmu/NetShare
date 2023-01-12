@@ -39,8 +39,6 @@ class DoppelGANgerTFModel(Model):
         if not ray.config.enabled:
             tf.compat.v1.reset_default_graph()
 
-        print("Currently training with config:", self._config)
-
         # save config to the result folder
         with open(
             os.path.join(self._config["result_folder"], "config.json"), "w"
