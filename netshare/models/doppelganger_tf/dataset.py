@@ -2,13 +2,16 @@ import copy
 import math
 import os
 import time
+from multiprocessing import Manager as multiprocessing_manager
+from multiprocessing import Pool as multiprocessing_pool
 
 import numpy as np
-from ray.util.multiprocessing import Pool
-from ray.util.queue import Queue
+from ray.util.multiprocessing import Pool as ray_pool
+from ray.util.queue import Queue as ray_queue
 
 from netshare.models.doppelganger_tf.util import add_gen_flag, normalize_per_sample
 from netshare.utils.logger import logger
+from netshare.utils.ray import is_ray_enabled
 
 
 class NetShareDataset(object):
@@ -19,7 +22,7 @@ class NetShareDataset(object):
         data_attribute_outputs,
         data_feature_outputs,
         buffer_size=1000,
-        num_processes=3,
+        num_processes=2,
         *args,
         **kwargs,
     ):
@@ -36,8 +39,10 @@ class NetShareDataset(object):
         self.buffer_size = buffer_size
         self.num_processes = num_processes
 
-        self.running_flag = Queue(maxsize=1)
-        self.image_buffer = Queue(maxsize=buffer_size)
+        queue_class = ray_queue if is_ray_enabled() else multiprocessing_manager().Queue
+        pool_class = ray_pool if is_ray_enabled() else multiprocessing_pool
+        self.running_flag = queue_class(maxsize=1)
+        self.image_buffer = queue_class(maxsize=buffer_size)
         self.files = [
             os.path.join(root, "data_train_npz", file)
             for file in os.listdir(os.path.join(root, "data_train_npz"))
@@ -46,7 +51,7 @@ class NetShareDataset(object):
 
         self.config_mp = config
 
-        self.pool = Pool(num_processes)
+        self.pool = pool_class(num_processes)
         print("prepared to start data loader")
         self.results = [
             self.pool.apply_async(
@@ -136,6 +141,7 @@ class NetShareDataset(object):
         data_feature = []
         data_gen_flag = []
         # Don't use busy waiting to check if queue is full.
+        logger.debug("Start waiting to data loading")
         for i in range(batch_size):
             image = self.image_buffer.get()
             data_attribute.append(image["data_attribute"])
