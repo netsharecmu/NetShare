@@ -72,7 +72,8 @@ def load_dataframe_chunks(csv_dir: str) -> Tuple[pd.DataFrame, List[pd.DataFrame
         df["filename"] = filename
         dfs.append(df)
     df = pd.concat(dfs, axis=0, ignore_index=True)
-    df.dropna(inplace=True)
+    if get_config("learn.dropna", default_value=True):
+        df.dropna(inplace=True)
     if get_config("global_config.n_chunks", default_value=1) > 1:
         df_chunks = split_dataframe_to_chunks(
             big_raw_df=df,

@@ -33,6 +33,9 @@ def put_canonical_data_from_directory(input_dir: str) -> None:
 def get_raw_generated_data() -> Generator[
     Tuple[np.ndarray, np.ndarray, np.ndarray, str], None, None
 ]:
+    ignore_preprocessed = os.listdir(get_raw_generated_data_dir()) != [
+        "pre_processed_data"
+    ]
     for path, directories, files in os.walk(get_raw_generated_data_dir()):
         for directory in directories:
             if directory == "feat_raw":
@@ -46,6 +49,8 @@ def get_raw_generated_data() -> Generator[
                         subdir = feat_raw_dir[
                             len(get_generated_data_folder()) : -len("feat_raw")
                         ]
-                        if subdir.startswith("pre_processed_data"):
+                        if ignore_preprocessed and subdir.startswith(
+                            "pre_processed_data"
+                        ):
                             continue
                         yield unnormalized_timeseries, unnormalized_session_key, data_gen_flag, subdir
