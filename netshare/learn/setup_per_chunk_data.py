@@ -355,7 +355,11 @@ def setup_per_chunk(
     ):
         data_attribute = df_per_chunk[new_session_key_list].to_numpy()
     else:
-        data_attribute = np.array(list(gk.groups.keys()))
+        if len(new_session_key_list) == 1:
+            # Solving a gotcha in pandas groupby when grouping by a single column
+            data_attribute = [tuple([key]) for key in gk.groups.keys()]
+        else:
+            data_attribute = np.array(list(gk.groups.keys()))
         if flow_tags:
             data_attribute = np.concatenate(
                 (data_attribute, np.array(flow_tags)), axis=1

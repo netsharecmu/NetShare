@@ -152,13 +152,6 @@ def merge_attr(config_group: dict, configs: List[dict]) -> None:
         else:
             dict_chunkid_attr[chunkid] = raw_attr_chunk
 
-        logger.debug(
-            "n_flows_startFromThisEpoch / total flows: {}/{}".format(
-                n_flows_startFromThisEpoch, raw_attr_chunk.shape[0]
-            )
-        )
-
-    logger.debug("Saving merged attributes")
     n_merged_attrs = 0
     for chunkid, attr_clean in dict_chunkid_attr.items():
         n_merged_attrs += len(attr_clean)

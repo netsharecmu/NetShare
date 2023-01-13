@@ -216,8 +216,6 @@ class DoppelGANgerTFModel(Model):
         if not ray.config.enabled:
             tf.compat.v1.reset_default_graph()
 
-        print("Currently generating with config:", self._config)
-
         if self._config["given_data_attribute_flag"]:
             print("Generating from a given data attribute!")
             given_attr_npz_file = os.path.join(
