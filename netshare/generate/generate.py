@@ -15,12 +15,13 @@ def generate() -> None:
     """
     model_generate()
     denormalized_fields_dir = denormalize_fields()
-    chosen_data_dir = choose_best_chunk(denormalized_fields_dir)
+    chosen_data_dir = choose_best_model(denormalized_fields_dir)
     copy_files(chosen_data_dir, get_generated_data_dir())
 
 
-def choose_best_chunk(denormalized_fields_dir: str) -> str:
+def choose_best_model(denormalized_fields_dir: str) -> str:
     """
-    :return: the path to the chosen data (the raw data that should be shared with the user).
+    :return: the path to the data that was created by the chosen model
+        (the raw data that should be shared with the user).
     """
     return denormalized_fields_dir

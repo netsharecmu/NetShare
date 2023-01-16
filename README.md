@@ -10,7 +10,7 @@
 
 # Overview
 <p align="center">
-  <img width="550" src="doc/figs/overview.png">
+  <img width="550" src="doc/figs/data-flow.png">
 </p>
 <p align="center">
   Figure 1: Overview of the NetShare workflow

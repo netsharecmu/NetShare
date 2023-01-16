@@ -43,8 +43,12 @@ def train_config_group(
 ) -> None:
     """
     This function train the given config group and list of configs.
-    We first train the chunk0 model, then train the rest of the models TODO: why?
-    All the rest of the models will be trained in parallel using ray.
+    With no differential privacy, we would first train a model given the first chunk of data (D_chunk0).
+        Then the rest of the models will be trained by using the first trained model as a base and fine-tuning
+        the parameters(weights) given the different chunks of data(D_chunk1 - D_chunkN).
+    With differential privacy, we would first train a pre-model using a public dataset.
+        Then the N+1 models will be trained by fine-tuning the pre-model given data(D_chunk0 - D_chunkN)
+        while DP-SGD is being activated.
     """
     chunk0_config = configs[config_group["config_ids"][0]]
     if should_train_chunk_0(config_group, chunk0_config):
