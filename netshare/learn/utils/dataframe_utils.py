@@ -84,7 +84,11 @@ def load_dataframe_chunks(csv_dir: str) -> Tuple[pd.DataFrame, List[pd.DataFrame
         df_chunks = split_dataframe_to_chunks(
             big_raw_df=df,
             split_type=get_config(
-                ["pre_post_processor.config.df2chunks", "global_config.df2chunks"],
+                [
+                    "pre_post_processor.config.df2chunks",
+                    "global_config.df2chunks",
+                    "learn.df2chunks",
+                ],
                 default_value=None,
             )
             or get_config("input_adapters.chunk_split_type"),

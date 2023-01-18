@@ -1,24 +1,17 @@
 {
     "global_config": {
-        "original_data_file": "../traces/ugr16-small/raw.csv",
         "overwrite": true,
-        "dataset_meta_type": "single_event_per_row",
-        "dataset_type": null,
-        "n_chunks": 2,
-        "dp": false,
-        "allowed_data_types": [
-            "ip_string",
-            "integer",
-            "float",
-            "string"
-        ],
-        "allowed_data_encodings": [
-            "categorical",
-            "bit",
-            "word2vec_port",
-            "word2vec_proto"
-        ],
-        "ray_enabled": true
+        "ray_enabled": true,
+        "work_folder": "../../results/test_ugr16",
+        "n_chunks": 2
+    },
+    "input_adapters": {
+        "data_source": {
+            "original_data_file": "../traces/ugr16-small/raw.csv"
+        },
+        "format_normalizer": {
+            "dataset_type": null
+        }
     },
     "default": "netflow.json",
     "pre_post_processor": {

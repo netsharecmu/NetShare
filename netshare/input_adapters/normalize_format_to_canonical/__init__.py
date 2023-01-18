@@ -12,12 +12,15 @@ def normalize_files_format(input_dir: str) -> None:
     This is the builder function for the files format normalizer.
     This function return the path to the directory that contains the normalized files.
     """
-    format_normalizer_config = get_config(
-        "input_adapters.format_normalizer", default_value={}
-    )
     normalizer_type = (
-        get_config(["dataset_type", "global_config.dataset_type"], default_value=None)
-        or format_normalizer_config.get("dataset_type", None)
+        get_config(
+            [
+                "dataset_type",
+                "global_config.dataset_type",
+                "input_adapters.format_normalizer.dataset_type",
+            ],
+            default_value=None,
+        )
         or "csv"
     )
 

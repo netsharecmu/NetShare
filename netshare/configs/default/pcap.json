@@ -1,24 +1,27 @@
 {
     "global_config": {
         "overwrite": false,
-        "original_data_file": "traces/1M/caida/raw.pcap",
-        "dataset_type": "pcap",
+        "ray_enabled": false,
+        "work_folder": "../../results/pcap",
         "n_chunks": 10,
-        "dp": false,
-        "word2vec_vecSize": 10,
-        "timestamp": "interarrival",
-        "truncate": "per_chunk"
+        "timestamp": "interarrival"
     },
-    "pre_post_processor": {
-        "class": "NetsharePrePostProcessor",
-        "config": {
-            "max_flow_len": null,
-            "norm_option": 0,
-            "split_name": "multichunk_dep_v2",
-            "df2chunks": "fixed_time",
-            "full_IP_header": true,
-            "encode_IP": "bit"
+    "input_adapters": {
+        "data_source": {
+            "type": "local_files",
+            "original_data_file": "<file_path>"
+        },
+        "format_normalizer": {
+            "dataset_type": "pcap"
         }
+    },
+    "learn": {
+        "max_flow_len": null,
+        "split_name": "multichunk_dep_v2",
+        "df2chunks": "fixed_time"
+    },
+    "generate": {
+        "word2vec_vecSize": 10
     },
     "model_manager": {
         "class": "NetShareManager",

@@ -9,6 +9,7 @@ import numpy as np
 import tensorflow as tf
 
 import netshare.utils.ray as ray
+from netshare.configs import get_config
 from netshare.models.doppelganger_tf.dataset import NetShareDataset
 from netshare.models.doppelganger_tf.doppelganger import DoppelGANger
 from netshare.models.doppelganger_tf.network import (
@@ -248,14 +249,17 @@ class DoppelGANgerTFModel(Model):
             num_real_samples += int(estimate_flowlen_dp([num_real_samples])[0])
 
         print("num_real_samples:", num_real_samples)
-        self._config["dataset_type"] = self._config.get("dataset_type", None)
-        if self._config["dataset_type"] == "netflow":
+        # TODO: Why does it care about the type of the input data?
+        dataset_type = get_config(
+            "input_adapters.format_normalizer.dataset_type", default_value=None
+        )
+        if dataset_type == "netflow":
             self._config["generate_num_train_sample"] = int(1.25 * num_real_samples)
             self._config["generate_num_test_sample"] = 0
-        elif self._config["dataset_type"] == "pcap":
+        elif dataset_type == "pcap":
             self._config["generate_num_train_sample"] = num_real_samples
             self._config["generate_num_test_sample"] = 0
-        elif self._config["dataset_type"] == "zeeklog":
+        elif dataset_type == "zeeklog":
             self._config["generate_num_train_sample"] = int(1.25 * num_real_samples)
             self._config["generate_num_test_sample"] = 0
         else:

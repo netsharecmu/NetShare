@@ -77,7 +77,7 @@ def merge_attr(config_group: dict, configs: List[dict]) -> None:
     chunk0_idx = config_group["config_ids"][0]
     eval_root_folder = configs[chunk0_idx]["eval_root_folder"]
     attr_raw_npz_folder = os.path.join(eval_root_folder, "attr_raw")
-    word2vec_size = configs[chunk0_idx].get("word2vec_vecSize", 0)
+    word2vec_size = get_config("generate.word2vec_vecSize", default_value=0)
     pcap_interarrival = configs[chunk0_idx].get("timestamp") == "interarrival"
     num_chunks = len(config_group["config_ids"])
 

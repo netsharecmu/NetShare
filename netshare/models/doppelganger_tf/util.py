@@ -260,7 +260,10 @@ def add_gen_flag(data_feature, data_gen_flag, data_feature_outputs, sample_len):
             raise Exception("is_gen_flag should be False for all" "feature_outputs")
 
     if data_feature.shape[2] != np.sum([t.dim for t in data_feature_outputs]):
-        raise Exception("feature dimension does not match feature_outputs")
+        raise Exception(
+            f"feature dimension ({data_feature.shape[2]}) does not"
+            f" match feature_outputs ({np.sum([t.dim for t in data_feature_outputs])})"
+        )
 
     if len(data_gen_flag.shape) != 2:
         raise Exception("data_gen_flag should be 2 dimension")

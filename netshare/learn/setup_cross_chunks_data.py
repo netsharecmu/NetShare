@@ -137,16 +137,10 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
         field.get("columns"), list
     ):
         raise ValueError(
-            f'In field configuration: "column" should be a string or "columns" a list of strings ({field})'
+            f'Malformed field configuration: "column" should be a string or "columns" a list of strings ({field})'
         )
-    if "type" not in field or field["type"] not in get_config(
-        "global_config.allowed_data_types", default_value=[field["type"]]
-    ):
-        raise ValueError(
-            '"type" must be specified as ({})'.format(
-                " | ".join(get_config("global_config.allowed_data_types"))
-            )
-        )
+    if "type" not in field:
+        raise ValueError(f'Malformed field configuration: Missing "type" in: {field}')
 
     field_name: Union[str, List[str]] = (
         field.get("name", "") or field.get("column", "") or field["columns"]

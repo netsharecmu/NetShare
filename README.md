@@ -93,34 +93,27 @@ You may refer to [`examples`](examples/) for more scripts and config files.
 
 [Driver code](examples/driver.py)
 ```Python
-import netshare.ray as ray
 from netshare import Generator
 
 if __name__ == '__main__':
-    # Change to False if you would not like to use Ray
-    ray.config.enabled = True
-    ray.init(address="auto")
-
-    # configuration file
-    generator = Generator(config="pcap/config_example_pcap_nodp.json")
-
-    # `work_folder` should not exist o/w an overwrite error will be thrown.
-    # Please set the `worker_folder` as *absolute path*
-    # if you are using Ray with multi-machine setup
-    # since Ray has bugs when dealing with relative paths.
-    generator.train_and_generate(work_folder='../results/test')
-
-    ray.shutdown()
+    generator = Generator(
+        config="pcap/config_example_pcap_nodp.json",
+        work_folder='../results/test'
+    )
+    generator.train_and_generate()
 ```
 
 The corresponding [configuration file](examples/pcap/config_example_pcap_nodp.json):
 ```json
 {
-    "global_config": {
-        "original_data_file": "../traces/caida/raw.pcap",
-        "dataset_type": "pcap",
-        "n_chunks": 10,
-        "dp": false
+  "global_config": {
+        "ray_enabled": true,
+        "n_chunks": 10
+    },
+    "input_adapters": {
+        "data_source": {
+            "original_data_file": "../traces/caida/raw.pcap"
+        }
     },
     "default": "pcap.json"
 }
@@ -135,11 +128,14 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 **Tip #1: if you only want to quickly verify NetShare does train and generate, you may use a much smaller number of training iterations to save time, simply modify the configuration file as follows:**
 ```json
 {
-    "global_config": {
-        "original_data_file": "../traces/caida/raw.pcap",
-        "dataset_type": "pcap",
-        "n_chunks": 10,
-        "dp": false
+  "global_config": {
+        "ray_enabled": false,
+        "n_chunks": 1
+    },
+    "input_adapters": {
+        "data_source": {
+            "original_data_file": "../traces/caida/raw.pcap"
+        }
     },
     "model": {
         "class": "DoppelGANgerTFModel",

@@ -1,18 +1,25 @@
 {
     "global_config": {
         "overwrite": false,
-        "original_data_file": "<file_path>"
-    },
-    "pre_post_processor": {
-        "class": "DGRowPerSamplePrePostProcessor",
-        "config": {
-            "num_train_samples": 100,
-            "num_test_samples": 100,
-            "metadata": [
-            ],
-            "timeseries": [
-            ]
+        "ray_enabled": false,
+        "work_folder": "../../results/wiki",
+        "n_chunks": 1,
+        "timestamp": {
+            "column": "Unnamed: 0"
         }
+    },
+    "input_adapters": {
+        "data_source": {
+            "type": "local_files",
+            "original_data_file": "<file_path>"
+        },
+        "format_normalizer": {
+            "dataset_type": "csv"
+        }
+    },
+    "learn": {
+        "num_train_samples": 50000,
+        "attributes_from_data": true
     },
     "model_manager": {
         "class": "DGModelManager",
@@ -24,7 +31,7 @@
         "config": {
             "batch_size": 100,
             "sample_len": 10,
-            "iteration": 20,
+            "iteration": 200000,
             "vis_freq": 100000,
             "vis_num_sample": 5,
             "d_rounds": 1,
@@ -61,8 +68,8 @@
             "num_cores": null,
             "sn_mode": null,
             "scale": 1.0,
-            "extra_checkpoint_freq": 20,
-            "epoch_checkpoint_freq": 20,
+            "extra_checkpoint_freq": 200000,
+            "epoch_checkpoint_freq": 1000,
             "dp_noise_multiplier": null,
             "dp_l2_norm_clip": null
         }

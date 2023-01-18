@@ -286,14 +286,12 @@ def reduce_samples(
         global_config.sample_ratio.
     """
     samples = get_config(
-        "pre_post_processor.config.num_train_samples", default_value=False
+        ["pre_post_processor.config.num_train_samples", "learn.num_train_samples"],
+        default_value=False,
     )
     # TODO: I use the should_sample because the old code expecting different data
     #   formats between the different PrePostProcessor
-    should_sample = (
-        get_config("pre_post_processor.class", default_value="")
-        == "DGRowPerSamplePrePostProcessor"
-    )
+    should_sample = get_config("learn.attributes_from_data", default_value=False)
     if samples and should_sample:
         logger.debug(f"Start to reduce samples")
         np.random.seed(get_config("global_config.seed", default_value=0))
@@ -355,11 +353,7 @@ def setup_per_chunk(
 
     logger.debug(f"(chunk_id={chunk_id}) Start to extract data attributes")
     data_attribute: np.array
-    if (
-        get_config("learn.attributes_from_data", default_value=False)
-        or get_config("pre_post_processor.class", default_value="")
-        == "DGRowPerSamplePrePostProcessor"
-    ):
+    if get_config("learn.attributes_from_data", default_value=False):
         data_attribute = df_per_chunk[new_session_key_list].to_numpy()
     else:
         if len(new_session_key_list) == 1:

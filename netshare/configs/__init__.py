@@ -22,6 +22,7 @@ def set_config(config: Union[Config, dict]) -> None:
 
 def get_config(
     path: Optional[Union[str, List[str]]] = None,
+    *,
     default_value: Any = Exception,
 ) -> Any:
     """

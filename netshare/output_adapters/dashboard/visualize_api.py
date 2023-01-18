@@ -21,7 +21,10 @@ def visualize(generated_data_dir: str, target_dir: str, original_data_dir: str) 
     static_figure_folder_for_vis = os.path.join(dashboard_class_path, VISUALIZE_DIR)
 
     original_data_file = get_config("global_config.original_data_file")
-    dataset_type = get_config("global_config.dataset_type")
+    # TODO: Why does it care about the type of the input data? IMO, we should create a new "metrics" config
+    dataset_type = get_config(
+        "input_adapters.format_normalizer.dataset_type", default_value=None
+    )
     original_data_path = os.path.dirname(original_data_file)
 
     # Check if pre-generated synthetic data exists
