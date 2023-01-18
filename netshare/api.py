@@ -3,13 +3,10 @@ from typing import Optional
 import netshare.utils.ray as ray
 from netshare.configs import change_work_folder, load_from_file
 from netshare.generate.generate import generate
-from netshare.input_adapters.adapt_input import input_adapter
+from netshare.input_adapters.adapt_input import adapt_input
 from netshare.learn.learn import learn
+from netshare.output_adapters.adapt_output import adapt_output, get_output_data_folder
 from netshare.output_adapters.dashboard import visualize_api
-from netshare.output_adapters.output_adapter import (
-    get_output_data_folder,
-    output_adapter,
-)
 from netshare.utils.paths import get_preprocessed_data_folder, get_visualization_folder
 
 
@@ -20,12 +17,12 @@ class Generator(object):
         ray.init(address="auto")
 
     def train(self) -> None:
-        input_adapter()
+        adapt_input()
         learn()
 
     def generate(self) -> None:
         generate()
-        output_adapter()
+        adapt_output()
 
     def train_and_generate(self) -> None:
         self.train()

@@ -5,7 +5,7 @@ from netshare.utils.logger import logger
 from netshare.utils.paths import copy_files
 
 
-def output_adapter() -> None:
+def adapt_output() -> None:
     """
     This is the main function of the output adapter phase.
     We get the generated data, denormalize the canonical format, and export it.

@@ -2,7 +2,7 @@ from netshare.input_adapters.data_source import fetch_data
 from netshare.input_adapters.normalize_format_to_canonical import normalize_files_format
 
 
-def input_adapter():
+def adapt_input():
     """
     This is the main function of the input_adapters phase.
     We get the configuration, and prepare everything for the training phase.
