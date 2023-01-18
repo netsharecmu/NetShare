@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 import netshare.utils.ray as ray
 from netshare import models
+from netshare.configs import get_config
 from netshare.utils.logger import TqdmToLogger, logger
 from netshare.utils.model_configuration import create_chunks_configurations
 from netshare.utils.paths import get_generated_data_log_folder
@@ -30,27 +31,27 @@ def model_generate() -> None:
     )
     time.sleep(10)
 
-    # TODO: The below part didn't happen in dg. Why?
-    logger.info("Start merging attributes")
-    ray.get(
-        [
-            merge_attr.remote(config_group=config_group, configs=configs)
-            for config_group in config_group_list
-        ]
-    )
-    time.sleep(10)
+    if get_config("global_config.n_chunks", default_value=1) > 1:
+        logger.info("Start merging attributes")
+        ray.get(
+            [
+                merge_attr.remote(config_group=config_group, configs=configs)
+                for config_group in config_group_list
+            ]
+        )
+        time.sleep(10)
 
-    logger.info("Start generating features given attributes")
-    ray.get(
-        [
-            generate_data.remote(
-                config=config,
-                given_data_attribute_flag=True,
-            )
-            for config in configs
-        ]
-    )
-    time.sleep(10)
+        logger.info("Start generating features given attributes")
+        ray.get(
+            [
+                generate_data.remote(
+                    config=config,
+                    given_data_attribute_flag=True,
+                )
+                for config in configs
+            ]
+        )
+        time.sleep(10)
 
 
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)

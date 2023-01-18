@@ -41,7 +41,7 @@ def apply_configuration_fields(
     for field in config_fields:
         field_instance = field_instances[field_config_to_key(field)]
         # Bit Field: (integer)
-        if "bit" in getattr(field, "encoding", ""):
+        if "bit" in field.get("encoding", ""):
             this_df = original_df.apply(
                 lambda row: field_instance.normalize(row[field.column]),
                 axis="columns",
@@ -52,7 +52,7 @@ def apply_configuration_fields(
             new_df = pd.concat([new_df, this_df], axis=1)
 
         # word2vec field: (any)
-        if "word2vec" in getattr(field, "encoding", ""):
+        if "word2vec" in field.get("encoding", ""):
             this_df = original_df.apply(
                 lambda row: get_vector(
                     embed_model, str(row[field.column]), norm_option=True
@@ -65,7 +65,7 @@ def apply_configuration_fields(
             new_df = pd.concat([new_df, this_df], axis=1)
 
         # Categorical field: (string | integer)
-        if "categorical" in getattr(field, "encoding", ""):
+        if "categorical" in field.get("encoding", ""):
             this_df = pd.DataFrame(
                 field_instance.normalize(original_df[field.column].to_numpy())
             )
@@ -113,10 +113,10 @@ def write_chunk_data(
     learn_api.create_dirs(chunk_id)
     learn_api.write_raw_chunk(df_per_chunk, chunk_id)
     learn_api.write_data_train_npz(
-        data_attribute,
-        data_feature,
-        cross_chunks_data.global_max_flow_len,
-        chunk_id,
+        data_attribute=data_attribute,
+        data_feature=data_feature,
+        global_max_flow_len=cross_chunks_data.global_max_flow_len,
+        chunk_id=chunk_id,
     )
     learn_api.write_attributes(cross_chunks_data.session_key_fields, chunk_id)
     learn_api.write_features(cross_chunks_data.timeseries_fields, chunk_id)
@@ -159,7 +159,9 @@ def apply_timestamp_generation(
             flow_start_list = list(gk.first()[time_col])
             flow_start_session_key_field = ContinuousField(
                 name="flow_start",
-                norm_option=getattr(Normalization, timestamp_config.normalization),
+                norm_option=Normalization.from_config(
+                    timestamp_config["normalization"]
+                ),
                 min_x=min(flow_start_list),
                 max_x=max(flow_start_list),
             )
@@ -176,7 +178,9 @@ def apply_timestamp_generation(
             df_per_chunk["interarrival_within_flow"] = interarrival_within_flow_list
             interarrival_within_flow_timeseries_field = ContinuousField(
                 name="interarrival_within_flow",
-                norm_option=getattr(Normalization, timestamp_config.normalization),
+                norm_option=Normalization.from_config(
+                    timestamp_config["normalization"]
+                ),
                 min_x=min(interarrival_within_flow_list),
                 max_x=max(interarrival_within_flow_list),
             )
@@ -192,8 +196,10 @@ def apply_timestamp_generation(
 
         elif timestamp_config["encoding"] == "raw":
             timestamp_field = ContinuousField(
-                name=getattr(timestamp_config, "name", timestamp_config["column"]),
-                norm_option=getattr(Normalization, timestamp_config.normalization),
+                name=timestamp_config.get("name", timestamp_config["column"]),
+                norm_option=Normalization.from_config(
+                    timestamp_config["normalization"]
+                ),
                 min_x=min(df_per_chunk[time_col]),
                 max_x=max(df_per_chunk[time_col]),
             )
@@ -335,7 +341,7 @@ def setup_per_chunk(
     gk = df_per_chunk.groupby(new_session_key_list)
     data_feature_list: List[np.ndarray] = []
     flow_tags: List[List[float]] = []
-    logger.debug(f"chunk_id={chunk_id}: Start to apply cross-chunk mechanism")
+    logger.debug(f"(chunk_id={chunk_id}) Start to apply cross-chunk mechanism")
     for group_name, df_group in gk:
         df_group = df_group.reset_index(
             drop=True
@@ -347,7 +353,7 @@ def setup_per_chunk(
         if attr_per_row:
             flow_tags.append(attr_per_row)
 
-    logger.debug(f"chunk_id={chunk_id}: Start to extract data attributes")
+    logger.debug(f"(chunk_id={chunk_id}) Start to extract data attributes")
     data_attribute: np.array
     if (
         get_config("learn.attributes_from_data", default_value=False)
@@ -375,7 +381,10 @@ def setup_per_chunk(
 
     data_attribute, data_feature = reduce_samples(data_attribute, data_feature)
 
-    logger.debug(f"chunk_id={chunk_id}: Start to writing data to disk")
+    logger.debug(
+        f"(chunk_id={chunk_id}) Start to writing data to disk: "
+        f"attributes shape: {data_attribute.shape}, features shape: {data_feature.shape}"
+    )
     write_chunk_data(
         df_per_chunk=df_per_chunk,
         cross_chunks_data=cross_chunks_data,
@@ -383,4 +392,3 @@ def setup_per_chunk(
         data_feature=data_feature,
         chunk_id=chunk_id,
     )
-    logger.debug(f"chunk_id={chunk_id}: Ended")

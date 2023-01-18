@@ -28,12 +28,10 @@ class DoppelGANgerTFModel(Model):
     def _train(self, input_train_data_folder, output_model_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
-        self._config["result_folder"] = getattr(
-            self._config, "result_folder", output_model_folder
+        self._config["result_folder"] = self._config.get(
+            "result_folder", output_model_folder
         )
-        self._config["dataset"] = getattr(
-            self._config, "dataset", input_train_data_folder
-        )
+        self._config["dataset"] = self._config.get("dataset", input_train_data_folder)
 
         # If Ray is disabled, reset TF graph
         if not ray.config.enabled:
@@ -146,7 +144,7 @@ class DoppelGANgerTFModel(Model):
             gan = DoppelGANger(
                 sess=sess,
                 checkpoint_dir=checkpoint_dir,
-                pretrain_dir=getattr(self._config, "pretrain_dir", None),
+                pretrain_dir=self._config.get("pretrain_dir", None),
                 sample_dir=sample_dir,
                 time_path=time_path,
                 batch_size=self._config["batch_size"],
@@ -191,7 +189,7 @@ class DoppelGANgerTFModel(Model):
             )
 
             gan.build()
-            gan.train(restore=getattr(self._config, "restore", False))
+            gan.train(restore=self._config.get("restore", False))
 
         dataset.stop_data_loader()
         return True
@@ -205,12 +203,10 @@ class DoppelGANgerTFModel(Model):
     ):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
-        self._config["result_folder"] = getattr(
-            self._config, "result_folder", input_model_folder
+        self._config["result_folder"] = self._config.get(
+            "result_folder", input_model_folder
         )
-        self._config["dataset"] = getattr(
-            self._config, "dataset", input_train_data_folder
-        )
+        self._config["dataset"] = self._config.get("dataset", input_train_data_folder)
 
         # If Ray is disabled, reset TF graph
         if not ray.config.enabled:
@@ -252,7 +248,7 @@ class DoppelGANgerTFModel(Model):
             num_real_samples += int(estimate_flowlen_dp([num_real_samples])[0])
 
         print("num_real_samples:", num_real_samples)
-        self._config["dataset_type"] = getattr(self._config, "dataset_type", None)
+        self._config["dataset_type"] = self._config.get("dataset_type", None)
         if self._config["dataset_type"] == "netflow":
             self._config["generate_num_train_sample"] = int(1.25 * num_real_samples)
             self._config["generate_num_test_sample"] = 0
@@ -263,8 +259,8 @@ class DoppelGANgerTFModel(Model):
             self._config["generate_num_train_sample"] = int(1.25 * num_real_samples)
             self._config["generate_num_test_sample"] = 0
         else:
-            self._config["generate_num_train_sample"] = getattr(
-                self._config, "generate_num_train_sample", num_real_samples
+            self._config["generate_num_train_sample"] = self._config.get(
+                "generate_num_train_sample", num_real_samples
             )
             self._config["generate_num_test_sample"] = 0
 
@@ -372,7 +368,7 @@ class DoppelGANgerTFModel(Model):
             gan = DoppelGANger(
                 sess=sess,
                 checkpoint_dir=checkpoint_dir,
-                pretrain_dir=getattr(self._config, "pretrain_dir", None),
+                pretrain_dir=self._config.get("pretrain_dir", None),
                 sample_dir=sample_dir,
                 time_path=time_path,
                 batch_size=self._config["batch_size"],
@@ -518,7 +514,7 @@ class DoppelGANgerTFModel(Model):
                         print(features.shape)
                         print(attributes.shape)
 
-                    if getattr(self._config, "save_without_chunk", False):
+                    if self._config.get("save_without_chunk", False):
                         save_path = os.path.join(
                             output_syn_data_folder, f"iteration_id-{iteration_id}"
                         )

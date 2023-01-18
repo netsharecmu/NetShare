@@ -46,7 +46,7 @@ def train_config_group(
     With no differential privacy, we would first train a model given the first chunk of data (D_chunk0).
         Then the rest of the models will be trained by using the first trained model as a base and fine-tuning
         the parameters(weights) given the different chunks of data(D_chunk1 - D_chunkN).
-    With differential privacy, we would first train a pre-model using a public dataset.
+    With differential privacy <Note: not implemented yet>, we would first train a pre-model using a public dataset.
         Then the N+1 models will be trained by fine-tuning the pre-model given data(D_chunk0 - D_chunkN)
         while DP-SGD is being activated.
     """

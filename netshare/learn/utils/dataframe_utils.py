@@ -7,6 +7,7 @@ import pandas as pd
 
 from netshare.configs import get_config
 from netshare.utils.constants import EPS
+from netshare.utils.logger import logger
 
 
 def split_dataframe_to_chunks(
@@ -53,7 +54,7 @@ def split_dataframe_to_chunks(
                 & (big_raw_df[time_col_name] < time_evenly_spaced[chunk_id + 1])
             ]
             if len(df_chunk) == 0:
-                print("Raw chunk_id: {}, empty df_chunk!".format(chunk_id))
+                logger.debug("Raw chunk_id: {}, empty df_chunk!".format(chunk_id))
                 continue
             dfs.append(df_chunk)
         return dfs
@@ -68,6 +69,11 @@ def load_dataframe_chunks(csv_dir: str) -> Tuple[pd.DataFrame, List[pd.DataFrame
     """
     dfs = []
     for filename in os.listdir(csv_dir):
+        if not filename.endswith(".csv"):
+            logger.warning(
+                f"Found a non-canonical file in the canonical directory. ({filename})"
+            )
+            continue
         df = pd.read_csv(os.path.join(csv_dir, filename), index_col=None, header=0)
         df["filename"] = filename
         dfs.append(df)

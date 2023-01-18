@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 import pandas as pd
 from config_io import Config
@@ -97,7 +97,7 @@ def get_word2vec_model(df: pd.DataFrame) -> Optional[Word2Vec]:
     word2vec_cols = [
         m
         for m in (session_key_fields + word2vec_config.get("timeseries", []))
-        if "word2vec" in getattr(m, "encoding", "")
+        if "word2vec" in m.get("encoding", "")
     ]
 
     if not word2vec_cols:
@@ -139,8 +139,8 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
         raise ValueError(
             f'In field configuration: "column" should be a string or "columns" a list of strings ({field})'
         )
-    if "type" not in field or field.type not in get_config(
-        "global_config.allowed_data_types", default_value=[field.type]
+    if "type" not in field or field["type"] not in get_config(
+        "global_config.allowed_data_types", default_value=[field["type"]]
     ):
         raise ValueError(
             '"type" must be specified as ({})'.format(
@@ -148,23 +148,25 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
             )
         )
 
-    field_name = getattr(field, "name", "") or field.get("column", "") or field.columns
+    field_name: Union[str, List[str]] = (
+        field.get("name", "") or field.get("column", "") or field["columns"]
+    )
     if field.get("column", ""):
-        this_df = df[field.column]
+        this_df = df[field["column"]]
     else:
-        this_df = df[field.columns].stack()
+        this_df = df[field["columns"]].stack()
 
     # Bit Field: (integer)
     field_instance: Field
-    if "bit" in getattr(field, "encoding", ""):
-        if field.type != "integer":
+    if "bit" in field.get("encoding", ""):
+        if field["type"] != "integer":
             raise ValueError('"encoding=bit" can be only used for "type=integer"')
         if "n_bits" not in field:
             raise ValueError("`n_bits` needs to be specified for bit fields")
-        return BitField(name=field_name, num_bits=field.n_bits)
+        return BitField(name=field_name, num_bits=field["n_bits"])
 
     # word2vec field: (any)
-    elif "word2vec" in getattr(field, "encoding", ""):
+    elif "word2vec" in field.get("encoding", ""):
         return ContinuousField(
             name=field_name,
             norm_option=Normalization.MINUSONE_ONE,  # l2-norm
@@ -172,14 +174,14 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
         )
 
     # Categorical field: (string | integer)
-    elif "categorical" in getattr(field, "encoding", "") or field.type == "string":
-        if field.type not in ["string", "integer"]:
+    elif "categorical" in field.get("encoding", "") or field["type"] == "string":
+        if field["type"] not in ["string", "integer"]:
             raise ValueError(
                 '"encoding=cateogrical" can be only used for "type=(string | integer)"'
             )
         if "regex" in field:
             return RegexField(
-                regex=field.regex,
+                regex=field["regex"],
                 choices=[],  # Note: it will be filled *per chunk* in the per-chunk preprocessing
                 name=field_name,
             )
@@ -189,11 +191,11 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
         )
 
     # Continuous Field: (float)
-    elif field.type == "float":
+    elif field["type"] == "float":
         return ContinuousField(
             name=field_name,
-            log1p_norm=getattr(field, "log1p_norm", False),
-            norm_option=getattr(Normalization, field.normalization),
+            log1p_norm=field.get("log1p_norm", False),
+            norm_option=Normalization.from_config(field["normalization"]),
             min_x=min(this_df) - EPS,
             max_x=max(this_df) + EPS,
             dim_x=1,
