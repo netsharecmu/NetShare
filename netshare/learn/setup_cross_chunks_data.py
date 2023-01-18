@@ -35,7 +35,7 @@ class CrossChunksData(NamedTuple):
 
 def get_flowkeys_chunkidx(df_chunks: List[pd.DataFrame]) -> Dict[str, List[int]]:
     prepost_config = get_config(
-        "pre_post_processor.config", path2="learn", default_value={}
+        ["pre_post_processor.config", "learn"], default_value={}
     )
     logger.info("compute flowkey-chunk list from scratch")
     session_key_config = prepost_config.get("session_key") or prepost_config["metadata"]
@@ -67,7 +67,7 @@ def get_flowkeys_chunkidx(df_chunks: List[pd.DataFrame]) -> Dict[str, List[int]]
 
 def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
     prepost_config = get_config(
-        "pre_post_processor.config", path2="learn", default_value={}
+        ["pre_post_processor.config", "learn"], default_value={}
     )
     session_key_config = prepost_config.get("session_key") or prepost_config["metadata"]
     if prepost_config.get("max_flow_len"):
@@ -86,7 +86,7 @@ def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
 
 def get_word2vec_model(df: pd.DataFrame) -> Optional[Word2Vec]:
     word2vec_config = get_config(
-        "pre_post_processor.config", path2="learn.word2vec", default_value={}
+        ["pre_post_processor.config", "learn.word2vec"], default_value={}
     )
     if not word2vec_config:
         logger.debug("No learn.word2vec config found, skipping the embedding model")
@@ -213,13 +213,13 @@ def build_fields(
     session_key_fields: Dict[FieldKey, Field] = {
         field_config_to_key(field): build_field_from_config(field, df)
         for field in get_config(
-            "pre_post_processor.config.metadata", path2="learn.session_key"
+            ["pre_post_processor.config.metadata", "learn.session_key"]
         )
     }
     timeseries_fields: Dict[FieldKey, Field] = {
         field_config_to_key(field): build_field_from_config(field, df)
         for field in get_config(
-            "pre_post_processor.config.timeseries", path2="learn.timeseries"
+            ["pre_post_processor.config.timeseries", "learn.timeseries"]
         )
     }
 

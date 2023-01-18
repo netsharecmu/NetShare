@@ -18,8 +18,10 @@ class LocalFilesDataSource(DataSource):
     def fetch_data(self) -> str:
         target_dir = tempfile.mkdtemp()
         single_file = get_config(
-            "global_config.original_data_file",
-            path2="input_adapters.data_source.original_data_file",
+            [
+                "global_config.original_data_file",
+                "input_adapters.data_source.original_data_file",
+            ],
             default_value=None,
         )
         if single_file:
@@ -29,8 +31,10 @@ class LocalFilesDataSource(DataSource):
             return target_dir
 
         input_folder = get_config(
-            "global_config.original_data_folder",
-            path2="input_adapters.data_source.input_folder",
+            [
+                "global_config.original_data_folder",
+                "input_adapters.data_source.input_folder",
+            ],
         )
         if not input_folder or not isinstance(input_folder, str):
             raise ValueError(

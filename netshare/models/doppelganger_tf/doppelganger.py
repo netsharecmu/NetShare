@@ -1225,7 +1225,9 @@ class DoppelGANger(object):
             #     self.dp_delta)
             # sys.stdout.flush()
 
-        for batch_id in tqdm(range(self.iteration), file=TqdmToLogger()):
+        for batch_id in tqdm(
+            range(self.iteration), file=TqdmToLogger("train iterations")
+        ):
 
             # batch_data_id_ = np.random.choice(
             #     self.data_feature.shape[0],

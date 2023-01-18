@@ -6,8 +6,8 @@
     "pre_post_processor": {
         "class": "DGRowPerSamplePrePostProcessor",
         "config": {
-            "num_train_samples": 50000,
-            "num_test_samples": 50000,
+            "num_train_samples": 100,
+            "num_test_samples": 100,
             "metadata": [
             ],
             "timeseries": [
@@ -24,7 +24,7 @@
         "config": {
             "batch_size": 100,
             "sample_len": 10,
-            "iteration": 200000,
+            "iteration": 20,
             "vis_freq": 100000,
             "vis_num_sample": 5,
             "d_rounds": 1,
@@ -61,8 +61,8 @@
             "num_cores": null,
             "sn_mode": null,
             "scale": 1.0,
-            "extra_checkpoint_freq": 20000,
-            "epoch_checkpoint_freq": 1000,
+            "extra_checkpoint_freq": 20,
+            "epoch_checkpoint_freq": 20,
             "dp_noise_multiplier": null,
             "dp_l2_norm_clip": null
         }

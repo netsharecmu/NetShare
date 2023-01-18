@@ -94,7 +94,7 @@ def merge_attr(config_group: dict, configs: List[dict]) -> None:
     for chunkid in range(num_chunks):
         dict_chunkid_attr[chunkid] = []
 
-    for chunkid in tqdm(range(num_chunks), file=TqdmToLogger()):
+    for chunkid in tqdm(range(num_chunks), file=TqdmToLogger("merge_attr")):
         n_flows_startFromThisEpoch = 0
 
         if not os.path.exists(

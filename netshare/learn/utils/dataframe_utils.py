@@ -16,7 +16,7 @@ def split_dataframe_to_chunks(
     eps: float = EPS,
 ) -> List[pd.DataFrame]:
     config_timestamp = get_config(
-        "pre_post_processor.config.timestamp", path2="global_config.timestamp"
+        ["pre_post_processor.config.timestamp", "global_config.timestamp"]
     )
     if not isinstance(config_timestamp, dict):
         raise ValueError(
@@ -78,8 +78,7 @@ def load_dataframe_chunks(csv_dir: str) -> Tuple[pd.DataFrame, List[pd.DataFrame
         df_chunks = split_dataframe_to_chunks(
             big_raw_df=df,
             split_type=get_config(
-                "pre_post_processor.config.df2chunks",
-                path2="global_config.df2chunks",
+                ["pre_post_processor.config.df2chunks", "global_config.df2chunks"],
                 default_value=None,
             )
             or get_config("input_adapters.chunk_split_type"),

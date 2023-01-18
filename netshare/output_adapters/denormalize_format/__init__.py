@@ -11,7 +11,7 @@ def denormalize_files_format(input_dir: str) -> str:
     This function return the path to the directory that contains the denormalized files.
     """
     normalizer_type = get_config(
-        path2="output_adapters.format_denormalizer.type", default_value="csv"
+        "output_adapters.format_denormalizer.dataset_type", default_value="csv"
     )
 
     format_normalizer: DataFormatDenormalizer

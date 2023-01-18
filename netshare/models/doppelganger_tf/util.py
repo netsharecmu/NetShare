@@ -295,7 +295,7 @@ def add_gen_flag(data_feature, data_gen_flag, data_feature_outputs, sample_len):
 def append_data_feature(data_feature, max_flow_len):
     feature_dim = len(data_feature[0][0])
     new_data_feature = []
-    for row in tqdm(data_feature, file=TqdmToLogger()):
+    for row in tqdm(data_feature, file=TqdmToLogger("append_data_feature")):
         new_row = list(copy.deepcopy(row))
         for i in range(max_flow_len - len(row)):
             new_row.append([0.0] * feature_dim)
@@ -306,7 +306,7 @@ def append_data_feature(data_feature, max_flow_len):
 
 def append_data_gen_flag(data_gen_flag, max_flow_len):
     new_data_gen_flag = []
-    for row in tqdm(data_gen_flag, file=TqdmToLogger()):
+    for row in tqdm(data_gen_flag, file=TqdmToLogger("append_data_gen_flag")):
         new_row = list(copy.deepcopy(row))
         for i in range(max_flow_len - len(row)):
             new_row.append(0.0)

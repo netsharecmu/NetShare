@@ -137,11 +137,10 @@ def apply_timestamp_generation(
         and also take the diff between every packet to the previous one as a feature column.
     """
     session_key_config = get_config(
-        "pre_post_processor.config.metadata", path2="learn.session_key"
+        ["pre_post_processor.config.metadata", "learn.session_key"]
     )
     timestamp_config = get_config(
-        "pre_post_processor.config.timestamp",
-        path2="learn.timestamp",
+        ["pre_post_processor.config.timestamp", "learn.timestamp"],
         default_value={},
     )
 
@@ -227,14 +226,13 @@ def apply_cross_chunk_mechanism(
         Note the signature of this function - it doesn't get the data of the current chunk...
     """
     session_key_config = get_config(
-        "pre_post_processor.config.metadata", path2="learn.session_key"
+        ["pre_post_processor.config.metadata", "learn.session_key"]
     )
 
     attr_per_row: List[float] = []
     if get_config("global_config.n_chunks", default_value=1) > 1:
         split_name = get_config(
-            "pre_post_processor.config.split_name",
-            path2="learn.split_name",
+            ["pre_post_processor.config.split_name", "learn.split_name"],
             default_value="multichunk_dep_v2",
         )
         if cross_chunks_data.flowkeys_chunkidx is None:
@@ -291,6 +289,7 @@ def reduce_samples(
         == "DGRowPerSamplePrePostProcessor"
     )
     if samples and should_sample:
+        logger.debug(f"Start to reduce samples")
         np.random.seed(get_config("global_config.seed", default_value=0))
         ids = np.random.permutation(data_attribute.shape[0])
         data_attribute = data_attribute[ids[:samples]]
@@ -309,10 +308,10 @@ def setup_per_chunk(
 ) -> None:
     logger.debug(f"chunk_id={chunk_id}: Started")
     session_key_config = get_config(
-        "pre_post_processor.config.metadata", path2="learn.session_key"
+        ["pre_post_processor.config.metadata", "learn.session_key"]
     )
     timeseries_config = get_config(
-        "pre_post_processor.config.timeseries", path2="learn.timeseries"
+        ["pre_post_processor.config.timeseries", "learn.timeseries"]
     )
 
     df_per_chunk, new_session_key_list = apply_configuration_fields(
@@ -336,6 +335,7 @@ def setup_per_chunk(
     gk = df_per_chunk.groupby(new_session_key_list)
     data_feature_list: List[np.ndarray] = []
     flow_tags: List[List[float]] = []
+    logger.debug(f"chunk_id={chunk_id}: Start to apply cross-chunk mechanism")
     for group_name, df_group in gk:
         df_group = df_group.reset_index(
             drop=True
@@ -347,6 +347,7 @@ def setup_per_chunk(
         if attr_per_row:
             flow_tags.append(attr_per_row)
 
+    logger.debug(f"chunk_id={chunk_id}: Start to extract data attributes")
     data_attribute: np.array
     if (
         get_config("learn.attributes_from_data", default_value=False)
@@ -374,6 +375,7 @@ def setup_per_chunk(
 
     data_attribute, data_feature = reduce_samples(data_attribute, data_feature)
 
+    logger.debug(f"chunk_id={chunk_id}: Start to writing data to disk")
     write_chunk_data(
         df_per_chunk=df_per_chunk,
         cross_chunks_data=cross_chunks_data,
