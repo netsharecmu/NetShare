@@ -7,6 +7,7 @@ from typing import List
 import numpy as np
 
 from netshare.configs import get_config
+from netshare.configs import get_config
 from netshare.generate import generate_api
 from netshare.input_adapters.input_adapter_api import get_canonical_data_dir
 from netshare.learn import learn_api
