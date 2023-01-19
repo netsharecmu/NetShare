@@ -2,11 +2,10 @@ import csv
 import os
 import random
 import tempfile
-from typing import List
+from typing import Dict, List
 
 import numpy as np
 
-from netshare.configs import get_config
 from netshare.configs import get_config
 from netshare.generate import generate_api
 from netshare.input_adapters.input_adapter_api import get_canonical_data_dir
@@ -72,7 +71,9 @@ def _denormalize_by_fields_list(
 
     canonical_data_dir = get_canonical_data_dir()
     df, _ = load_dataframe_chunks(canonical_data_dir)
-    dict_type_annDictPair: annoyTypeDescription = build_annoy_dictionary_word2vec(
+    dict_type_annDictPair: Dict[
+        str, annoyTypeDescription
+    ] = build_annoy_dictionary_word2vec(
         df=df,
         model_path=word2vec_model_path,
         word2vec_cols=word2vec_cols,
