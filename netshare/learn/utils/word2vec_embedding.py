@@ -1,13 +1,19 @@
 import itertools
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, NamedTuple
 
 import numpy as np
+import pandas as pd
 from annoy import AnnoyIndex
 from gensim.models import Word2Vec
 from sklearn.neighbors import NearestNeighbors
 
 from netshare.utils.logger import logger
+
+
+class annoyTypeDescription(NamedTuple):
+    annoy_type: AnnoyIndex
+    annoy_dict: Dict[int, Any]
 
 
 def word2vec_train(
@@ -54,8 +60,14 @@ def get_word2vec_type_col(word2vec_cols: List[Any]) -> Dict[str, List[str]]:
 
 
 def build_annoy_dictionary_word2vec(
-    df, model_path, word2vec_cols, word2vec_size, n_trees
-):
+    df: pd.DataFrame,
+    model_path: str,
+    word2vec_cols: List[Any],
+    word2vec_size: int,
+    n_trees: int,
+) -> Dict[str, annoyTypeDescription]:
+
+    dict_type_annDictPair: Dict[str, annoyTypeDescription] = {}
 
     model = Word2Vec.load(model_path)
     wv = model.wv
@@ -67,8 +79,6 @@ def build_annoy_dictionary_word2vec(
     dict_type_cols = get_word2vec_type_col(word2vec_cols)
     logger.info(dict_type_cols)
 
-    sets = []
-    dict_type_annDictPair = {}
     for type, cols in dict_type_cols.items():
         type_set = set(
             list(itertools.chain.from_iterable([list(df[col]) for col in cols]))
@@ -83,7 +93,9 @@ def build_annoy_dictionary_word2vec(
             index += 1
         type_ann.build(n_trees)
 
-        dict_type_annDictPair[type] = (type_ann, type_dict)
+        dict_type_annDictPair[type] = annoyTypeDescription(
+            annoy_type=type_ann, annoy_dict=type_dict
+        )
 
     logger.info("Finish building Angular trees...")
 

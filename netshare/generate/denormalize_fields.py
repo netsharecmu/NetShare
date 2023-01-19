@@ -12,6 +12,7 @@ from netshare.input_adapters.input_adapter_api import get_canonical_data_dir
 from netshare.learn import learn_api
 from netshare.learn.utils.dataframe_utils import load_dataframe_chunks
 from netshare.learn.utils.word2vec_embedding import (
+    annoyTypeDescription,
     build_annoy_dictionary_word2vec,
     get_original_objs,
     get_word2vec_type_col,
@@ -70,7 +71,7 @@ def _denormalize_by_fields_list(
 
     canonical_data_dir = get_canonical_data_dir()
     df, _ = load_dataframe_chunks(canonical_data_dir)
-    dict_type_annDictPair = build_annoy_dictionary_word2vec(
+    dict_type_annDictPair: annoyTypeDescription = build_annoy_dictionary_word2vec(
         df=df,
         model_path=word2vec_model_path,
         word2vec_cols=word2vec_cols,
@@ -96,9 +97,9 @@ def _denormalize_by_fields_list(
             if word2vec_type_col is None:
                 raise ValueError("Cannot find the word2vec key!")
             sub_data = get_original_objs(
-                dict_type_annDictPair[word2vec_type_col][0],
+                dict_type_annDictPair[word2vec_type_col].annoy_type,
                 sub_data,
-                dict_type_annDictPair[word2vec_type_col][1],
+                dict_type_annDictPair[word2vec_type_col].annoy_dict,
             )
             sub_data = np.asarray(sub_data)
         denormalized_data.append(sub_data)
