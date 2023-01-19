@@ -6,9 +6,15 @@ from typing import List
 
 import numpy as np
 
+from netshare.configs import get_config
+from netshare.input_adapters.input_adapter_api import get_canonical_data_dir
 from netshare.generate import generate_api
 from netshare.learn import learn_api
+from netshare.learn.utils.dataframe_utils import load_dataframe_chunks
 from netshare.utils.field import ContinuousField, Field
+from netshare.utils.logger import logger
+from netshare.learn.utils.word2vec_embedding \
+    import build_annoy_dictionary_word2vec, get_original_objs, get_word2vec_type_col
 
 
 def _get_fields_names(fields_list: List[Field]) -> List[str]:
@@ -32,14 +38,62 @@ def _denormalize_by_fields_list(
     """
     denormalized_data = []
     dim = 0
+    word2vec_config = get_config(
+        ["pre_post_processor.config", "learn.word2vec"], default_value={}
+    )
+    if not word2vec_config:
+        logger.debug("No learn.word2vec config found, skipping the embedding model")
+        return None
+    session_key_fields = word2vec_config.get(
+        "session_key", word2vec_config.get("metadata", [])
+    )
+    word2vec_cols = [
+        m
+        for m in (session_key_fields + word2vec_config.get("timeseries", []))
+        if "word2vec" in m.get("encoding", "")
+    ]
+    word2vec_cols_names = [
+        m["column"]
+        for m in (session_key_fields + word2vec_config.get("timeseries", []))
+        if "word2vec" in m.get("encoding", "")
+    ]
+    word2vec_model_path = os.path.join(
+        learn_api.get_word2vec_model_directory(),
+        "{}_{}.model".format(word2vec_config["word2vec"]["model_name"],
+                             word2vec_config["word2vec"]["vec_size"])
+    )
+
+    canonical_data_dir = get_canonical_data_dir()
+    df, _ = load_dataframe_chunks(canonical_data_dir)
+    dict_type_annDictPair = build_annoy_dictionary_word2vec(
+        df=df,
+        model_path=word2vec_model_path,
+        word2vec_cols=word2vec_cols,
+        word2vec_size=word2vec_config["word2vec"]["vec_size"],
+        n_trees=1000)
+
+    word2vec_dict_type_cols = get_word2vec_type_col(word2vec_cols)
+
     for field in fields_list:
         if is_session_key:
-            sub_data = normalized_data[:, dim : dim + field.getOutputDim()]
+            sub_data = normalized_data[:, dim: dim + field.getOutputDim()]
         else:
-            sub_data = normalized_data[:, :, dim : dim + field.getOutputDim()]
+            sub_data = normalized_data[:, :, dim: dim + field.getOutputDim()]
+
         sub_data = field.denormalize(sub_data)
-        if isinstance(field, ContinuousField):
-            sub_data = sub_data[:, 0] if is_session_key else sub_data[:, :, 0]
+        if field.name in word2vec_cols_names:
+            word2vec_type_col = None
+            for k in word2vec_dict_type_cols.keys():
+                if field.name in word2vec_dict_type_cols[k]:
+                    word2vec_type_col = k
+                    break
+            if word2vec_type_col is None:
+                raise ValueError(
+                    "Cannot find the word2vec key!"
+                )
+            sub_data = get_original_objs(dict_type_annDictPair[word2vec_type_col]
+                                         [0], sub_data, dict_type_annDictPair[word2vec_type_col][1])
+            sub_data = np.asarray(sub_data)
         denormalized_data.append(sub_data)
         dim += field.getOutputDim()
     return denormalized_data
