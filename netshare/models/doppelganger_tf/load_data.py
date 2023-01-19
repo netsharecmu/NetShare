@@ -1,6 +1,7 @@
 import os
-import numpy as np
 import pickle
+
+import numpy as np
 
 
 def load_data(path, flag="train"):

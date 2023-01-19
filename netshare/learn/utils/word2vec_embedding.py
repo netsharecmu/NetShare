@@ -1,9 +1,12 @@
-import os
 import itertools
+import os
+from typing import Any, Dict, List
+
 import numpy as np
 from annoy import AnnoyIndex
 from gensim.models import Word2Vec
 from sklearn.neighbors import NearestNeighbors
+
 from netshare.utils.logger import logger
 
 
@@ -40,8 +43,8 @@ def word2vec_train(
     return model_path
 
 
-def get_word2vec_type_col(word2vec_cols):
-    dict_type_cols = {}
+def get_word2vec_type_col(word2vec_cols: List[Any]) -> Dict[str, List[str]]:
+    dict_type_cols: Dict[str, List[str]] = {}
     for col in word2vec_cols:
         type = col.encoding.split("_")[1]
         if type not in dict_type_cols:
@@ -51,11 +54,8 @@ def get_word2vec_type_col(word2vec_cols):
 
 
 def build_annoy_dictionary_word2vec(
-        df,
-        model_path,
-        word2vec_cols,
-        word2vec_size,
-        n_trees):
+    df, model_path, word2vec_cols, word2vec_size, n_trees
+):
 
     model = Word2Vec.load(model_path)
     wv = model.wv
@@ -70,15 +70,15 @@ def build_annoy_dictionary_word2vec(
     sets = []
     dict_type_annDictPair = {}
     for type, cols in dict_type_cols.items():
-        type_set = set(list(itertools.chain.from_iterable(
-            [list(df[col]) for col in cols])))
-        type_ann = AnnoyIndex(word2vec_size, 'angular')
+        type_set = set(
+            list(itertools.chain.from_iterable([list(df[col]) for col in cols]))
+        )
+        type_ann = AnnoyIndex(word2vec_size, "angular")
         type_dict = {}
         index = 0
 
         for ele in type_set:
-            type_ann.add_item(index, get_vector(
-                model, str(ele), norm_option=True))
+            type_ann.add_item(index, get_vector(model, str(ele), norm_option=True))
             type_dict[index] = ele
             index += 1
         type_ann.build(n_trees)
@@ -91,8 +91,7 @@ def build_annoy_dictionary_word2vec(
 
 
 def get_original_obj(ann, vector, dic):
-    obj_list = ann.get_nns_by_vector(
-        vector, 1, search_k=-1, include_distances=False)
+    obj_list = ann.get_nns_by_vector(vector, 1, search_k=-1, include_distances=False)
 
     return dic[obj_list[0]]
 
@@ -101,7 +100,8 @@ def get_original_objs(ann, vectors, dic):
     res = []
     for vector in vectors:
         obj_list = ann.get_nns_by_vector(
-            vector, 1, search_k=-1, include_distances=False)
+            vector, 1, search_k=-1, include_distances=False
+        )
         res.append(dic[obj_list[0]])
     return res
 
@@ -120,8 +120,7 @@ def get_vector(model, word, norm_option=False):
             if ele.isdigit():
                 all_words.append(int(ele))
         all_words = np.array(all_words).reshape((-1, 1))
-        nbrs = NearestNeighbors(
-            n_neighbors=1, algorithm='ball_tree').fit(all_words)
+        nbrs = NearestNeighbors(n_neighbors=1, algorithm="ball_tree").fit(all_words)
         distances, indices = nbrs.kneighbors([[int(word)]])
         nearest_word = str(all_words[indices[0][0]][0])
         model.init_sims()
