@@ -205,24 +205,12 @@ def build_field_from_config(
 
     # Continuous Field: (float)
     elif field["type"] == "float":
-        # If set log1p_norm, we need to re-calculate the min_x and max_x based on the df after
-        # doing log1p. Since the denormalizing step would first do min-max denomalization and
-        # then expm1. Using stale min_x and max_x would cause the synthetic value larger than
-        # expected and is possible to have np.inf
-        log1p_norm_flag = field.get("log1p_norm", False)
-        if log1p_norm_flag:
-            tmp_df = np.log1p(this_df)
-            min_x = min(tmp_df) - EPS
-            max_x = max(tmp_df) + EPS
-        else:
-            min_x = min(this_df) - EPS
-            max_x = max(this_df) + EPS
         return ContinuousField(
             name=field_name,
-            log1p_norm=log1p_norm_flag,
+            log1p_norm=field.get("log1p_norm", False),
             norm_option=Normalization.from_config(field["normalization"]),
-            min_x=min_x,
-            max_x=max_x,
+            min_x=min(this_df) - EPS,
+            max_x=max(this_df) + EPS,
             dim_x=1,
         )
 
