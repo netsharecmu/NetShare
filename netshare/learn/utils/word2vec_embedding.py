@@ -85,12 +85,10 @@ def build_annoy_dictionary_word2vec(
         )
         type_ann = AnnoyIndex(word2vec_size, "angular")
         dict_idx_ele = {}
-        index = 0
 
-        for ele in ele_set:
+        for index, ele in enumerate(ele_set):
             type_ann.add_item(index, get_vector(model, str(ele), norm_option=True))
             dict_idx_ele[index] = ele
-            index += 1
         type_ann.build(n_trees)
 
         dict_encoding_type_vs_idx_ele_dict_pair[encoding_type] = dict_idx_ele
