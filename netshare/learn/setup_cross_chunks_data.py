@@ -211,9 +211,12 @@ def build_field_from_config(
         # expected and is possible to have np.inf
         log1p_norm_flag = field.get("log1p_norm", False)
         if log1p_norm_flag:
-            this_df = np.log1p(this_df)
-        min_x = min(this_df) - EPS
-        max_x = max(this_df) + EPS
+            tmp_df = np.log1p(this_df)
+            min_x = min(tmp_df) - EPS
+            max_x = max(tmp_df) + EPS
+        else:
+            min_x = min(this_df) - EPS
+            max_x = max(this_df) + EPS
         return ContinuousField(
             name=field_name,
             log1p_norm=log1p_norm_flag,
