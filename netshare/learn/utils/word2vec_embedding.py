@@ -11,7 +11,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from netshare.utils.logger import logger
 from netshare.utils.paths import (
-    get_annoy_type_dict_for_word2vec,
+    get_annoy_dict_idx_ele_for_word2vec,
     get_annoyIndex_for_word2vec,
     get_word2vec_model_path,
 )
@@ -67,50 +67,52 @@ def build_annoy_dictionary_word2vec(
     n_trees: int,
 ) -> None:
 
-    dict_type_annDictPair = {}
+    dict_encoding_type_vs_idx_ele_dict_pair = {}
 
     model = Word2Vec.load(model_path)
     wv = model.wv
 
-    # type : [cols]
-    # ("ip": ["srcip", "dstip"])
-    # "word2vec_port": ["srcport", "dstport"]
-    # "word2vec_proto": ["proto"]
-    dict_type_cols = get_word2vec_type_col(word2vec_cols)
-    logger.debug(f"word2vec type columns are: {dict_type_cols}")
+    # encoding type and column names may not be necessarily the same. eg. for a pcap/netflow dataset
+    # encoding type = word2vec_port -> column: ["srcport", "dstport"]
+    # encoding type = word2vec_proto -> column: ["proto"]
+    # srcport and dstport are two fields for a dataset, but from a word2vec perspective, they are both ports
+    dict_encoding_type_vs_cols = get_word2vec_type_col(word2vec_cols)
+    logger.debug(f"word2vec type columns are: {dict_encoding_type_vs_cols}")
 
-    for type, cols in dict_type_cols.items():
-        type_set = set(
+    for encoding_type, cols in dict_encoding_type_vs_cols.items():
+        ele_set = set(
             list(itertools.chain.from_iterable([list(df[col]) for col in cols]))
         )
         type_ann = AnnoyIndex(word2vec_size, "angular")
-        type_dict = {}
+        dict_idx_ele = {}
         index = 0
 
-        for ele in type_set:
+        for ele in ele_set:
             type_ann.add_item(index, get_vector(model, str(ele), norm_option=True))
-            type_dict[index] = ele
+            dict_idx_ele[index] = ele
             index += 1
         type_ann.build(n_trees)
 
-        dict_type_annDictPair[type] = type_dict
+        dict_encoding_type_vs_idx_ele_dict_pair[encoding_type] = dict_idx_ele
 
-        type_ann.save(get_annoyIndex_for_word2vec(type))
-        with open(get_annoy_type_dict_for_word2vec(), "w") as outfile:
-            json.dump(dict_type_annDictPair, outfile)
+        type_ann.save(get_annoyIndex_for_word2vec(encoding_type))
+        with open(get_annoy_dict_idx_ele_for_word2vec(), "w") as outfile:
+            json.dump(dict_encoding_type_vs_idx_ele_dict_pair, outfile)
 
     logger.info("Finish building Angular trees...")
 
     return None
 
 
-def get_original_obj(ann, vector, dic):
+def get_original_obj(ann: AnnoyIndex, vector: np.ndarray, dic: Dict[int, Any]) -> Any:
     obj_list = ann.get_nns_by_vector(vector, 1, search_k=-1, include_distances=False)
 
     return dic[obj_list[0]]
 
 
-def get_original_objs(ann, vectors, dic):
+def get_original_objs(
+    ann: AnnoyIndex, vectors: np.ndarray, dic: Dict[int, Any]
+) -> List[Any]:
     res = []
     for vector in vectors:
         obj_list = ann.get_nns_by_vector(
@@ -120,7 +122,7 @@ def get_original_objs(ann, vectors, dic):
     return res
 
 
-def get_vector(model, word, norm_option=False):
+def get_vector(model: Word2Vec, word: str, norm_option: bool = False) -> np.ndarray:
     all_words_str = list(model.wv.vocab.keys())
 
     # Privacy-related

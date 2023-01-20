@@ -11,7 +11,6 @@ import netshare.utils.ray as ray
 from netshare.configs import get_config
 from netshare.learn import learn_api
 from netshare.learn.setup_cross_chunks_data import CrossChunksData
-from netshare.learn.utils.embedding_helper import get_vector
 from netshare.utils.field import (
     ContinuousField,
     Field,

@@ -47,6 +47,13 @@ def _denormalize_by_fields_list(
             sub_data = normalized_data[:, :, dim : dim + field.getOutputDim()]
 
         sub_data = field.denormalize(sub_data)
+
+        # For session key, if shape looks like (n, ), change it to (n, 1) for consistency
+        if is_session_key == True and len(sub_data.shape) == 1:
+            sub_data = np.expand_dims(sub_data, axis=1)
+        # For timeseries, if shape looks like (i, j), change it to (i, j, 1) for consistency
+        if is_session_key == False and len(sub_data.shape) == 2:
+            sub_data = np.expand_dims(sub_data, axis=2)
         denormalized_data.append(sub_data)
         dim += field.getOutputDim()
     return denormalized_data
@@ -63,23 +70,30 @@ def write_to_csv(
 ) -> None:
     """
     This function dumps the given data to the given directory as a csv format.
+    `data_gen_flag` is an indicator showing if the time series for this session
+    has ended in this time step.
     """
     os.makedirs(csv_folder, exist_ok=True)
     csv_path = os.path.join(csv_folder, f"data_{filename}_{random.random()}.csv")
+    # change session key shape to #session * #attributes
+    session_key = np.concatenate(session_key, axis=1)
+    # change timeseries shape to #session * #time_steps * #features
+    timeseries = np.concatenate(timeseries, axis=2)
+
     with open(csv_path, "w") as f:
         writer = csv.writer(f)
         session_titles = _get_fields_names(session_key_fields)
         timeseries_titles = _get_fields_names(timeseries_fields)
         writer.writerow(session_titles + timeseries_titles)
 
-        for i in range(session_key[0].shape[0]):
-            session_data = [d[i] for d in session_key]
+        for i in range(data_gen_flag.shape[0]):
+            session_data = session_key[i].tolist()
             # this if is here in parallel to the if in `reduce_samples`. It supports old flows.
-            if len(timeseries) == 1:
-                timeseries_data = timeseries[0][i].tolist()
-            else:
-                timeseries_data = [d[i][0] for d in timeseries]
-            writer.writerow(session_data + timeseries_data)
+            for j in range(data_gen_flag.shape[1]):
+                if data_gen_flag[i][j] == 1.0:
+                    timeseries_data = timeseries[i][j].tolist()
+
+                    writer.writerow(session_data + timeseries_data)
 
 
 def denormalize_fields() -> str:

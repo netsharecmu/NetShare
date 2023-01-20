@@ -58,9 +58,9 @@ def get_annoyIndex_for_word2vec(name: str) -> str:
     return annoyIndex_path
 
 
-def get_annoy_type_dict_for_word2vec() -> str:
+def get_annoy_dict_idx_ele_for_word2vec() -> str:
     annoy_type_dict_path = os.path.join(
-        get_word2vec_model_directory(), "annoy_type_dict.json"
+        get_word2vec_model_directory(), "annoy_idx_ele_dict.json"
     )
     return annoy_type_dict_path
 

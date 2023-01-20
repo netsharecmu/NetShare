@@ -15,7 +15,7 @@ from netshare.learn.utils.word2vec_embedding import (
 )
 from netshare.utils.logger import logger
 from netshare.utils.paths import (
-    get_annoy_type_dict_for_word2vec,
+    get_annoy_dict_idx_ele_for_word2vec,
     get_annoyIndex_for_word2vec,
 )
 
@@ -60,6 +60,7 @@ class ContinuousField(Field):
             )
         if self.log1p_norm:
             x = np.log1p(x)
+
         # [0, 1] normalization
         if self.norm_option == Normalization.ZERO_ONE:
             if self.max_x - self.min_x == 0:
@@ -92,6 +93,7 @@ class ContinuousField(Field):
         else:
             raise Exception("Not valid normalization option!")
         if self.log1p_norm:
+
             to_return = np.expm1(to_return)
         return to_return
 
@@ -212,7 +214,7 @@ class Word2VecField(Field):
 
         self.word2vec_size = word2vec_size
         self.norm_option = Normalization.MINUSONE_ONE
-        self.word2vec_dict_type_cols = get_word2vec_type_col(word2vec_cols)
+        self.dict_encoding_type_vs_cols = get_word2vec_type_col(word2vec_cols)
 
     def normalize(self, x, embed_model):
         return np.array(
@@ -221,24 +223,28 @@ class Word2VecField(Field):
 
     def denormalize(self, norm_x):
         dict_annDictPair = {}
-        with open(get_annoy_type_dict_for_word2vec(), "r") as readfile:
+        with open(get_annoy_dict_idx_ele_for_word2vec(), "r") as readfile:
             dict_annDictPair = json.load(readfile)
         dict_annoyIndex = {}
-        for type in dict_annDictPair.keys():
+        for encoding_type in dict_annDictPair:
             type_ann = AnnoyIndex(self.word2vec_size, "angular")
-            type_ann.load(get_annoyIndex_for_word2vec(type))
-            dict_annoyIndex[type] = type_ann
+            type_ann.load(get_annoyIndex_for_word2vec(encoding_type))
+            dict_annoyIndex[encoding_type] = type_ann
 
-        for k in self.word2vec_dict_type_cols:
-            if self.name in self.word2vec_dict_type_cols[k]:
-                word2vec_type_col = k
+        for k in self.dict_encoding_type_vs_cols:
+            if self.name in self.dict_encoding_type_vs_cols[k]:
+                encoding_type = k
                 break
-        if word2vec_type_col is None:
+        else:
             raise ValueError("Cannot find the word2vec key!")
+        # When constructing the dict_annDictPair, dict_annDictPair[encoding_type]: dict{}
+        # is a k v pair where k is an integer. After using Json.save() then Json.load(), it
+        # will change k into str. Therefore, when we are using dict_annDictPair[encoding_type]
+        # the k should be casted to int.
         x = get_original_objs(
-            dict_annoyIndex[word2vec_type_col],
+            dict_annoyIndex[encoding_type],
             norm_x,
-            {int(k): v for k, v in dict_annDictPair[word2vec_type_col].items()},
+            {int(k): v for k, v in dict_annDictPair[encoding_type].items()},
         )
         return np.asarray(x)
 
