@@ -6,8 +6,10 @@ from config_io import Config
 from gensim.models import Word2Vec
 
 from netshare.configs import get_config
-from netshare.learn.learn_api import get_word2vec_model_directory
-from netshare.learn.utils.word2vec_embedding import word2vec_train
+from netshare.learn.utils.word2vec_embedding import (
+    build_annoy_dictionary_word2vec,
+    word2vec_train,
+)
 from netshare.utils.field import (
     BitField,
     ContinuousField,
@@ -16,11 +18,12 @@ from netshare.utils.field import (
     FieldKey,
     Normalization,
     RegexField,
+    Word2VecField,
     field_config_to_key,
     key_from_field,
 )
 from netshare.utils.logger import logger
-from netshare.utils.paths import get_preprocessed_data_folder
+from netshare.utils.paths import get_preprocessed_data_folder, get_word2vec_model_path
 
 EPS = 1e-8
 
@@ -84,13 +87,15 @@ def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
     return max(max_flow_lens)
 
 
-def get_word2vec_model(df: pd.DataFrame) -> Optional[Word2Vec]:
+def get_word2vec_model(
+    df: pd.DataFrame,
+) -> Union[Tuple[Word2Vec, List[str]], Tuple[None, None]]:
     word2vec_config = get_config(
         ["pre_post_processor.config", "learn.word2vec"], default_value={}
     )
     if not word2vec_config:
         logger.debug("No learn.word2vec config found, skipping the embedding model")
-        return None
+        return None, None
     session_key_fields = word2vec_config.get(
         "session_key", word2vec_config.get("metadata", [])
     )
@@ -102,26 +107,39 @@ def get_word2vec_model(df: pd.DataFrame) -> Optional[Word2Vec]:
 
     if not word2vec_cols:
         logger.info("Skipping word2vec embedding: no word2vec columns")
-        return None
+        return None, None
 
     if word2vec_config["word2vec"]["pretrain_model_path"]:
         logger.info("Word2vec: Loading pretrained model")
-        return Word2Vec.load(word2vec_config["word2vec"]["pretrain_model_path"])
+        return (
+            Word2Vec.load(word2vec_config["word2vec"]["pretrain_model_path"]),
+            word2vec_cols,
+        )
 
     logger.info("Word2vec: training model")
     os.makedirs(get_preprocessed_data_folder(), exist_ok=True)
-    word2vec_model_path = word2vec_train(
+    word2vec_train(
         df=df,
-        out_dir=get_word2vec_model_directory(),
         model_name=word2vec_config["word2vec"]["model_name"],
         word2vec_cols=word2vec_cols,
         word2vec_size=word2vec_config["word2vec"]["vec_size"],
         annoy_n_trees=word2vec_config["word2vec"]["annoy_n_trees"],
     )
-    return Word2Vec.load(word2vec_model_path)
+    word2vec_model_path = get_word2vec_model_path()
+
+    build_annoy_dictionary_word2vec(
+        df=df,
+        model_path=word2vec_model_path,
+        word2vec_cols=word2vec_cols,
+        word2vec_size=word2vec_config["word2vec"]["vec_size"],
+        n_trees=1000,
+    )
+    return Word2Vec.load(word2vec_model_path), word2vec_cols
 
 
-def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
+def build_field_from_config(
+    field: Config, df: pd.DataFrame, word2vec_cols: Optional[List[str]]
+) -> Field:
     """
     This function builds the Field object from a specific field configuration.
     There are 3 types of fields:
@@ -161,10 +179,10 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
 
     # word2vec field: (any)
     elif "word2vec" in field.get("encoding", ""):
-        return ContinuousField(
+        return Word2VecField(
             name=field_name,
-            norm_option=Normalization.MINUSONE_ONE,  # l2-norm
-            dim_x=prepost_config["word2vec"]["vec_size"],
+            word2vec_size=prepost_config["word2vec"]["vec_size"],
+            word2vec_cols=word2vec_cols,
         )
 
     # Categorical field: (string | integer)
@@ -203,17 +221,17 @@ def build_field_from_config(field: Config, df: pd.DataFrame) -> Field:
 
 
 def build_fields(
-    df: pd.DataFrame,
+    df: pd.DataFrame, word2vec_cols: Optional[List[str]]
 ) -> Tuple[Dict[FieldKey, Field], Dict[FieldKey, Field]]:
 
     session_key_fields: Dict[FieldKey, Field] = {
-        field_config_to_key(field): build_field_from_config(field, df)
+        field_config_to_key(field): build_field_from_config(field, df, word2vec_cols)
         for field in get_config(
             ["pre_post_processor.config.metadata", "learn.session_key"]
         )
     }
     timeseries_fields: Dict[FieldKey, Field] = {
-        field_config_to_key(field): build_field_from_config(field, df)
+        field_config_to_key(field): build_field_from_config(field, df, word2vec_cols)
         for field in get_config(
             ["pre_post_processor.config.timeseries", "learn.timeseries"]
         )
@@ -238,8 +256,8 @@ def setup_cross_chunks_data(
     """
     This function splits the input data into chunks, and compute the .
     """
-    embed_model = get_word2vec_model(big_df)
-    session_key_fields, timeseries_fields = build_fields(big_df)
+    embed_model, word2vec_cols = get_word2vec_model(big_df)
+    session_key_fields, timeseries_fields = build_fields(big_df, word2vec_cols)
     flowkeys_chunkidx = get_flowkeys_chunkidx(df_chunks)
     global_max_flow_len = get_global_max_flow_len(df_chunks)
 

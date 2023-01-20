@@ -1,8 +1,23 @@
-from typing import List, Tuple, Union
+import json
+import os
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from annoy import AnnoyIndex
 from config_io import Config
+
+from netshare.configs import get_config
+from netshare.learn.utils.word2vec_embedding import (
+    get_original_objs,
+    get_vector,
+    get_word2vec_type_col,
+)
+from netshare.utils.logger import logger
+from netshare.utils.paths import (
+    get_annoy_type_dict_for_word2vec,
+    get_annoyIndex_for_word2vec,
+)
 
 from .output import Normalization, Output, OutputType
 
@@ -15,10 +30,10 @@ class Field(object):
         self.name = name
         self.log1p_norm = log1p_norm
 
-    def normalize(self, x):
+    def normalize(self, x, *args, **kwargs):
         raise NotImplementedError
 
-    def denormalize(self, x):
+    def denormalize(self, x, *args, **kwargs):
         raise NotImplementedError
 
     def getOutputType(self):
@@ -189,6 +204,53 @@ class BitField(Field):
 
     def getOutputDim(self) -> int:
         return 2 * self.num_bits  # type: ignore
+
+
+class Word2VecField(Field):
+    def __init__(self, word2vec_size, word2vec_cols, *args, **kwargs):
+        super(Word2VecField, self).__init__(*args, **kwargs)
+
+        self.word2vec_size = word2vec_size
+        self.norm_option = Normalization.MINUSONE_ONE
+        self.word2vec_dict_type_cols = get_word2vec_type_col(word2vec_cols)
+
+    def normalize(self, x, embed_model):
+        return np.array(
+            [get_vector(embed_model, str(xi), norm_option=True) for xi in x]
+        )
+
+    def denormalize(self, norm_x):
+        dict_annDictPair = {}
+        with open(get_annoy_type_dict_for_word2vec(), "r") as readfile:
+            dict_annDictPair = json.load(readfile)
+        dict_annoyIndex = {}
+        for type in dict_annDictPair.keys():
+            type_ann = AnnoyIndex(self.word2vec_size, "angular")
+            type_ann.load(get_annoyIndex_for_word2vec(type))
+            dict_annoyIndex[type] = type_ann
+
+        for k in self.word2vec_dict_type_cols:
+            if self.name in self.word2vec_dict_type_cols[k]:
+                word2vec_type_col = k
+                break
+        if word2vec_type_col is None:
+            raise ValueError("Cannot find the word2vec key!")
+        x = get_original_objs(
+            dict_annoyIndex[word2vec_type_col],
+            norm_x,
+            {int(k): v for k, v in dict_annDictPair[word2vec_type_col].items()},
+        )
+        return np.asarray(x)
+
+    def getOutputType(self):
+        return Output(
+            type_=OutputType.CONTINUOUS,
+            dim=self.word2vec_size,
+            normalization=self.norm_option,
+        )
+
+    def getOutputDim(self) -> int:
+        return self.word2vec_size  # type: ignore
 
 
 def field_config_to_key(field: Config) -> FieldKey:

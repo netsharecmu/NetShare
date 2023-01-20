@@ -31,7 +31,7 @@ def put_canonical_data_from_directory(input_dir: str) -> None:
 
 
 def get_raw_generated_data() -> Generator[
-    Tuple[np.ndarray, np.ndarray, np.ndarray, str], None, None
+    Tuple[np.ndarray, np.ndarray, np.ndarray, str, str], None, None
 ]:
     ignore_preprocessed = os.listdir(get_raw_generated_data_dir()) != [
         "pre_processed_data"
@@ -43,6 +43,7 @@ def get_raw_generated_data() -> Generator[
                 for file in os.listdir(feat_raw_dir):
                     if file.endswith(".npz"):
                         data = np.load(os.path.join(feat_raw_dir, file))
+                        filename = file.split(".")[0]
                         unnormalized_timeseries = data["data_feature"]
                         unnormalized_session_key = data["data_attribute"]
                         data_gen_flag = data["data_gen_flag"]
@@ -53,4 +54,4 @@ def get_raw_generated_data() -> Generator[
                             "pre_processed_data"
                         ):
                             continue
-                        yield unnormalized_timeseries, unnormalized_session_key, data_gen_flag, subdir
+                        yield unnormalized_timeseries, unnormalized_session_key, data_gen_flag, subdir, filename

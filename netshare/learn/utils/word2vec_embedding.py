@@ -1,4 +1,5 @@
 import itertools
+import json
 import os
 from typing import Any, Dict, List, NamedTuple
 
@@ -9,24 +10,23 @@ from gensim.models import Word2Vec
 from sklearn.neighbors import NearestNeighbors
 
 from netshare.utils.logger import logger
-
-
-class annoyTypeDescription(NamedTuple):
-    annoy_type: AnnoyIndex
-    annoy_dict: Dict[int, Any]
+from netshare.utils.paths import (
+    get_annoy_type_dict_for_word2vec,
+    get_annoyIndex_for_word2vec,
+    get_word2vec_model_path,
+)
 
 
 def word2vec_train(
-    df,
-    out_dir,
-    model_name,
-    word2vec_cols,
-    word2vec_size,
-    annoy_n_trees,
-    force_retrain=False,  # retrain from scratch
-    model_test=False,
-):
-    model_path = os.path.join(out_dir, "{}_{}.model".format(model_name, word2vec_size))
+    df: pd.DataFrame,
+    model_name: str,
+    word2vec_cols: List[Any],
+    word2vec_size: int,
+    annoy_n_trees: int,
+    force_retrain: bool = False,  # retrain from scratch
+    model_test: bool = False,
+) -> None:
+    model_path = get_word2vec_model_path()
 
     if os.path.exists(model_path) and not force_retrain:
         logger.info("Loading Word2Vec pre-trained model...")
@@ -46,13 +46,13 @@ def word2vec_train(
         model.save(model_path)
     logger.info(f"Word2Vec model is saved at {model_path}")
 
-    return model_path
+    return None
 
 
 def get_word2vec_type_col(word2vec_cols: List[Any]) -> Dict[str, List[str]]:
     dict_type_cols: Dict[str, List[str]] = {}
     for col in word2vec_cols:
-        type = col.encoding.split("_")[1]
+        type = col.encoding
         if type not in dict_type_cols:
             dict_type_cols[type] = []
         dict_type_cols[type].append(col.column)
@@ -65,19 +65,19 @@ def build_annoy_dictionary_word2vec(
     word2vec_cols: List[Any],
     word2vec_size: int,
     n_trees: int,
-) -> Dict[str, annoyTypeDescription]:
+) -> None:
 
-    dict_type_annDictPair: Dict[str, annoyTypeDescription] = {}
+    dict_type_annDictPair = {}
 
     model = Word2Vec.load(model_path)
     wv = model.wv
 
     # type : [cols]
     # ("ip": ["srcip", "dstip"])
-    # "port": ["srcport", "dstport"]
-    # "proto": ["proto"]
+    # "word2vec_port": ["srcport", "dstport"]
+    # "word2vec_proto": ["proto"]
     dict_type_cols = get_word2vec_type_col(word2vec_cols)
-    logger.info(dict_type_cols)
+    logger.debug(f"word2vec type columns are: {dict_type_cols}")
 
     for type, cols in dict_type_cols.items():
         type_set = set(
@@ -93,13 +93,15 @@ def build_annoy_dictionary_word2vec(
             index += 1
         type_ann.build(n_trees)
 
-        dict_type_annDictPair[type] = annoyTypeDescription(
-            annoy_type=type_ann, annoy_dict=type_dict
-        )
+        dict_type_annDictPair[type] = type_dict
+
+        type_ann.save(get_annoyIndex_for_word2vec(type))
+        with open(get_annoy_type_dict_for_word2vec(), "w") as outfile:
+            json.dump(dict_type_annDictPair, outfile)
 
     logger.info("Finish building Angular trees...")
 
-    return dict_type_annDictPair
+    return None
 
 
 def get_original_obj(ann, vector, dic):

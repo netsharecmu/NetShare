@@ -53,12 +53,10 @@ def apply_configuration_fields(
 
         # word2vec field: (any)
         if "word2vec" in field.get("encoding", ""):
-            this_df = original_df.apply(
-                lambda row: get_vector(
-                    embed_model, str(row[field.column]), norm_option=True
-                ),
-                axis="columns",
-                result_type="expand",
+            this_df = pd.DataFrame(
+                field_instance.normalize(
+                    original_df[field.column].to_numpy(), embed_model
+                )
             )
             this_df.columns = [f"{field.column}_{i}" for i in range(this_df.shape[1])]
             new_field_list += list(this_df.columns)
