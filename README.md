@@ -34,7 +34,7 @@ You may also refer to the [README](traces/README.md) for detailed descriptions o
 
 # Getting started
 ## Step 1: Install NetShare Python package (Required)
-We recommend installing NetShare in a virtual environment (e.g., Anaconda3 or virtualenv). We test with virtual environment with Python==3.7.
+We recommend installing NetShare in a virtual environment (e.g., Anaconda3 or virtualenv). We test with virtual environment with Python==3.6.
 
 ```Bash
 # Assume Anaconda is installed
