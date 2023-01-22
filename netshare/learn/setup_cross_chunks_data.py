@@ -90,7 +90,7 @@ def get_global_max_flow_len(df_chunks: List[pd.DataFrame]) -> int:
 
 def get_word2vec_model(
     df: pd.DataFrame,
-) -> Union[Tuple[Word2Vec, List[str]], Tuple[None, None]]:
+) -> Tuple[Optional[Word2Vec], Optional[List[str]]]:
     word2vec_config = get_config(
         ["pre_post_processor.config", "learn.word2vec"], default_value={}
     )

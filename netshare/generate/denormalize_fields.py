@@ -49,10 +49,10 @@ def _denormalize_by_fields_list(
         sub_data = field.denormalize(sub_data)
 
         # For session key, if shape looks like (n, ), change it to (n, 1) for consistency
-        if is_session_key == True and len(sub_data.shape) == 1:
+        if is_session_key and len(sub_data.shape) == 1:
             sub_data = np.expand_dims(sub_data, axis=1)
         # For timeseries, if shape looks like (i, j), change it to (i, j, 1) for consistency
-        if is_session_key == False and len(sub_data.shape) == 2:
+        if not is_session_key and len(sub_data.shape) == 2:
             sub_data = np.expand_dims(sub_data, axis=2)
         denormalized_data.append(sub_data)
         dim += field.getOutputDim()
@@ -86,14 +86,17 @@ def write_to_csv(
         timeseries_titles = _get_fields_names(timeseries_fields)
         writer.writerow(session_titles + timeseries_titles)
 
-        for i in range(data_gen_flag.shape[0]):
-            session_data = session_key[i].tolist()
+        for (
+            data_gen_per_session,
+            session_data_per_session,
+            timeseries_per_session,
+        ) in zip(data_gen_flag, session_key, timeseries):
             # this if is here in parallel to the if in `reduce_samples`. It supports old flows.
-            for j in range(data_gen_flag.shape[1]):
-                if data_gen_flag[i][j] == 1.0:
-                    timeseries_data = timeseries[i][j].tolist()
-
-                    writer.writerow(session_data + timeseries_data)
+            session_data_per_session = session_data_per_session.tolist()
+            for j in range(data_gen_per_session.shape[0]):
+                if data_gen_per_session[j] == 1.0:
+                    timeseries_data = timeseries_per_session[j].tolist()
+                    writer.writerow(session_data_per_session + timeseries_data)
 
 
 def denormalize_fields() -> str:

@@ -51,6 +51,13 @@ class ContinuousField(Field):
         self.max_x = max_x
         self.norm_option = norm_option
         self.dim_x = dim_x
+        if self.log1p_norm:
+            # If set log1p_norm, we need to re-calculate the min_x and max_x after doing
+            # log1p. Since the denormalizing step would first do min-max denomalization
+            # and then expm1. Using stale min_x and max_x would cause the synthetic
+            # value larger than expected and is possible to have np.inf
+            self.min_x = np.log1p(self.min_x)
+            self.max_x = np.log1p(self.max_x)
 
     # Normalize x in [a, b]: x' = (b-a)(x-min x)/(max x - minx) + a
     def normalize(self, x):
@@ -59,13 +66,7 @@ class ContinuousField(Field):
                 f"Dimension is {x.shape[-1]}. Expected dimension is {self.dim_x}"
             )
         if self.log1p_norm:
-            # If set log1p_norm, we need to re-calculate the min_x and max_x after doing
-            # log1p. Since the denormalizing step would first do min-max denomalization
-            # and then expm1. Using stale min_x and max_x would cause the synthetic
-            # value larger than expected and is possible to have np.inf
             x = np.log1p(x)
-            self.min_x = np.log1p(self.min_x)
-            self.max_x = np.log1p(self.max_x)
 
         # [0, 1] normalization
         if self.norm_option == Normalization.ZERO_ONE:

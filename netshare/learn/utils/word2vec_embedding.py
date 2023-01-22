@@ -1,7 +1,8 @@
 import itertools
 import json
 import os
-from typing import Any, Dict, List, NamedTuple
+from collections import defaultdict
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -50,12 +51,9 @@ def word2vec_train(
 
 
 def get_word2vec_type_col(word2vec_cols: List[Any]) -> Dict[str, List[str]]:
-    dict_type_cols: Dict[str, List[str]] = {}
+    dict_type_cols: Dict[str, List[str]] = defaultdict(list)
     for col in word2vec_cols:
-        type = col.encoding
-        if type not in dict_type_cols:
-            dict_type_cols[type] = []
-        dict_type_cols[type].append(col.column)
+        dict_type_cols[col.encoding].append(col.column)
     return dict_type_cols
 
 
@@ -80,9 +78,7 @@ def build_annoy_dictionary_word2vec(
     logger.debug(f"word2vec type columns are: {dict_encoding_type_vs_cols}")
 
     for encoding_type, cols in dict_encoding_type_vs_cols.items():
-        ele_set = set(
-            list(itertools.chain.from_iterable([list(df[col]) for col in cols]))
-        )
+        ele_set = set(itertools.chain.from_iterable([list(df[col]) for col in cols]))
         type_ann = AnnoyIndex(word2vec_size, "angular")
         dict_idx_ele = {}
 
@@ -111,24 +107,16 @@ def get_original_obj(ann: AnnoyIndex, vector: np.ndarray, dic: Dict[int, Any]) -
 def get_original_objs(
     ann: AnnoyIndex, vectors: np.ndarray, dic: Dict[int, Any]
 ) -> List[Any]:
-    res = []
-    for vector in vectors:
-        obj_list = ann.get_nns_by_vector(
-            vector, 1, search_k=-1, include_distances=False
-        )
-        res.append(dic[obj_list[0]])
+    res = [
+        dic[ann.get_nns_by_vector(vector, 1, search_k=-1, include_distances=False)[0]]
+        for vector in vectors
+    ]
     return res
 
 
 def get_vector(model: Word2Vec, word: str, norm_option: bool = False) -> np.ndarray:
     all_words_str = list(model.wv.vocab.keys())
-
-    # Privacy-related
-    # If word not in the vocabulary, replace with nearest neighbor
-    # Suppose that protocol is covered
-    #   while very few port numbers are out of range
     if word not in all_words_str:
-        # print(f"{word} not in dict")
         all_words = []
         for ele in all_words_str:
             if ele.isdigit():
