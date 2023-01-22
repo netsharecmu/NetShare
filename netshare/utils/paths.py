@@ -33,6 +33,38 @@ def get_model_log_folder() -> str:
     return os.path.join(get_config("global_config.work_folder"), "logs", "models")
 
 
+def get_word2vec_model_directory() -> str:
+    return get_preprocessed_data_folder()
+
+
+def get_word2vec_model_path() -> str:
+    word2vec_config = get_config(
+        ["pre_post_processor.config", "learn.word2vec"], default_value={}
+    )
+    word2vec_model_path = os.path.join(
+        get_word2vec_model_directory(),
+        "{}_{}.model".format(
+            word2vec_config["word2vec"]["model_name"],
+            word2vec_config["word2vec"]["vec_size"],
+        ),
+    )
+    return word2vec_model_path
+
+
+def get_annoyIndex_for_word2vec(name: str) -> str:
+    annoyIndex_path = os.path.join(
+        get_word2vec_model_directory(), "{}.ann".format(name)
+    )
+    return annoyIndex_path
+
+
+def get_annoy_dict_idx_ele_for_word2vec() -> str:
+    annoy_type_dict_path = os.path.join(
+        get_word2vec_model_directory(), "annoy_idx_ele_dict.json"
+    )
+    return annoy_type_dict_path
+
+
 def check_folder(folder: str, skip_existing: bool = False) -> None:
     if os.path.exists(folder):
         if skip_existing:

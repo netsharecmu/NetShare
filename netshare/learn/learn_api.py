@@ -39,10 +39,6 @@ def get_all_chunks_dirs() -> List[str]:
     ]
 
 
-def get_word2vec_model_directory() -> str:
-    return get_preprocessed_data_folder()
-
-
 def create_dirs(chunk_id: int) -> None:
     """
     Create the directories for the preprocessed data.

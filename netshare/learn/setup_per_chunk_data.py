@@ -11,7 +11,6 @@ import netshare.utils.ray as ray
 from netshare.configs import get_config
 from netshare.learn import learn_api
 from netshare.learn.setup_cross_chunks_data import CrossChunksData
-from netshare.learn.utils.embedding_helper import get_vector
 from netshare.utils.field import (
     ContinuousField,
     Field,
@@ -53,12 +52,10 @@ def apply_configuration_fields(
 
         # word2vec field: (any)
         if "word2vec" in field.get("encoding", ""):
-            this_df = original_df.apply(
-                lambda row: get_vector(
-                    embed_model, str(row[field.column]), norm_option=True
-                ),
-                axis="columns",
-                result_type="expand",
+            this_df = pd.DataFrame(
+                field_instance.normalize(
+                    original_df[field.column].to_numpy(), embed_model
+                )
             )
             this_df.columns = [f"{field.column}_{i}" for i in range(this_df.shape[1])]
             new_field_list += list(this_df.columns)
