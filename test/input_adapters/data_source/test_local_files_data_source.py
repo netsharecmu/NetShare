@@ -25,4 +25,4 @@ def test_fetch_data(tmp_path):
     # Check that the files were copied
     assert open(os.path.join(target, "file1.txt"), "r").read() == "file1"
     assert open(os.path.join(target, "file2.txt"), "r").read() == "file2"
-    assert open(os.path.join(target, "subdir_file3.txt"), "r").read() == "file3"
+    assert open(os.path.join(target, "subdir__file3.txt"), "r").read() == "file3"
