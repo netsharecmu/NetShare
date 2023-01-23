@@ -225,7 +225,7 @@ class DoppelGANgerTFModel(Model):
             if not os.path.exists(given_attr_npz_file):
                 raise ValueError(f"Given data attribute file {given_attr_npz_file}")
             given_data_attribute = np.load(given_attr_npz_file)["data_attribute"]
-            logger.debug("given_data_attribute:", given_data_attribute.shape)
+            logger.debug(f"given_data_attribute: {given_data_attribute.shape}")
         else:
             logger.debug("Generating w/o given data attribute!")
 
