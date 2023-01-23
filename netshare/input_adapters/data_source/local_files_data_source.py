@@ -47,7 +47,7 @@ class LocalFilesDataSource(DataSource):
                 unique_filename = (
                     os.path.join(root, filename)
                     .replace(input_folder, "")
-                    .replace("/", "_")
+                    .replace("/", "__")
                     .lstrip("_")
                 )
                 shutil.copyfile(

@@ -90,9 +90,9 @@ def _write_fields(
         data_attribute_output = []
         for v in fields.values():
             if isinstance(v, BitField):
-                data_attribute_output += v.getOutputType()
+                data_attribute_output += v.get_output_type()
             else:
-                data_attribute_output.append(v.getOutputType())
+                data_attribute_output.append(v.get_output_type())
         pickle.dump(data_attribute_output, f)
     with open(os.path.join(data_out_dir, f"data_{field_type}_fields.pkl"), "wb") as f:
         pickle.dump(fields, f)

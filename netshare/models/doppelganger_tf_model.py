@@ -23,6 +23,7 @@ from netshare.models.doppelganger_tf.util import (
     renormalize_per_sample,
 )
 from netshare.models.model import Model
+from netshare.utils.logger import logger
 
 
 class DoppelGANgerTFModel(Model):
@@ -214,7 +215,7 @@ class DoppelGANgerTFModel(Model):
             tf.compat.v1.reset_default_graph()
 
         if self._config["given_data_attribute_flag"]:
-            print("Generating from a given data attribute!")
+            logger.debug("Generating from a given data attribute!")
             given_attr_npz_file = os.path.join(
                 output_syn_data_folder,
                 "attr_clean",
@@ -224,9 +225,9 @@ class DoppelGANgerTFModel(Model):
             if not os.path.exists(given_attr_npz_file):
                 raise ValueError(f"Given data attribute file {given_attr_npz_file}")
             given_data_attribute = np.load(given_attr_npz_file)["data_attribute"]
-            print("given_data_attribute:", given_data_attribute.shape)
+            logger.debug("given_data_attribute:", given_data_attribute.shape)
         else:
-            print("Generating w/o given data attribute!")
+            logger.debug("Generating w/o given data attribute!")
 
         data_in_dir = self._config["dataset"]
         with open(os.path.join(data_in_dir, "data_feature_output.pkl"), "rb") as f:
@@ -248,7 +249,6 @@ class DoppelGANgerTFModel(Model):
             print("DP case: adding noise to # of flows")
             num_real_samples += int(estimate_flowlen_dp([num_real_samples])[0])
 
-        print("num_real_samples:", num_real_samples)
         # TODO: Why does it care about the type of the input data?
         dataset_type = get_config(
             "input_adapters.format_normalizer.dataset_type", default_value=None
@@ -282,20 +282,24 @@ class DoppelGANgerTFModel(Model):
         )
         # Run dataset.sample_batch() once to intialize data_attribute_outputs
         # and data_feature_outputs
-        print("Prepare sample batch")
+        logger.debug("Prepare sample batch")
         dataset.sample_batch(self._config["batch_size"])
         if (
             (dataset.data_attribute_outputs_train is None)
             or (dataset.data_feature_outputs_train is None)
             or (dataset.real_attribute_mask is None)
         ):
-            print(dataset.data_attribute_outputs_train)
-            print(dataset.data_feature_outputs_train)
-            print(dataset.real_attribute_mask)
+            logger.debug(
+                f"dataset.data_attribute_outputs_train: {dataset.data_attribute_outputs_train}"
+            )
+            logger.debug(
+                f"dataset.data_feature_outputs_train: {dataset.data_feature_outputs_train}"
+            )
+            logger.debug(f"dataset.real_attribute_mask: {dataset.real_attribute_mask}")
             raise Exception(
                 "Dataset variables are not initialized properly for training purposes!"
             )
-        print("finished preparing sample batch")
+        logger.debug("finished preparing sample batch")
 
         sample_len = self._config["sample_len"]
         data_attribute_outputs = dataset.data_attribute_outputs_train
@@ -422,7 +426,7 @@ class DoppelGANgerTFModel(Model):
                 self._config["generate_num_train_sample"]
                 + self._config["generate_num_test_sample"]
             )
-            print("total generated sample:", total_generate_num_sample)
+            logger.debug(f"total generated sample: {total_generate_num_sample}")
 
             (
                 batch_data_attribute,
@@ -460,7 +464,7 @@ class DoppelGANgerTFModel(Model):
                 if last_iteration_found == True:
                     break
 
-                print("Processing iteration_id: {}".format(iteration_id))
+                logger.debug("Processing iteration_id: {}".format(iteration_id))
                 mid_checkpoint_dir = os.path.join(
                     checkpoint_dir, "iteration_id-{}".format(iteration_id)
                 )
@@ -470,15 +474,13 @@ class DoppelGANgerTFModel(Model):
                 else:
                     last_iteration_found = True
                 for generated_samples_idx in range(generatedSamples_per_epoch):
-                    print(
+                    logger.debug(
                         "generate {}-th sample from iteration_id-{}".format(
                             generated_samples_idx + 1, iteration_id
                         )
                     )
 
                     gan.load(mid_checkpoint_dir)
-
-                    print("Finished loading")
 
                     # specify given_attribute parameter, if you want to generate
                     # data according to an attribute
@@ -497,11 +499,6 @@ class DoppelGANgerTFModel(Model):
                             feature_input_noise,
                             input_data,
                         )
-
-                    print(features.shape)
-                    print(attributes.shape)
-                    print(gen_flags.shape)
-                    print(lengths.shape)
 
                     split = self._config["generate_num_train_sample"]
 
@@ -549,8 +546,7 @@ class DoppelGANgerTFModel(Model):
                         # save attributes/features/gen_flags/self._config to
                         # files
 
-                        print("GENERATOR......")
-                        print(output_syn_data_folder)
+                        logger.info(f"Generate to {output_syn_data_folder}")
                         save_path = os.path.join(output_syn_data_folder, "feat_raw")
                         os.makedirs(save_path, exist_ok=True)
                         np.savez(
