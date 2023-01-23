@@ -43,13 +43,14 @@ class Field(object):
 class ContinuousField(Field):
     def __init__(
         self,
-        name: str,
+        name: Union[str, List[str]],
         norm_option: Normalization,
         min_x: float,
         max_x: float,
         dim_x: int = 1,
+        log1p_norm: bool = False,
     ) -> None:
-        super(ContinuousField, self).__init__(name)
+        super(ContinuousField, self).__init__(name=name, log1p_norm=log1p_norm)
 
         self.min_x = min_x
         self.max_x = max_x

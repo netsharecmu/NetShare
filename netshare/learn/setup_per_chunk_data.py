@@ -53,7 +53,7 @@ def apply_configuration_fields(
         # word2vec field: (any)
         if "word2vec" in field.get("encoding", ""):
             this_df = pd.DataFrame(
-                field_instance.normalize(
+                field_instance.normalize(  # type: ignore
                     original_df[field.column].to_numpy(), embed_model
                 )
             )
