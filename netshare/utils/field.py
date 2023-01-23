@@ -1,19 +1,16 @@
 import json
-import os
-from typing import Dict, List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from annoy import AnnoyIndex
 from config_io import Config
 
-from netshare.configs import get_config
 from netshare.learn.utils.word2vec_embedding import (
     get_original_objs,
     get_vector,
     get_word2vec_type_col,
 )
-from netshare.utils.logger import logger
 from netshare.utils.paths import (
     get_annoy_dict_idx_ele_for_word2vec,
     get_annoyIndex_for_word2vec,
@@ -30,22 +27,29 @@ class Field(object):
         self.name = name
         self.log1p_norm = log1p_norm
 
-    def normalize(self, x, *args, **kwargs):
+    def normalize(self, x):
         raise NotImplementedError
 
-    def denormalize(self, x, *args, **kwargs):
+    def denormalize(self, x):
         raise NotImplementedError
 
-    def getOutputType(self):
+    def get_output_type(self):
         raise NotImplementedError
 
-    def getOutputDim(self) -> int:
+    def get_output_dim(self) -> int:
         raise NotImplementedError
 
 
 class ContinuousField(Field):
-    def __init__(self, norm_option, min_x=None, max_x=None, dim_x=1, *args, **kwargs):
-        super(ContinuousField, self).__init__(*args, **kwargs)
+    def __init__(
+        self,
+        name: str,
+        norm_option: Normalization,
+        min_x: float,
+        max_x: float,
+        dim_x: int = 1,
+    ) -> None:
+        super(ContinuousField, self).__init__(name)
 
         self.min_x = min_x
         self.max_x = max_x
@@ -85,9 +89,9 @@ class ContinuousField(Field):
     def denormalize(self, norm_x):
         if not self.max_x or not self.min_x:
             return norm_x  # This is a word2vec field
-        if norm_x.shape[-1] != self.dim_x:
+        if norm_x.shape[-1] != self.get_output_dim():
             raise ValueError(
-                f"Dimension is {norm_x.shape[-1]}. Expected dimension is {self.dim_x}"
+                f"Dimension is {norm_x.shape[-1]}. Expected dimension is {self.get_output_dim()}"
             )
         # [0, 1] normalization
         if self.norm_option == Normalization.ZERO_ONE:
@@ -104,13 +108,15 @@ class ContinuousField(Field):
             to_return = np.expm1(to_return)
         return to_return
 
-    def getOutputType(self):
+    def get_output_type(self):
         return Output(
-            type_=OutputType.CONTINUOUS, dim=self.dim_x, normalization=self.norm_option
+            type_=OutputType.CONTINUOUS,
+            dim=self.get_output_dim(),
+            normalization=self.norm_option,
         )
 
-    def getOutputDim(self) -> int:
-        return self.dim_x  # type: ignore
+    def get_output_dim(self) -> int:
+        return self.dim_x
 
 
 class DiscreteField(Field):
@@ -140,10 +146,10 @@ class DiscreteField(Field):
 
         return np.asarray(self.choices)[index]
 
-    def getOutputType(self):
-        return Output(type_=OutputType.DISCRETE, dim=len(self.choices))
+    def get_output_type(self):
+        return Output(type_=OutputType.DISCRETE, dim=self.get_output_dim())
 
-    def getOutputDim(self) -> int:
+    def get_output_dim(self) -> int:
         return len(self.choices)
 
 
@@ -203,7 +209,7 @@ class BitField(Field):
     def denormalize(self, bin_x):
         return np.array([self._denormalize(b) for b in bin_x])
 
-    def getOutputType(self):
+    def get_output_type(self):
         outputs = []
 
         for i in range(self.num_bits):
@@ -211,7 +217,7 @@ class BitField(Field):
 
         return outputs
 
-    def getOutputDim(self) -> int:
+    def get_output_dim(self) -> int:
         return 2 * self.num_bits  # type: ignore
 
 
@@ -255,14 +261,14 @@ class Word2VecField(Field):
         )
         return np.asarray(x)
 
-    def getOutputType(self):
+    def get_output_type(self):
         return Output(
             type_=OutputType.CONTINUOUS,
-            dim=self.word2vec_size,
+            dim=self.get_output_dim(),
             normalization=self.norm_option,
         )
 
-    def getOutputDim(self) -> int:
+    def get_output_dim(self) -> int:
         return self.word2vec_size  # type: ignore
 
 

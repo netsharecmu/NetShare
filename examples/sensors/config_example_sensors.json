@@ -1,0 +1,149 @@
+{
+    "global_config": {
+        "work_folder": "../../results/sensors",
+        "n_chunks": 1,
+        "timestamp": {
+            "column": "Unnamed: 0"
+        },
+        "ray_enabled": false
+    },
+    "input_adapters": {
+        "data_source": {
+            "type": "local_files",
+            "input_folder": "../../traces/sensors/A_DeviceMotion_data/A_DeviceMotion_data"
+        },
+        "format_normalizer": {
+            "dataset_type": "csv"
+        }
+    },
+    "learn": {
+        "session_key": [
+            {
+                "column": "filename",
+                "regex": "(\\w{3}_\\d+)__sub_\\d+.csv",
+                "type": "string",
+                "name": "sensor_type"
+            },
+            {
+                "column": "filename",
+                "regex": "\\w{3}_\\d+__(sub_\\d+).csv",
+                "type": "string",
+                "name": "sample_id"
+            }
+        ],
+        "timeseries": [
+            {
+                "column": "attitude.roll",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            },
+            {
+                "column": "attitude.pitch",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            },
+            {
+                "column": "attitude.yaw",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            },
+            {
+                "column": "gravity.x",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            },
+            {
+                "column": "gravity.y",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            },
+            {
+                "column": "gravity.z",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            },
+            {
+                "column": "rotationRate.x",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            },
+            {
+                "column": "rotationRate.y",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            },
+            {
+                "column": "rotationRate.z",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            },
+            {
+                "column": "userAcceleration.x",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            },
+            {
+                "column": "userAcceleration.y",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            },
+            {
+                "column": "userAcceleration.z",
+                "type": "float",
+                "normalization": "MINUSONE_ONE"
+            }
+        ]
+    },
+    "model": {
+        "class": "DoppelGANgerTFModel",
+        "config": {
+            "batch_size": 100,
+            "sample_len": [
+                1,
+                5
+            ],
+            "sample_len_expand": true,
+            "iteration": 10,
+            "vis_freq": 5,
+            "vis_num_sample": 5,
+            "d_rounds": 5,
+            "g_rounds": 1,
+            "num_packing": 1,
+            "noise": true,
+            "attr_noise_type": "normal",
+            "feature_noise_type": "normal",
+            "rnn_mlp_num_layers": 0,
+            "feed_back": false,
+            "g_lr": 0.0001,
+            "d_lr": 0.0001,
+            "d_gp_coe": 10.0,
+            "gen_feature_num_layers": 1,
+            "gen_feature_num_units": 100,
+            "gen_attribute_num_layers": 5,
+            "gen_attribute_num_units": 512,
+            "disc_num_layers": 5,
+            "disc_num_units": 512,
+            "initial_state": "random",
+            "leaky_relu": false,
+            "attr_d_lr": 0.0001,
+            "attr_d_gp_coe": 10.0,
+            "g_attr_d_coe": 1.0,
+            "attr_disc_num_layers": 5,
+            "attr_disc_num_units": 512,
+            "aux_disc": true,
+            "self_norm": false,
+            "fix_feature_network": false,
+            "debug": false,
+            "combined_disc": true,
+            "use_gt_lengths": false,
+            "use_uniform_lengths": false,
+            "num_cores": null,
+            "sn_mode": null,
+            "scale": 1.0,
+            "extra_checkpoint_freq": 5,
+            "epoch_checkpoint_freq": 2,
+            "dp_noise_multiplier": null,
+            "dp_l2_norm_clip": null
+        }
+    }
+}
