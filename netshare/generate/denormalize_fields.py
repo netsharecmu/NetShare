@@ -42,9 +42,9 @@ def _denormalize_by_fields_list(
 
     for field in fields_list:
         if is_session_key:
-            sub_data = normalized_data[:, dim : dim + field.getOutputDim()]
+            sub_data = normalized_data[:, dim : dim + field.get_output_dim()]
         else:
-            sub_data = normalized_data[:, :, dim : dim + field.getOutputDim()]
+            sub_data = normalized_data[:, :, dim : dim + field.get_output_dim()]
 
         sub_data = field.denormalize(sub_data)
 
@@ -55,7 +55,7 @@ def _denormalize_by_fields_list(
         if not is_session_key and len(sub_data.shape) == 2:
             sub_data = np.expand_dims(sub_data, axis=2)
         denormalized_data.append(sub_data)
-        dim += field.getOutputDim()
+        dim += field.get_output_dim()
     return denormalized_data
 
 
