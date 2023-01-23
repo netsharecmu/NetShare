@@ -43,7 +43,7 @@ class Field(object):
 class ContinuousField(Field):
     def __init__(
         self,
-        name: str,
+        name: Union[str, List[str]],
         norm_option: Normalization,
         min_x: float,
         max_x: float,
