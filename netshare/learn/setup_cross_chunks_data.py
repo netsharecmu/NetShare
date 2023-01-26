@@ -255,7 +255,7 @@ def setup_cross_chunks_data(
     big_df: pd.DataFrame, df_chunks: List[pd.DataFrame]
 ) -> CrossChunksData:
     """
-    This function splits the input data into chunks, and compute the .
+    This function splits the input data into chunks, and compute the flow tags for each chunk.
     """
     embed_model, word2vec_cols = get_word2vec_model(big_df)
     session_key_fields, timeseries_fields = build_fields(big_df, word2vec_cols)
