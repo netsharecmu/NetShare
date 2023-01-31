@@ -427,6 +427,10 @@ class DoppelGANgerTFModel(Model):
                 + self._config["generate_num_test_sample"]
             )
             logger.debug(f"total generated sample: {total_generate_num_sample}")
+            if total_generate_num_sample == 0:
+                raise ValueError(
+                    f"Generating given data attribute: {self._config['given_data_attribute_flag']}. # of total generated samples is ZERO."
+                )
 
             (
                 batch_data_attribute,
