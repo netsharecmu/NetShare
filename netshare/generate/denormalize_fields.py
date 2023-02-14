@@ -5,6 +5,7 @@ import tempfile
 from typing import Dict, List
 
 import numpy as np
+from config_io import Config
 from tqdm import tqdm
 
 from netshare.configs import get_config
@@ -73,12 +74,15 @@ def write_to_csv(
     timeseries: List[np.ndarray],
     data_gen_flag: np.ndarray,
     filename: str,
+    config: Config,
 ) -> None:
     """
     This function dumps the given data to the given directory as a csv format.
     `data_gen_flag` is an indicator showing if the time series for this session
     has ended in this time step.
     """
+    print(config)
+
     os.makedirs(csv_folder, exist_ok=True)
     csv_path = os.path.join(csv_folder, filename)
     # change session key shape to #session * #attributes
@@ -90,14 +94,43 @@ def write_to_csv(
         writer = csv.writer(f)
         session_titles = _get_fields_names(session_key_fields)
         timeseries_titles = _get_fields_names(timeseries_fields)
+        raw_metadata_field_names = [col.column for col in config["metadata"]]
+        raw_timeseries_filed_names = [col.column for col in config["timeseries"]]
+        session_titles = [
+            f for i, f in enumerate(session_titles) if f in raw_metadata_field_names
+        ]
+        session_titles_idx = [
+            i for i, f in enumerate(session_titles) if f in raw_metadata_field_names
+        ]
+        timeseries_titles = [
+            f
+            for i, f in enumerate(timeseries_titles)
+            if f in raw_timeseries_filed_names
+        ]
+        timeseries_titles_idx = [
+            i
+            for i, f in enumerate(timeseries_titles)
+            if f in raw_timeseries_filed_names
+        ]
+
         writer.writerow(session_titles + timeseries_titles)
+
+        # print(
+        #     session_titles, session_titles_idx, timeseries_titles, timeseries_titles_idx
+        # )
+        # print(session_key.shape, timeseries.shape)
 
         for (
             data_gen_per_session,
             session_data_per_session,
             timeseries_per_session,
-        ) in zip(data_gen_flag, session_key, timeseries):
-            # this if is here in parallel to the if in `reduce_samples`. It supports old flows.
+        ) in zip(
+            data_gen_flag,
+            np.array(session_key)[:, session_titles_idx],  # remove cols not in raw data
+            np.array(timeseries)[
+                :, :, timeseries_titles_idx
+            ],  # remove cols not in raw data
+        ):
             session_data_per_session = session_data_per_session.tolist()
             for j in range(data_gen_per_session.shape[0]):
                 if data_gen_per_session[j] == 1.0:
@@ -158,4 +191,5 @@ def denormalize_fields() -> None:
                 timeseries=timeseries,
                 data_gen_flag=data_gen_flag,
                 filename=csv_filename,
+                config=config,
             )
