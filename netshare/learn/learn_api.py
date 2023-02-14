@@ -114,7 +114,7 @@ def write_features(timeseries_fields: Dict[FieldKey, Field], chunk_id: int) -> N
     _write_fields(field_type="feature", fields=timeseries_fields, chunk_id=chunk_id)
 
 
-def get_fields(field_type: str, chunk_id: Optional[int]) -> Dict[FieldKey, Field]:
+def get_fields(field_type: str, chunk_id: int) -> Dict[FieldKey, Field]:
     """
     This function loads the attributes fields from the pickle file.
     """
@@ -124,7 +124,7 @@ def get_fields(field_type: str, chunk_id: Optional[int]) -> Dict[FieldKey, Field
         return pickle.load(f)  # type: ignore
 
 
-def get_attributes_fields(chunk_id: Optional[int] = None) -> Dict[FieldKey, Field]:
+def get_attributes_fields(chunk_id: int) -> Dict[FieldKey, Field]:
     """
     This function returns the attributes fields that were stored in the input_adapters phase.
     # TODO: Attributes are cross-chunks, it doesn't make sense to have a chunk_id here.
@@ -132,7 +132,7 @@ def get_attributes_fields(chunk_id: Optional[int] = None) -> Dict[FieldKey, Fiel
     return get_fields("attribute", chunk_id)
 
 
-def get_feature_fields(chunk_id: Optional[int] = None) -> Dict[FieldKey, Field]:
+def get_feature_fields(chunk_id: int) -> Dict[FieldKey, Field]:
     """
     Similar to get_attributes_fields, but for the features.
     # TODO: Features are cross-chunks, it doesn't make sense to have a chunk_id here.
