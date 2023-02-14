@@ -81,8 +81,6 @@ def write_to_csv(
     `data_gen_flag` is an indicator showing if the time series for this session
     has ended in this time step.
     """
-    print(config)
-
     os.makedirs(csv_folder, exist_ok=True)
     csv_path = os.path.join(csv_folder, filename)
     # change session key shape to #session * #attributes
@@ -120,6 +118,7 @@ def write_to_csv(
         # )
         # print(session_key.shape, timeseries.shape)
 
+        session_key_set = set()
         for (
             data_gen_per_session,
             session_data_per_session,
@@ -132,6 +131,11 @@ def write_to_csv(
             ],  # remove cols not in raw data
         ):
             session_data_per_session = session_data_per_session.tolist()
+            # remove duplicated session keys
+            if tuple(session_data_per_session) in session_key_set:
+                logger.debug(f"Session key {session_data_per_session} already exists!")
+                continue
+            session_key_set.add(tuple(session_data_per_session))
             for j in range(data_gen_per_session.shape[0]):
                 if data_gen_per_session[j] == 1.0:
                     timeseries_data = timeseries_per_session[j].tolist()
