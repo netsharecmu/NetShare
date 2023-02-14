@@ -126,7 +126,7 @@ def apply_timestamp_generation(
         and generate the normalized timestamp column if needed.
 
     There are two types of timestamp generation:
-    1. encoding = raw: Taking a specific column as another timestamp column. TODO: I don't understand why this is needed.
+    1. encoding = raw: Taking a specific column as another timestamp column.
     2. encoding = interarrival: For each tuple of session_key (old term: metadata), we take the start time of the flow a metadata column,
         and also take the diff between every packet to the previous one as a feature column.
     """

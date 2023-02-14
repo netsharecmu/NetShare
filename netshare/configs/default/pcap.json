@@ -3,8 +3,7 @@
         "overwrite": false,
         "ray_enabled": false,
         "work_folder": "../../results/pcap",
-        "n_chunks": 10,
-        "timestamp": "interarrival"
+        "n_chunks": 10
     },
     "input_adapters": {
         "data_source": {

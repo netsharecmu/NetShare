@@ -112,14 +112,10 @@ def denormalize_fields() -> None:
 
     :return: the path to the denormalized data.
     """
-    # output_folder = tempfile.mkdtemp()
-
-    # print(output_folder)
-
     configs, config_group_list = create_chunks_configurations(generation_flag=True)
 
-    # print(len(configs), config_group_list)
-    # print(configs[0])
+    # print(configs[0], config_group_list)
+    # () + 1
 
     for config in tqdm(configs):
         session_key_fields = list(
