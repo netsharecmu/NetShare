@@ -67,12 +67,13 @@
         "config": {
             "batch_size": 100,
             "sample_len": [
+                5,
                 10
             ],
             "sample_len_expand": true,
-            "iteration": 4,
-            "extra_checkpoint_freq": 1,
-            "epoch_checkpoint_freq": 1
+            "iteration": 16,
+            "extra_checkpoint_freq": 2,
+            "epoch_checkpoint_freq": 2
         }
     },
     "default": "pcap.json"

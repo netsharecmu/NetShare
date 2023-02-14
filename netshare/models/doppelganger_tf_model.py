@@ -465,7 +465,9 @@ class DoppelGANgerTFModel(Model):
             generatedSamples_per_epoch = 1
 
             for iteration_id in iteration_range:
-                if last_iteration_found == True:
+                if last_iteration_found and (
+                    not self._config["given_data_attribute_flag"]
+                ):
                     break
 
                 logger.debug("Processing iteration_id: {}".format(iteration_id))
@@ -551,14 +553,16 @@ class DoppelGANgerTFModel(Model):
                         # files
 
                         logger.info(f"Generate to {output_syn_data_folder}")
-                        save_path = os.path.join(output_syn_data_folder, "feat_raw")
+                        save_path = os.path.join(
+                            output_syn_data_folder,
+                            "feat_raw",
+                            f"chunk_id-{self._config['chunk_id']}",
+                        )
                         os.makedirs(save_path, exist_ok=True)
                         np.savez(
                             os.path.join(
                                 save_path,
-                                "chunk_id-{}_iteration_id-{}.npz".format(
-                                    self._config["chunk_id"], iteration_id
-                                ),
+                                f"iteration_id-{iteration_id}.npz",
                             ),
                             data_attribute=attributes,
                             data_feature=features,
