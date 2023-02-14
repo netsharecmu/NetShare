@@ -55,16 +55,9 @@
             ],
             "timeseries": [
                 {
-                    "column": "time",
-                    "type": "float",
-                    "normalization": "ZERO_ONE",
-                    "log1p_norm": true
-                },
-                {
                     "column": "pkt_len",
                     "type": "float",
-                    "normalization": "ZERO_ONE",
-                    "log1p_norm": true
+                    "normalization": "ZERO_ONE"
                 }
             ]
         }

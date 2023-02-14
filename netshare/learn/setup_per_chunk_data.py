@@ -103,9 +103,6 @@ def write_chunk_data(
 ) -> None:
     """
     This function writes the data of a single chunk using the learn_api.
-
-    TODO: Why do we store the cross_chunks_data for every chunk?
-        It creates trouble later when we try to load it in the postprocess phase.
     """
     learn_api.create_dirs(chunk_id)
     learn_api.write_raw_chunk(df_per_chunk, chunk_id)

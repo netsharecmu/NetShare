@@ -82,7 +82,7 @@ def merge_attr(config_group: dict, configs: List[dict]) -> None:
     num_chunks = len(config_group["config_ids"])
 
     dim = 0
-    for field in list(learn_api.get_attributes_fields().values()):
+    for field in list(learn_api.get_attributes_fields(chunk_id=0).values()):
         if field.name != "startFromThisChunk":
             dim += field.get_output_dim()
         else:

@@ -13,7 +13,7 @@ def generate() -> None:
     1. Denormalize the fields (e.g. int to IP, vector to word, etc.)
     2. Choose the best generated data and write it using the generate_api
     """
-    # model_generate()
+    model_generate()
     denormalized_fields_dir = denormalize_fields()
     chosen_data_dir = choose_best_model(denormalized_fields_dir)
     copy_files(chosen_data_dir, get_generated_data_dir())
