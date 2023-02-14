@@ -5,14 +5,20 @@ import tempfile
 from typing import Dict, List
 
 import numpy as np
+from tqdm import tqdm
 
 from netshare.configs import get_config
 from netshare.generate import generate_api
+from netshare.generate.generate_api import (
+    get_generated_data_dir,
+    get_raw_generated_data_dir,
+)
 from netshare.input_adapters.input_adapter_api import get_canonical_data_dir
 from netshare.learn import learn_api
 from netshare.learn.utils.dataframe_utils import load_dataframe_chunks
 from netshare.utils.field import ContinuousField, Field
 from netshare.utils.logger import logger
+from netshare.utils.model_configuration import create_chunks_configurations
 
 
 def _get_fields_names(fields_list: List[Field]) -> List[str]:
@@ -74,7 +80,7 @@ def write_to_csv(
     has ended in this time step.
     """
     os.makedirs(csv_folder, exist_ok=True)
-    csv_path = os.path.join(csv_folder, f"data_{filename}_{random.random()}.csv")
+    csv_path = os.path.join(csv_folder, filename)
     # change session key shape to #session * #attributes
     session_key = np.concatenate(session_key, axis=1)
     # change timeseries shape to #session * #time_steps * #features
@@ -99,40 +105,61 @@ def write_to_csv(
                     writer.writerow(session_data_per_session + timeseries_data)
 
 
-def denormalize_fields() -> str:
+def denormalize_fields() -> None:
     """
-    This function denormalizes the data in the generated_data folder using the attributes
-        and features fields that were created in the pre-process step.
+    This function denormalizes the data in the generated_data folder using the attributes and features fields that were created in the pre-process step.
     Last, it writes the denormalized data to a csv file under the same directory hierarchy as the created data.
 
     :return: the path to the denormalized data.
     """
-    output_folder = tempfile.mkdtemp()
+    # output_folder = tempfile.mkdtemp()
 
-    session_key_fields = list(learn_api.get_attributes_fields().values())
-    timeseries_fields = list(learn_api.get_feature_fields().values())
+    # print(output_folder)
 
-    for (
-        unnormalized_timeseries,
-        unnormalized_session_key,
-        data_gen_flag,
-        sub_folder,
-        filename,
-    ) in generate_api.get_raw_generated_data():
-        session_key = _denormalize_by_fields_list(
-            unnormalized_session_key, session_key_fields, is_session_key=True
-        )
-        timeseries = _denormalize_by_fields_list(
-            unnormalized_timeseries, timeseries_fields, is_session_key=False
-        )
-        write_to_csv(
-            csv_folder=os.path.join(output_folder, sub_folder),
-            session_key_fields=session_key_fields,
-            timeseries_fields=timeseries_fields,
-            session_key=session_key,
-            timeseries=timeseries,
-            data_gen_flag=data_gen_flag,
-            filename=filename,
-        )
+    configs, config_group_list = create_chunks_configurations(generation_flag=True)
 
-    return output_folder
+    # print(len(configs), config_group_list)
+    # print(configs[0])
+
+    for config in tqdm(configs):
+        session_key_fields = list(
+            learn_api.get_attributes_fields(chunk_id=config["chunk_id"]).values()
+        )
+        timeseries_fields = list(
+            learn_api.get_feature_fields(chunk_id=config["chunk_id"]).values()
+        )
+        # Each configuration has multiple iteration ckpts
+        per_chunk_basedir = os.path.join(
+            config["eval_root_folder"], "feat_raw", f"chunk_id-{config['chunk_id']}"
+        )
+        for f in os.listdir(per_chunk_basedir):
+            if not f.endswith(".npz"):
+                continue
+            per_iteration_npzfile = os.path.join(per_chunk_basedir, f)
+            data = np.load(per_iteration_npzfile)
+            unnormalized_session_key = data["data_attribute"]
+            unnormalized_timeseries = data["data_feature"]
+            data_gen_flag = data["data_gen_flag"]
+
+            session_key = _denormalize_by_fields_list(
+                unnormalized_session_key, session_key_fields, is_session_key=True
+            )
+            timeseries = _denormalize_by_fields_list(
+                unnormalized_timeseries, timeseries_fields, is_session_key=False
+            )
+
+            csv_root_folder = config["eval_root_folder"].replace(
+                get_raw_generated_data_dir(), get_generated_data_dir()
+            )
+            csv_filename = f.replace(".npz", ".csv")
+            write_to_csv(
+                csv_folder=os.path.join(
+                    csv_root_folder, f"chunk_id-{config['chunk_id']}"
+                ),
+                session_key_fields=session_key_fields,
+                timeseries_fields=timeseries_fields,
+                session_key=session_key,
+                timeseries=timeseries,
+                data_gen_flag=data_gen_flag,
+                filename=csv_filename,
+            )
