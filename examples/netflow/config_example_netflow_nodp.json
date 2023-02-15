@@ -3,11 +3,11 @@
     "global_config": {
         "overwrite": true,
         "ray_enabled": true,
-        "n_chunks": 2
+        "n_chunks": 1
     },
     "input_adapters": {
         "data_source": {
-            "original_data_file": "../traces/ugr16-small/raw.csv"
+            "original_data_file": "../../traces/ugr16-small/raw.csv"
         },
         "format_normalizer": {
             "dataset_type": null

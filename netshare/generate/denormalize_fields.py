@@ -131,7 +131,8 @@ def write_to_csv(
 
                 # convert interarrival to raw timestamp
                 interarrival_cumsum = np.cumsum(
-                    timeseries_numpy[:, :, interarrival_within_flow_idx], axis=1
+                    timeseries_numpy[:, :, interarrival_within_flow_idx].astype(float),
+                    axis=1,
                 )
                 interarrival_cumsum[:, 0] = 0.0  # first packet has 0.0 interarrival
                 flow_start_expand = (

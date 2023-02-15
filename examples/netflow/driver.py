@@ -11,7 +11,7 @@ if __name__ == "__main__":
         config="config_example_netflow_nodp.json",
         # `work_folder` should not exist o/w an overwrite error will be thrown.
         work_folder="../../results/test_ugr16-" + str(random.randint(0, 1000000)),
-        # work_folder="../../results/test_caida-561722",
+        # work_folder="../../results/test_ugr16-581986",
     )
     generator.train_and_generate()
     # generator.generate()
