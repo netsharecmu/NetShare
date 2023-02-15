@@ -70,7 +70,7 @@ def _load_config() -> List[Config]:
     configs = []
     for config_ in config_post_expand:
         # single-chunk case
-        if "chunk_id" not in os.path.basename(config_["dataset"]):
+        if "chunkid" not in os.path.basename(config_["dataset"]):
             sub_result_folder = ",".join(
                 "{}-{}".format(k, os.path.basename(str(v)))
                 for k, v in config_.items()

@@ -1,8 +1,9 @@
 {
+    "default": "pcap.json",
     "global_config": {
-        "original_data_file": "../traces/caida/sliced_pcaps_10k/sliced_00000_20180315085933.pcap",
+        "original_data_file": "../../traces/caida-small/raw.pcap",
         "dataset_type": "pcap",
-        "n_chunks": 1,
+        "n_chunks": 2,
         "dp": false,
         "ray_enabled": true
     },
@@ -81,6 +82,5 @@
             "extra_checkpoint_freq": 2,
             "epoch_checkpoint_freq": 2
         }
-    },
-    "default": "pcap.json"
+    }
 }
