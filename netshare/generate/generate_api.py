@@ -15,6 +15,10 @@ def get_generated_data_dir() -> str:
     return os.path.join(get_config("global_config.work_folder"), "generated")
 
 
+def get_best_generated_data_dir() -> str:
+    return os.path.join(get_config("global_config.work_folder"), "best_generated")
+
+
 def get_canonical_data_dir() -> str:
     """
     This function returns a directory that contains the canonical data.

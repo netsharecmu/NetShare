@@ -47,6 +47,7 @@ def _load_config() -> List[Config]:
     config_pre_expand = Config(
         {
             **get_config("global_config"),
+            **get_config("pre_post_processor.config", default_value={}),
             **get_config("model_manager.config", default_value={}),
             **get_config("model.config", default_value={}),
         }
@@ -68,14 +69,23 @@ def _load_config() -> List[Config]:
 
     configs = []
     for config_ in config_post_expand:
-        sub_result_folder = os.path.join(
-            os.path.basename(config_["dataset"]),
-            ",".join(
+        # single-chunk case
+        if "chunkid" not in os.path.basename(config_["dataset"]):
+            sub_result_folder = ",".join(
                 "{}-{}".format(k, os.path.basename(str(v)))
                 for k, v in config_.items()
                 if f"{k}_expand" in config_.keys() and k != "dataset"
-            ),
-        )
+            )
+        # multi-chunk case
+        else:
+            sub_result_folder = os.path.join(
+                os.path.basename(config_["dataset"]),
+                ",".join(
+                    "{}-{}".format(k, os.path.basename(str(v)))
+                    for k, v in config_.items()
+                    if f"{k}_expand" in config_.keys() and k != "dataset"
+                ),
+            )
         config_["sub_result_folder"] = sub_result_folder
         config_["result_folder"] = os.path.join(get_model_folder(), sub_result_folder)
 

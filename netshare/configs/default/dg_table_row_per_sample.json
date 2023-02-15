@@ -23,8 +23,7 @@
     },
     "model_manager": {
         "class": "DGModelManager",
-        "config": {
-        }
+        "config": {}
     },
     "model": {
         "class": "DoppelGANgerTFModel",

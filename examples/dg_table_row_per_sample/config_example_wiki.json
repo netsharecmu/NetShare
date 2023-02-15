@@ -1,7 +1,7 @@
 {
     "global_config": {
         "overwrite": true,
-        "ray_enabled": false
+        "ray_enabled": true
     },
     "input_adapters": {
         "data_source": {
@@ -10,8 +10,14 @@
         }
     },
     "default": "dg_table_row_per_sample.json",
+    "model": {
+        "class": "DoppelGANgerTFModel",
+        "config": {
+            "iteration": 10
+        }
+    },
     "learn": {
-        "num_train_samples": 50000,
+        "num_train_samples": 500,
         "session_key": [
             {
                 "column": "Page",

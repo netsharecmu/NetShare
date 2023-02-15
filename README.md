@@ -34,7 +34,7 @@ You may also refer to the [README](traces/README.md) for detailed descriptions o
 
 # Getting started
 ## Step 1: Install NetShare Python package (Required)
-We recommend installing NetShare in a virtual environment (e.g., Anaconda3 or virtualenv). We test with virtual environment with Python==3.7.
+We recommend installing NetShare in a virtual environment (e.g., Anaconda3 or virtualenv). We test with virtual environment with Python==3.6.
 
 ```Bash
 # Assume Anaconda is installed
@@ -149,16 +149,12 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 }
 ```
 
-**Tip #2: If you would like to skip the training for existing datasets, you may load some of our pre-trained models to generate directly.**
-
-*Placeholder: we will this part soon.*
-
 # Codebase structure (for *dev* purpose)
 ```
 ├── doc                       # (tentative) NetShare tutorials and APIs
 ├── examples                  # Examples of using NetShare on different datasets
 ├── netshare                  # NetShare source code
-│   ├── api                   # The interface to use NetSahre
+│   ├── api                   # The interface to use NetShare
 │   ├── input_adapter         # Fetch and normalize the data from different data sources and data format
 │   ├── learn                 # Core learn process of NetShare service
 │   ├── generate              # Core generation of NetShare service

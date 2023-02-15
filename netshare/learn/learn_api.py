@@ -11,7 +11,7 @@ from netshare.utils.logger import logger
 from netshare.utils.paths import get_preprocessed_data_folder
 
 
-def get_chunk_dir(chunk_id: Optional[int]) -> str:
+def get_chunk_dir(chunk_id: int) -> str:
     if get_config("global_config.n_chunks", default_value=1) == 1:
         if chunk_id == 0 or chunk_id is None:
             return get_preprocessed_data_folder()
@@ -101,7 +101,6 @@ def _write_fields(
 def write_attributes(session_key_fields: Dict[FieldKey, Field], chunk_id: int) -> None:
     """
     This function stores the attributes fields in two pickle files: one for the output types and one for the fields.
-    # TODO: Attributes are cross-chunks, it doesn't make sense to have a chunk_id here.
     """
     _write_fields(field_type="attribute", fields=session_key_fields, chunk_id=chunk_id)
 
@@ -109,12 +108,11 @@ def write_attributes(session_key_fields: Dict[FieldKey, Field], chunk_id: int) -
 def write_features(timeseries_fields: Dict[FieldKey, Field], chunk_id: int) -> None:
     """
     Similar to write_attributes, but for the features.
-    # TODO: Features are cross-chunks, it doesn't make sense to have a chunk_id here.
     """
     _write_fields(field_type="feature", fields=timeseries_fields, chunk_id=chunk_id)
 
 
-def get_fields(field_type: str, chunk_id: Optional[int]) -> Dict[FieldKey, Field]:
+def get_fields(field_type: str, chunk_id: int) -> Dict[FieldKey, Field]:
     """
     This function loads the attributes fields from the pickle file.
     """
@@ -124,17 +122,15 @@ def get_fields(field_type: str, chunk_id: Optional[int]) -> Dict[FieldKey, Field
         return pickle.load(f)  # type: ignore
 
 
-def get_attributes_fields(chunk_id: Optional[int] = None) -> Dict[FieldKey, Field]:
+def get_attributes_fields(chunk_id: int) -> Dict[FieldKey, Field]:
     """
     This function returns the attributes fields that were stored in the input_adapters phase.
-    # TODO: Attributes are cross-chunks, it doesn't make sense to have a chunk_id here.
     """
     return get_fields("attribute", chunk_id)
 
 
-def get_feature_fields(chunk_id: Optional[int] = None) -> Dict[FieldKey, Field]:
+def get_feature_fields(chunk_id: int) -> Dict[FieldKey, Field]:
     """
     Similar to get_attributes_fields, but for the features.
-    # TODO: Features are cross-chunks, it doesn't make sense to have a chunk_id here.
     """
     return get_fields("feature", chunk_id)
