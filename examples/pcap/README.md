@@ -1,6 +1,0 @@
-- Without differential privacy 
-    - `config_example_pcap_nodp.json`: configuration for CAIDA PCAP without differential privacy
-- With differential privacy (two-step)
-    - Step 1: `config_example_pcap_public.json`: configuration for public data pretraining (with another CAIDA PCAP)
-    - Step 2: `config_example_pcap_private.json`: configuration for private data (CAIDA PCAP)
-    - We will integrate the two steps together soon for an easier use.
