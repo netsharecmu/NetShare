@@ -111,6 +111,8 @@ def write_to_csv(
             if f in raw_timeseries_filed_names
         ]
 
+        if config["timestamp"]["generation"]:
+            timeseries_titles.append(config["timestamp"]["column"])
         writer.writerow(session_titles + timeseries_titles)
 
         # print(
