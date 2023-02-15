@@ -22,8 +22,8 @@ def generate() -> None:
     1. Denormalize the fields (e.g. int to IP, vector to word, etc.)
     2. Choose the best generated data and write it using the generate_api
     """
-    # model_generate()
-    # denormalize_fields()
+    model_generate()
+    denormalize_fields()
     choose_best_model()
 
 

@@ -62,6 +62,12 @@
             ]
         }
     },
+    "model_manager": {
+        "class": "NetShareManager",
+        "config": {
+            "pretrain_non_dp_reduce_time": 2.0
+        }
+    },
     "model": {
         "class": "DoppelGANgerTFModel",
         "config": {
@@ -71,7 +77,7 @@
                 10
             ],
             "sample_len_expand": true,
-            "iteration": 16,
+            "iteration": 8,
             "extra_checkpoint_freq": 2,
             "epoch_checkpoint_freq": 2
         }
