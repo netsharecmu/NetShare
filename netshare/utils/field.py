@@ -88,7 +88,7 @@ class ContinuousField(Field):
             raise Exception("Not valid normalization option!")
 
     def denormalize(self, norm_x):
-        if not self.max_x or not self.min_x:
+        if self.max_x is None or self.min_x is None:
             return norm_x  # This is a word2vec field
         if norm_x.shape[-1] != self.get_output_dim():
             raise ValueError(

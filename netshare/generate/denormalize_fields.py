@@ -84,9 +84,9 @@ def write_to_csv(
     os.makedirs(csv_folder, exist_ok=True)
     csv_path = os.path.join(csv_folder, filename)
     # change session key shape to #session * #attributes
-    session_key = np.concatenate(session_key, axis=1)
+    session_key_numpy = np.array(np.concatenate(session_key, axis=1))
     # change timeseries shape to #session * #time_steps * #features
-    timeseries = np.concatenate(timeseries, axis=2)
+    timeseries_numpy = np.array(np.concatenate(timeseries, axis=2))
 
     with open(csv_path, "w") as f:
         writer = csv.writer(f)
@@ -113,12 +113,46 @@ def write_to_csv(
 
         if config["timestamp"]["generation"]:
             timeseries_titles.append(config["timestamp"]["column"])
-        writer.writerow(session_titles + timeseries_titles)
+            if config["timestamp"]["encoding"] == "interarrival":
+                # Find `flow_start` and `interarrival_within_flow` index
+                flow_start_idx, interarrival_within_flow_idx = None, None
+                for idx, field_name in enumerate(_get_fields_names(session_key_fields)):
+                    if field_name == "flow_start":
+                        flow_start_idx = idx
+                        break
+                for idx, field_name in enumerate(_get_fields_names(timeseries_fields)):
+                    if field_name == "interarrival_within_flow":
+                        interarrival_within_flow_idx = idx
+                        break
+                if flow_start_idx is None or interarrival_within_flow_idx is None:
+                    raise ValueError(
+                        "Using `interarrival` encoding: `flow_start` or `interarrival_field` not found!"
+                    )
 
-        # print(
-        #     session_titles, session_titles_idx, timeseries_titles, timeseries_titles_idx
-        # )
-        # print(session_key.shape, timeseries.shape)
+                # convert interarrival to raw timestamp
+                interarrival_cumsum = np.cumsum(
+                    timeseries_numpy[:, :, interarrival_within_flow_idx], axis=1
+                )
+                interarrival_cumsum[:, 0] = 0.0  # first packet has 0.0 interarrival
+                flow_start_expand = (
+                    np.array(
+                        [
+                            session_key_numpy[:, flow_start_idx],
+                        ]
+                        * interarrival_cumsum.shape[1]
+                    )
+                    .transpose()
+                    .astype(float)
+                )
+                timestamp_matrix = np.expand_dims(
+                    np.add(flow_start_expand, interarrival_cumsum), axis=2
+                )
+                timeseries_numpy = np.concatenate(
+                    (timeseries_numpy, timestamp_matrix), axis=2
+                )
+                timeseries_titles_idx.append(timeseries_numpy.shape[2] - 1)
+
+        writer.writerow(session_titles + timeseries_titles)
 
         session_key_set = set()
         for (
@@ -127,8 +161,8 @@ def write_to_csv(
             timeseries_per_session,
         ) in zip(
             data_gen_flag,
-            np.array(session_key)[:, session_titles_idx],  # remove cols not in raw data
-            np.array(timeseries)[
+            session_key_numpy[:, session_titles_idx],  # remove cols not in raw data
+            timeseries_numpy[
                 :, :, timeseries_titles_idx
             ],  # remove cols not in raw data
         ):
@@ -152,9 +186,6 @@ def denormalize_fields() -> None:
     :return: the path to the denormalized data.
     """
     configs, config_group_list = create_chunks_configurations(generation_flag=True)
-
-    # print(configs[0], config_group_list)
-    # () + 1
 
     for config in tqdm(configs):
         session_key_fields = list(
