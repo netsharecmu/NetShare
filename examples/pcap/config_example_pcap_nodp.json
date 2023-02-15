@@ -3,7 +3,7 @@
     "global_config": {
         "original_data_file": "../../traces/caida-small/raw.pcap",
         "dataset_type": "pcap",
-        "n_chunks": 2,
+        "n_chunks": 1,
         "dp": false,
         "ray_enabled": true
     },
