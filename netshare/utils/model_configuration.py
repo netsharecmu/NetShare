@@ -69,14 +69,23 @@ def _load_config() -> List[Config]:
 
     configs = []
     for config_ in config_post_expand:
-        sub_result_folder = os.path.join(
-            os.path.basename(config_["dataset"]),
-            ",".join(
+        # single-chunk case
+        if "chunk_id" not in os.path.basename(config_["dataset"]):
+            sub_result_folder = ",".join(
                 "{}-{}".format(k, os.path.basename(str(v)))
                 for k, v in config_.items()
                 if f"{k}_expand" in config_.keys() and k != "dataset"
-            ),
-        )
+            )
+        # multi-chunk case
+        else:
+            sub_result_folder = os.path.join(
+                os.path.basename(config_["dataset"]),
+                ",".join(
+                    "{}-{}".format(k, os.path.basename(str(v)))
+                    for k, v in config_.items()
+                    if f"{k}_expand" in config_.keys() and k != "dataset"
+                ),
+            )
         config_["sub_result_folder"] = sub_result_folder
         config_["result_folder"] = os.path.join(get_model_folder(), sub_result_folder)
 

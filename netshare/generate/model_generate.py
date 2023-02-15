@@ -20,42 +20,56 @@ from netshare.utils.paths import get_generated_data_log_folder
 def model_generate() -> None:
     configs, config_group_list = create_chunks_configurations(generation_flag=True)
 
-    logger.info("Start generating attributes")
-    ray.get(
-        [
-            generate_data.remote(
-                config=config,
-                given_data_attribute_flag=False,
-            )
-            for config in configs
-        ]
-    )
+    # single chunk case
+    if len(config_group_list[0]["config_ids"]) == 1:
+        logger.info("Single chunk... co-generating attributes and features")
+        for config in configs:
+            config["single_chunk_flag"] = True  # indicate single chunk generation
+        ray.get(
+            [
+                generate_data.remote(
+                    config=config,
+                    given_data_attribute_flag=False,
+                )
+                for config in configs
+            ]
+        )
+    else:
+        # multi-chunk case
+        logger.info("Multi chunk...")
+        logger.info("Start generating attributes")
+        ray.get(
+            [
+                generate_data.remote(
+                    config=config,
+                    given_data_attribute_flag=False,
+                )
+                for config in configs
+            ]
+        )
 
-    logger.info("Start merging attributes")
-    ray.get(
-        [
-            merge_attr.remote(config_group=config_group, configs=configs)
-            for config_group in config_group_list
-        ]
-    )
+        logger.info("Start merging attributes")
+        ray.get(
+            [
+                merge_attr.remote(config_group=config_group, configs=configs)
+                for config_group in config_group_list
+            ]
+        )
 
-    logger.info("Start generating features given attributes")
-    ray.get(
-        [
-            generate_data.remote(
-                config=config,
-                given_data_attribute_flag=True,
-            )
-            for config in configs
-        ]
-    )
+        logger.info("Start generating features given attributes")
+        ray.get(
+            [
+                generate_data.remote(
+                    config=config,
+                    given_data_attribute_flag=True,
+                )
+                for config in configs
+            ]
+        )
 
 
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
-def generate_data(
-    config: dict,
-    given_data_attribute_flag: bool,
-) -> None:
+def generate_data(config: dict, given_data_attribute_flag: bool) -> None:
     config["given_data_attribute_flag"] = given_data_attribute_flag
     model = models.build_model_from_config()(config)
     model.generate(

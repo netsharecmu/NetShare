@@ -13,7 +13,7 @@ def generate() -> None:
     1. Denormalize the fields (e.g. int to IP, vector to word, etc.)
     2. Choose the best generated data and write it using the generate_api
     """
-    # model_generate()
+    model_generate()
     denormalize_fields()
     # chosen_data_dir = choose_best_model(denormalized_fields_dir)
     # copy_files(chosen_data_dir, get_generated_data_dir())
@@ -24,4 +24,6 @@ def choose_best_model(denormalized_fields_dir: str) -> str:
     :return: the path to the data that was created by the chosen model
         (the raw data that should be shared with the user).
     """
+    # Currently for each hyperparameter set, output one synthetic dataset by aggregating last ckpt's data.
+    # TODO: pick best model across hyperparameters/ckpts by metrics
     return denormalized_fields_dir

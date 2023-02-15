@@ -466,7 +466,8 @@ class DoppelGANgerTFModel(Model):
 
             for iteration_id in iteration_range:
                 if last_iteration_found and (
-                    not self._config["given_data_attribute_flag"]
+                    (not self._config["given_data_attribute_flag"])
+                    and (not self._config.get("single_chunk_flag", False))
                 ):
                     break
 
@@ -521,37 +522,36 @@ class DoppelGANgerTFModel(Model):
                         print(features.shape)
                         print(attributes.shape)
 
-                    if self._config.get("save_without_chunk", False):
-                        save_path = os.path.join(
-                            output_syn_data_folder, f"iteration_id-{iteration_id}"
-                        )
-                        os.makedirs(save_path, exist_ok=True)
-                        np.savez(
-                            os.path.join(save_path, "data.npz"),
-                            data_attribute=attributes,
-                            data_feature=features,
-                            data_gen_flag=gen_flags,
-                        )
-                    elif not self._config["given_data_attribute_flag"]:
-                        save_path = os.path.join(output_syn_data_folder, "attr_raw")
-                        os.makedirs(save_path, exist_ok=True)
-                        np.savez(
-                            os.path.join(
-                                save_path,
-                                "chunk_id-{}.npz".format(self._config["chunk_id"]),
-                            ),
-                            data_attribute=attributes[0:split],
-                        )
-                        print(
-                            os.path.join(
-                                save_path,
-                                "chunk_id-{}.npz".format(self._config["chunk_id"]),
-                            )
-                        )
-                    else:
-                        # save attributes/features/gen_flags/self._config to
-                        # files
+                    # if self._config.get("save_without_chunk", False):
+                    #     save_path = os.path.join(
+                    #         output_syn_data_folder, f"iteration_id-{iteration_id}"
+                    #     )
+                    #     os.makedirs(save_path, exist_ok=True)
+                    #     np.savez(
+                    #         os.path.join(save_path, "data.npz"),
+                    #         data_attribute=attributes,
+                    #         data_feature=features,
+                    #         data_gen_flag=gen_flags,
+                    #     )
 
+                    if not self._config["given_data_attribute_flag"]:
+                        # multi-chunk: generate attributes only
+                        if not self._config.get("single_chunk_flag", False):
+                            save_path = os.path.join(output_syn_data_folder, "attr_raw")
+                            os.makedirs(save_path, exist_ok=True)
+                            np.savez(
+                                os.path.join(
+                                    save_path,
+                                    "chunk_id-{}.npz".format(self._config["chunk_id"]),
+                                ),
+                                data_attribute=attributes[0:split],
+                            )
+                    # multi-chunk: generate features given attribute
+                    # single-chunk: co-generate attributes and features
+                    if self._config["given_data_attribute_flag"] or (
+                        (not self._config["given_data_attribute_flag"])
+                        and self._config.get("single_chunk_flag", False)
+                    ):
                         logger.info(f"Generate to {output_syn_data_folder}")
                         save_path = os.path.join(
                             output_syn_data_folder,
