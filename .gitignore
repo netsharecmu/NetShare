@@ -7,7 +7,6 @@ data
 
 netshare/dashboard/static/tmp
 
-tests/
 traces/
 results/
 rsync*.sh
