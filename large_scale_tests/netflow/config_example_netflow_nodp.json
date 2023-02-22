@@ -7,7 +7,7 @@
     },
     "input_adapters": {
         "data_source": {
-            "original_data_file": "../../traces/ugr16-small/raw.csv"
+            "original_data_file": "../../traces/ugr16/raw.csv"
         },
         "format_normalizer": {
             "dataset_type": null
@@ -90,7 +90,7 @@
     "model_manager": {
         "class": "NetShareManager",
         "config": {
-            "pretrain_non_dp_reduce_time": 2.0
+            "pretrain_non_dp_reduce_time": 4.0
         }
     },
     "model": {
@@ -101,9 +101,9 @@
                 1
             ],
             "sample_len_expand": true,
-            "iteration": 8,
-            "extra_checkpoint_freq": 2,
-            "epoch_checkpoint_freq": 2
+            "iteration": 400000,
+            "extra_checkpoint_freq": 2500,
+            "epoch_checkpoint_freq": 1000
         }
     }
 }

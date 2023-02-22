@@ -1,7 +1,7 @@
 {
     "default": "pcap.json",
     "global_config": {
-        "original_data_file": "../../traces/caida-small/raw.pcap",
+        "original_data_file": "../../traces/caida/raw.pcap",
         "dataset_type": "pcap",
         "n_chunks": 1,
         "dp": false,
@@ -66,7 +66,7 @@
     "model_manager": {
         "class": "NetShareManager",
         "config": {
-            "pretrain_non_dp_reduce_time": 2.0
+            "pretrain_non_dp_reduce_time": 4.0
         }
     },
     "model": {
@@ -75,12 +75,15 @@
             "batch_size": 100,
             "sample_len": [
                 5,
-                10
+                10,
+                25,
+                50,
+                100
             ],
             "sample_len_expand": true,
-            "iteration": 8,
-            "extra_checkpoint_freq": 2,
-            "epoch_checkpoint_freq": 2
+            "iteration": 80000,
+            "extra_checkpoint_freq": 5000,
+            "epoch_checkpoint_freq": 5000
         }
     }
 }
