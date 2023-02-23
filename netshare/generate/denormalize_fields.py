@@ -1,7 +1,6 @@
 import csv
 import os
 import random
-import tempfile
 from typing import Dict, List
 
 import numpy as np

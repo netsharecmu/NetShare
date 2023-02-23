@@ -8,7 +8,7 @@ from netshare.input_adapters.data_source.s3_data_source import S3DataSource
 
 
 @mock_s3
-def test_fetch_data(tmp_path):
+def test_fetch_data(tmp_path, work_folder):
     data_source = S3DataSource()
 
     # Create mock bucket
@@ -17,7 +17,14 @@ def test_fetch_data(tmp_path):
     client.put_object(Bucket="test-bucket", Key="file1.txt", Body="file1")
     client.put_object(Bucket="test-bucket", Key="subdir/file2.txt", Body="file2")
 
-    set_config({"bucket_name": "test-bucket"})
+    set_config(
+        {
+            "bucket_name": "test-bucket",
+            "global_config": {
+                "work_folder": work_folder,
+            },
+        }
+    )
     target = data_source.fetch_data()
 
     # Check that the files were copied

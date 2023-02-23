@@ -1,6 +1,5 @@
 import os
 import shutil
-import tempfile
 
 from netshare.configs import get_config
 from netshare.input_adapters.data_source import DataSource
@@ -16,7 +15,10 @@ class LocalFilesDataSource(DataSource):
     """
 
     def fetch_data(self) -> str:
-        target_dir = tempfile.mkdtemp()
+        target_dir = os.path.join(
+            get_config("global_config.work_folder"), "local_files_data_source"
+        )
+        os.makedirs(target_dir, exist_ok=True)
         single_file = get_config(
             [
                 "global_config.original_data_file",
