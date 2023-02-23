@@ -167,21 +167,35 @@ class RegexField(DiscreteField):
 
 
 class BitField(Field):
-    def __init__(self, num_bits, *args, **kwargs):
+    def __init__(self, num_bits, *args, truncate=False, **kwargs):
         super(BitField, self).__init__(*args, **kwargs)
 
         self.num_bits = num_bits
+        self.truncate = truncate
 
     def normalize(self, decimal_x):
-        bin_x = bin(int(decimal_x))[2:].zfill(self.num_bits)
-        bin_x = [int(b) for b in bin_x]  # type: ignore
+        try:
+            bin_x_str = bin(int(decimal_x))[2:].zfill(self.num_bits)
+            bin_x = [int(b) for b in bin_x_str]
+        except ValueError:
+            raise Exception(
+                f"BitField does not support the given input. Column: {self.name}, input: {decimal_x}"
+            )
+
+        if len(bin_x) != self.num_bits:
+            if self.truncate:
+                bin_x = bin_x[: self.num_bits]
+            else:
+                raise ValueError(
+                    f"Input {decimal_x} could not be interpreted using {self.num_bits} bits (Column: {self.name})"
+                )
 
         bits = []
         for b in bin_x:
-            if b == 0:  # type: ignore
+            if b == 0:
                 bits += [1.0, 0.0]
 
-            elif b == 1:  # type: ignore
+            elif b == 1:
                 bits += [0.0, 1.0]
 
             else:
@@ -190,6 +204,9 @@ class BitField(Field):
         return bits
 
     def _denormalize(self, bin_x):
+        if len(bin_x.shape) == 2:
+            # This is a timeseries field
+            return [self._denormalize(x) for x in bin_x]
         bits = "0b"
         for i in range(self.num_bits):
             index = np.argmax(bin_x[2 * i : 2 * (i + 1)])
@@ -201,7 +218,9 @@ class BitField(Field):
                 bits += "1"
 
             else:
-                raise Exception("Bits array is ZERO or ONE!")
+                raise Exception(
+                    f"Bits array is ZERO or ONE! value: {index}, bin_x dimension: {bin_x.shape}"
+                )
 
         decimal_x = int(bits, 2)
 
@@ -236,6 +255,9 @@ class Word2VecField(Field):
         )
 
     def denormalize(self, norm_x):
+        if len(norm_x.shape) == 3:
+            # This is a timeseries field
+            return np.array([self.denormalize(x) for x in norm_x])
         dict_annDictPair = {}
         with open(get_annoy_dict_idx_ele_for_word2vec(), "r") as readfile:
             dict_annDictPair = json.load(readfile)

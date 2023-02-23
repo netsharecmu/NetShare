@@ -13,6 +13,8 @@ We support four different fields:
         "n_bits": 32
     }
     ```
+   An optional property to this field is `truncate`, which is a boolean value with default `False`. If `truncate` is set to `true`, then we will truncate large integers and consider only the most significant `n_bits` bits. 
+
 2. Word2Vec field (encoded as Word2Vec vectors), e.g.,
     ```JSON
     {

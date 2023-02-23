@@ -92,7 +92,7 @@ def get_word2vec_model(
     df: pd.DataFrame,
 ) -> Tuple[Optional[Word2Vec], Optional[List[str]]]:
     word2vec_config = get_config(
-        ["pre_post_processor.config", "learn.word2vec"], default_value={}
+        ["pre_post_processor.config", "learn"], default_value={}
     )
     if not word2vec_config:
         logger.debug("No learn.word2vec config found, skipping the embedding model")
@@ -150,7 +150,9 @@ def build_field_from_config(
         2.2 when type = float, we take the min and max value of the column in the dataframe.
     3. DiscreteField: when encoding = categorical or type = string, we use the unique values of the column in the dataframe.
     """
-    prepost_config = get_config("pre_post_processor.config", default_value={})
+    prepost_config = get_config(
+        ["pre_post_processor.config", "learn"], default_value={}
+    )
 
     if not isinstance(field.get("column"), str) and not isinstance(
         field.get("columns"), list
@@ -176,7 +178,11 @@ def build_field_from_config(
             raise ValueError('"encoding=bit" can be only used for "type=integer"')
         if "n_bits" not in field:
             raise ValueError("`n_bits` needs to be specified for bit fields")
-        return BitField(name=field_name, num_bits=field["n_bits"])
+        return BitField(
+            name=field_name,
+            num_bits=field["n_bits"],
+            truncate=field.get("truncate", False),
+        )
 
     # word2vec field: (any)
     elif "word2vec" in field.get("encoding", ""):

@@ -36,6 +36,7 @@ def word2vec_train(
         logger.info("Training Word2Vec model from scratch...")
         sentences = []
         for row in range(0, len(df)):
+            # TODO: If some lines were dropped (e.g. due to NaN), the rows will not be continuous
             sentence = [
                 str(df.at[row, col]) for col in [c.column for c in word2vec_cols]
             ]
@@ -107,11 +108,7 @@ def get_original_obj(ann: AnnoyIndex, vector: np.ndarray, dic: Dict[int, Any]) -
 def get_original_objs(
     ann: AnnoyIndex, vectors: np.ndarray, dic: Dict[int, Any]
 ) -> List[Any]:
-    res = [
-        dic[ann.get_nns_by_vector(vector, 1, search_k=-1, include_distances=False)[0]]
-        for vector in vectors
-    ]
-    return res
+    return [get_original_obj(ann, vector, dic) for vector in vectors]
 
 
 def get_vector(model: Word2Vec, word: str, norm_option: bool = False) -> np.ndarray:

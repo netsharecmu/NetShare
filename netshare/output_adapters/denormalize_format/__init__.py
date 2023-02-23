@@ -14,11 +14,11 @@ def denormalize_files_format(input_dir: str) -> str:
         "output_adapters.format_denormalizer.dataset_type", default_value="csv"
     )
 
-    format_normalizer: DataFormatDenormalizer
+    format_denormalizer: DataFormatDenormalizer
     if denormalizer_type == "csv":
         logger.info("Skip format denormalize: files should be in csv format")
-        format_normalizer = CsvDeormalizer()
+        format_denormalizer = CsvDeormalizer()
     else:
         raise ValueError(f"Unknown format normalizer type: {denormalizer_type}")
 
-    return format_normalizer.denormalize_data(input_dir)
+    return format_denormalizer.denormalize_data(input_dir)

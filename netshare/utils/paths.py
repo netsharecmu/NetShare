@@ -39,7 +39,7 @@ def get_word2vec_model_directory() -> str:
 
 def get_word2vec_model_path() -> str:
     word2vec_config = get_config(
-        ["pre_post_processor.config", "learn.word2vec"], default_value={}
+        ["pre_post_processor.config", "learn"], default_value={}
     )
     word2vec_model_path = os.path.join(
         get_word2vec_model_directory(),

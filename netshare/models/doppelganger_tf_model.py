@@ -28,7 +28,7 @@ from netshare.utils.logger import logger
 
 class DoppelGANgerTFModel(Model):
     def _train(self, input_train_data_folder, output_model_folder, log_folder):
-        print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
+        logger.debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
         self._config["result_folder"] = self._config.get(
             "result_folder", output_model_folder
@@ -203,7 +203,7 @@ class DoppelGANgerTFModel(Model):
         output_syn_data_folder,
         log_folder,
     ):
-        print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
+        logger.debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
         self._config["result_folder"] = self._config.get(
             "result_folder", input_model_folder
@@ -518,9 +518,6 @@ class DoppelGANgerTFModel(Model):
                             gen_flags,
                             num_real_attribute=num_real_attribute,
                         )
-
-                        print(features.shape)
-                        print(attributes.shape)
 
                     # if self._config.get("save_without_chunk", False):
                     #     save_path = os.path.join(

@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 import pandas as pd
 
@@ -10,13 +11,14 @@ from netshare.generate.generate_api import (
 )
 from netshare.generate.model_generate import model_generate
 from netshare.utils.model_configuration import create_chunks_configurations
-from netshare.utils.paths import copy_files
 
 
-def generate() -> None:
+def generate(target_dir: Optional[str] = None) -> None:
     """
     This is the main function of the postprocess phase.
     We get the generated data, prepare it to be exported, export it, and create the visualization.
+    If target_dir is given, then we will export the data to it,
+        otherwise, we will export the data to `generate_api.get_best_generated_data_dir()`.
 
     This function execute the following steps:
     1. Denormalize the fields (e.g. int to IP, vector to word, etc.)
@@ -24,10 +26,10 @@ def generate() -> None:
     """
     model_generate()
     denormalize_fields()
-    choose_best_model()
+    choose_best_model(target_dir)
 
 
-def choose_best_model() -> None:
+def choose_best_model(target_dir: Optional[str] = None) -> None:
     """
     :return: the path to the data that was created by the chosen model
         (the raw data that should be shared with the user).
@@ -73,6 +75,7 @@ def choose_best_model() -> None:
         # sort by timestamp if exists
         if config["timestamp"]["generation"]:
             syn_csv.sort_values(by=config["timestamp"]["column"])
+        target_dir = target_dir or get_best_generated_data_dir()
         os.makedirs(get_best_generated_data_dir(), exist_ok=True)
         syn_csv.to_csv(
             os.path.join(get_best_generated_data_dir(), syn_csv_filename), index=False
