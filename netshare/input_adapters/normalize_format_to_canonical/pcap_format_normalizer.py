@@ -25,6 +25,7 @@ class PcapNormalizer(DataFormatNormalizer):
 
         pcap2csv_func = ctypes.CDLL(os.path.join(cwd, "pcap2csv.so")).pcap2csv
         pcap2csv_func.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+        os.makedirs(get_canonical_data_dir(), exist_ok=True)
         for file_name in os.listdir(input_dir):
             csv_file = os.path.join(
                 get_canonical_data_dir(), f"{file_name.split('.')[0]}.csv"
