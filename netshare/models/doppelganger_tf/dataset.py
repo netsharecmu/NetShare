@@ -77,7 +77,7 @@ class NetShareDataset(object):
                 continue
             try:
                 file_id = np.random.choice(len(files))
-                image = np.load(files[file_id])
+                image = np.load(files[file_id], allow_pickle=True)
                 image_ = {}
                 for k in image.files:
                     image_[k] = image[k]

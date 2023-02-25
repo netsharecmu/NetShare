@@ -73,10 +73,8 @@ def choose_best_model(target_dir: Optional[str] = None) -> None:
         )
         syn_csv = pd.concat(syn_csvs)
         # sort by timestamp if exists
-        if config["timestamp"]["generation"]:
+        if config["timestamp"].get("generation", False):
             syn_csv.sort_values(by=config["timestamp"]["column"])
         target_dir = target_dir or get_best_generated_data_dir()
-        os.makedirs(get_best_generated_data_dir(), exist_ok=True)
-        syn_csv.to_csv(
-            os.path.join(get_best_generated_data_dir(), syn_csv_filename), index=False
-        )
+        os.makedirs(target_dir, exist_ok=True)
+        syn_csv.to_csv(os.path.join(target_dir, syn_csv_filename), index=False)

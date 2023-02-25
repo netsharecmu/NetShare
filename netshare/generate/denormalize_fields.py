@@ -91,7 +91,9 @@ def write_to_csv(
         writer = csv.writer(f)
         session_titles = _get_fields_names(session_key_fields)
         timeseries_titles = _get_fields_names(timeseries_fields)
-        raw_metadata_field_names = [col.column for col in config["metadata"]]
+        raw_metadata_field_names = [
+            col.column for col in (config["session_key"] or config["metadata"])
+        ]
         raw_timeseries_filed_names = [col.column for col in config["timeseries"]]
         session_titles = [
             f for i, f in enumerate(session_titles) if f in raw_metadata_field_names
@@ -110,7 +112,7 @@ def write_to_csv(
             if f in raw_timeseries_filed_names
         ]
 
-        if config["timestamp"]["generation"]:
+        if config["timestamp"].get("generation", False):
             timeseries_titles.append(config["timestamp"]["column"])
             if config["timestamp"]["encoding"] == "interarrival":
                 # Find `flow_start` and `interarrival_within_flow` index
