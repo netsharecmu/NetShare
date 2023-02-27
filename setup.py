@@ -34,6 +34,7 @@ setup(
         ],
     },
     install_requires=[
+        "cmake==3.25.0",
         "tensorflow==1.15",
         "numpy==1.19.5",
         "tensorflow-privacy==0.5.0",
@@ -57,7 +58,6 @@ setup(
         "config_io==0.4.0",
         "flask",
         "scikit-learn==0.24.2",
-        "cmake==3.25.0",
     ],  # add any additional packages that
     # needs to be installed along with your package. Eg: 'caer'
     keywords=["python", "netshare"],
