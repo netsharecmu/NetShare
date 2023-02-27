@@ -6,7 +6,7 @@ from netshare.input_adapters.data_source.local_files_data_source import (
 )
 
 
-def test_fetch_data(tmp_path):
+def test_fetch_data(tmp_path, work_folder):
     data_source = LocalFilesDataSource()
 
     # Create temporary directories
@@ -19,7 +19,14 @@ def test_fetch_data(tmp_path):
     (source / "subdir").mkdir()
     (source / "subdir" / "file3.txt").write_text("file3")
 
-    set_config({"global_config": {"original_data_folder": str(source)}})
+    set_config(
+        {
+            "global_config": {
+                "original_data_folder": str(source),
+                "work_folder": work_folder,
+            }
+        }
+    )
     target = data_source.fetch_data()
 
     # Check that the files were copied
