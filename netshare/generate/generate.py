@@ -75,5 +75,6 @@ def choose_best_model() -> None:
             syn_csv.sort_values(by=config["timestamp"]["column"])
         os.makedirs(get_best_generated_data_dir(), exist_ok=True)
         syn_csv.to_csv(
-            os.path.join(get_best_generated_data_dir(), syn_csv_filename), index=False
+            os.path.join(get_best_generated_data_dir(), syn_csv_filename + ".csv"),
+            index=False,
         )
