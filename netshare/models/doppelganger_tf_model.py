@@ -236,7 +236,9 @@ class DoppelGANgerTFModel(Model):
             data_attribute_outputs = pickle.load(f)
 
         num_real_attribute = len(data_attribute_outputs)
-        num_real_samples = len(
+        num_real_samples = get_config(
+            "model.config.num_real_samples", default_value=None
+        ) or len(
             [
                 file
                 for file in os.listdir(os.path.join(data_in_dir, "data_train_npz"))

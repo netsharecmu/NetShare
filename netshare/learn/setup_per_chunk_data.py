@@ -41,11 +41,7 @@ def apply_configuration_fields(
         field_instance = field_instances[field_config_to_key(field)]
         # Bit Field: (integer)
         if "bit" in field.get("encoding", ""):
-            this_df = original_df.apply(
-                lambda row: field_instance.normalize(row[field.column]),
-                axis="columns",
-                result_type="expand",
-            )
+            this_df = pd.DataFrame(field_instance.normalize(original_df[field.column]))
             this_df.columns = [f"{field.column}_{i}" for i in range(this_df.shape[1])]
             new_field_list += list(this_df.columns)
             new_df = pd.concat([new_df, this_df], axis=1)
@@ -105,7 +101,7 @@ def write_chunk_data(
     This function writes the data of a single chunk using the learn_api.
     """
     learn_api.create_dirs(chunk_id)
-    learn_api.write_raw_chunk(df_per_chunk, chunk_id)
+    # learn_api.write_raw_chunk(df_per_chunk, chunk_id)  # Takes too much time and space. uncomment if needed.
     learn_api.write_data_train_npz(
         data_attribute=data_attribute,
         data_feature=data_feature,

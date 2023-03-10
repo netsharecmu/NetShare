@@ -2,6 +2,7 @@ import itertools
 import json
 import os
 from collections import defaultdict
+from functools import lru_cache
 from typing import Any, Dict, List
 
 import numpy as np
@@ -99,8 +100,13 @@ def build_annoy_dictionary_word2vec(
     return None
 
 
+@lru_cache(maxsize=None)
+def _get_original_obj(ann: AnnoyIndex, vector: tuple) -> Any:
+    return ann.get_nns_by_vector(vector, 1, search_k=-1, include_distances=False)
+
+
 def get_original_obj(ann: AnnoyIndex, vector: np.ndarray, dic: Dict[int, Any]) -> Any:
-    obj_list = ann.get_nns_by_vector(vector, 1, search_k=-1, include_distances=False)
+    obj_list = _get_original_obj(ann, tuple(vector))
 
     return dic[obj_list[0]]
 

@@ -43,9 +43,6 @@ def _denormalize_by_fields_list(
     denormalized_data = []
     dim = 0
 
-    canonical_data_dir = get_canonical_data_dir()
-    df, _ = load_dataframe_chunks(canonical_data_dir)
-
     for field in fields_list:
         if is_session_key:
             sub_data = normalized_data[:, dim : dim + field.get_output_dim()]
