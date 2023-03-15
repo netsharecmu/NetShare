@@ -986,6 +986,10 @@ class DoppelGANger(object):
                         ],
                     },
                 )
+            if np.isnan(sub_features[0][0][0]):
+                raise ValueError(
+                    "Nan in generated features. Possible troubleshoot: The input contains nan."
+                )
             features.append(sub_features)
             attributes.append(sub_attributes)
             gen_flags.append(sub_gen_flags)

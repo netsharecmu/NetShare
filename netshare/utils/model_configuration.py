@@ -48,6 +48,7 @@ def _load_config() -> List[Config]:
         {
             **get_config("global_config"),
             **get_config("pre_post_processor.config", default_value={}),
+            **get_config("learn", default_value={}),
             **get_config("model_manager.config", default_value={}),
             **get_config("model.config", default_value={}),
         }
