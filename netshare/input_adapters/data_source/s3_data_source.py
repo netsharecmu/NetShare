@@ -18,7 +18,10 @@ class S3DataSource(DataSource):
         # We import boto3 here, because it is a requirement only if you use s3 as a data source.
         import boto3
 
-        target_dir = tempfile.mkdtemp()
+        target_dir = os.path.join(
+            get_config("global_config.work_folder"), "s3_data_source"
+        )
+        os.makedirs(target_dir, exist_ok=True)
 
         s3_bucket = boto3.resource("s3").Bucket(get_config("bucket_name"))
         for s3_object in s3_bucket.objects.all():

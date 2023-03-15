@@ -1,11 +1,17 @@
 {
-    "default": "pcap.json",
+    "default": "netflow.json",
     "global_config": {
-        "original_data_file": "../../traces/caida-small/raw.pcap",
-        "dataset_type": "pcap",
-        "n_chunks": 1,
-        "dp": false,
-        "ray_enabled": true
+        "overwrite": true,
+        "ray_enabled": true,
+        "n_chunks": 1
+    },
+    "input_adapters": {
+        "data_source": {
+            "original_data_file": "../../traces/ugr16/raw.csv"
+        },
+        "format_normalizer": {
+            "dataset_type": null
+        }
     },
     "pre_post_processor": {
         "class": "NetsharePrePostProcessor",
@@ -14,7 +20,7 @@
             "num_test_samples": 50000,
             "max_flow_len": null,
             "timestamp": {
-                "column": "time",
+                "column": "ts",
                 "generation": true,
                 "encoding": "interarrival",
                 "normalization": "ZERO_ONE"
@@ -56,9 +62,27 @@
             ],
             "timeseries": [
                 {
-                    "column": "pkt_len",
+                    "column": "td",
                     "type": "float",
-                    "normalization": "ZERO_ONE"
+                    "normalization": "ZERO_ONE",
+                    "log1p_norm": true
+                },
+                {
+                    "column": "pkt",
+                    "type": "float",
+                    "normalization": "ZERO_ONE",
+                    "log1p_norm": true
+                },
+                {
+                    "column": "byt",
+                    "type": "float",
+                    "normalization": "ZERO_ONE",
+                    "log1p_norm": true
+                },
+                {
+                    "column": "type",
+                    "type": "string",
+                    "encoding": "categorical"
                 }
             ]
         }
@@ -66,7 +90,7 @@
     "model_manager": {
         "class": "NetShareManager",
         "config": {
-            "pretrain_non_dp_reduce_time": 2.0
+            "pretrain_non_dp_reduce_time": 4.0
         }
     },
     "model": {
@@ -74,13 +98,12 @@
         "config": {
             "batch_size": 100,
             "sample_len": [
-                5,
-                10
+                1
             ],
             "sample_len_expand": true,
-            "iteration": 8,
-            "extra_checkpoint_freq": 2,
-            "epoch_checkpoint_freq": 2
+            "iteration": 400000,
+            "extra_checkpoint_freq": 2500,
+            "epoch_checkpoint_freq": 1000
         }
     }
 }

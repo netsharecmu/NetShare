@@ -88,7 +88,7 @@ class ContinuousField(Field):
             raise Exception("Not valid normalization option!")
 
     def denormalize(self, norm_x):
-        if not self.max_x or not self.min_x:
+        if self.max_x is None or self.min_x is None:
             return norm_x  # This is a word2vec field
         if norm_x.shape[-1] != self.get_output_dim():
             raise ValueError(
@@ -167,48 +167,44 @@ class RegexField(DiscreteField):
 
 
 class BitField(Field):
-    def __init__(self, num_bits, *args, **kwargs):
+    def __init__(self, num_bits, *args, truncate=False, **kwargs):
         super(BitField, self).__init__(*args, **kwargs)
 
         self.num_bits = num_bits
+        self.truncate = truncate
 
-    def normalize(self, decimal_x):
-        bin_x = bin(int(decimal_x))[2:].zfill(self.num_bits)
-        bin_x = [int(b) for b in bin_x]  # type: ignore
+    def normalize(self, column: pd.Series) -> pd.DataFrame:
+        if isinstance(column[0], str):
+            column = column.str[-64:].astype("int")
 
-        bits = []
-        for b in bin_x:
-            if b == 0:  # type: ignore
-                bits += [1.0, 0.0]
+        if self.truncate:
+            column = column % (2 ** self.num_bits)
 
-            elif b == 1:  # type: ignore
-                bits += [0.0, 1.0]
+        bits_dataframe = pd.DataFrame(
+            (column[:, None] & (1 << np.arange(self.num_bits))) > 0
+        )
 
-            else:
-                print("Binary number is zero or one!")
+        final_dataframe = pd.DataFrame()
+        for column in bits_dataframe.columns[::-1]:
+            final_dataframe[f"{column}_0"] = (~bits_dataframe[column]).astype("int")
+            final_dataframe[f"{column}_1"] = bits_dataframe[column].astype("int")
 
-        return bits
-
-    def _denormalize(self, bin_x):
-        bits = "0b"
-        for i in range(self.num_bits):
-            index = np.argmax(bin_x[2 * i : 2 * (i + 1)])
-
-            if index == 0:
-                bits += "0"
-
-            elif index == 1:
-                bits += "1"
-
-            else:
-                raise Exception("Bits array is ZERO or ONE!")
-
-        decimal_x = int(bits, 2)
-
-        return decimal_x
+        return final_dataframe
 
     def denormalize(self, bin_x):
-        return np.array([self._denormalize(b) for b in bin_x])
+        if len(bin_x.shape) == 3:
+            # This is a timeseries field
+            a, b, c = bin_x.shape
+            if self.num_bits * 2 != c:
+                raise ValueError(
+                    f"Dimension is {c}. Expected dimension is {self.num_bits * 2}"
+                )
+            return self.denormalize(bin_x.reshape(a * b, c)).to_numpy().reshape(a, b)
+        df_bin = pd.DataFrame(bin_x)
+        chosen_bits = (df_bin > df_bin.shift(axis=1)).drop(
+            range(0, self.num_bits * 2, 2), axis=1
+        )
+        return chosen_bits.dot(1 << np.arange(self.num_bits - 1, -1, -1))
 
     def get_output_type(self):
         outputs = []
@@ -235,8 +231,18 @@ class Word2VecField(Field):
             [get_vector(embed_model, str(xi), norm_option=True) for xi in x]
         )
 
+    def _denormalize(self, norm_x, encoding_type, dict_annoyIndex, dict_annDictPair):
+        # When constructing the dict_annDictPair, dict_annDictPair[encoding_type]: dict{}
+        # is a k v pair where k is an integer. After using Json.save() then Json.load(), it
+        # will change k into str. Therefore, when we are using dict_annDictPair[encoding_type]
+        # the k should be casted to int.
+        return get_original_objs(
+            dict_annoyIndex[encoding_type],
+            norm_x,
+            {int(k): v for k, v in dict_annDictPair[encoding_type].items()},
+        )
+
     def denormalize(self, norm_x):
-        dict_annDictPair = {}
         with open(get_annoy_dict_idx_ele_for_word2vec(), "r") as readfile:
             dict_annDictPair = json.load(readfile)
         dict_annoyIndex = {}
@@ -251,16 +257,20 @@ class Word2VecField(Field):
                 break
         else:
             raise ValueError("Cannot find the word2vec key!")
-        # When constructing the dict_annDictPair, dict_annDictPair[encoding_type]: dict{}
-        # is a k v pair where k is an integer. After using Json.save() then Json.load(), it
-        # will change k into str. Therefore, when we are using dict_annDictPair[encoding_type]
-        # the k should be casted to int.
-        x = get_original_objs(
-            dict_annoyIndex[encoding_type],
-            norm_x,
-            {int(k): v for k, v in dict_annDictPair[encoding_type].items()},
+
+        if len(norm_x.shape) == 3:
+            # This is a timeseries field
+            return np.array(
+                [
+                    self._denormalize(
+                        x, encoding_type, dict_annoyIndex, dict_annDictPair
+                    )
+                    for x in norm_x
+                ]
+            )
+        return np.asarray(
+            self._denormalize(norm_x, encoding_type, dict_annoyIndex, dict_annDictPair)
         )
-        return np.asarray(x)
 
     def get_output_type(self):
         return Output(

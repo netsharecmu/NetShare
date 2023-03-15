@@ -28,7 +28,7 @@ from netshare.utils.logger import logger
 
 class DoppelGANgerTFModel(Model):
     def _train(self, input_train_data_folder, output_model_folder, log_folder):
-        print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
+        logger.debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
         self._config["result_folder"] = self._config.get(
             "result_folder", output_model_folder
@@ -203,7 +203,7 @@ class DoppelGANgerTFModel(Model):
         output_syn_data_folder,
         log_folder,
     ):
-        print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
+        logger.debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
         self._config["result_folder"] = self._config.get(
             "result_folder", input_model_folder
@@ -236,7 +236,9 @@ class DoppelGANgerTFModel(Model):
             data_attribute_outputs = pickle.load(f)
 
         num_real_attribute = len(data_attribute_outputs)
-        num_real_samples = len(
+        num_real_samples = get_config(
+            "model.config.num_real_samples", default_value=None
+        ) or len(
             [
                 file
                 for file in os.listdir(os.path.join(data_in_dir, "data_train_npz"))
@@ -427,6 +429,10 @@ class DoppelGANgerTFModel(Model):
                 + self._config["generate_num_test_sample"]
             )
             logger.debug(f"total generated sample: {total_generate_num_sample}")
+            if total_generate_num_sample == 0:
+                raise ValueError(
+                    f"Generating given data attribute: {self._config['given_data_attribute_flag']}. # of total generated samples is ZERO."
+                )
 
             (
                 batch_data_attribute,
@@ -461,7 +467,10 @@ class DoppelGANgerTFModel(Model):
             generatedSamples_per_epoch = 1
 
             for iteration_id in iteration_range:
-                if last_iteration_found == True:
+                if last_iteration_found and (
+                    (not self._config["given_data_attribute_flag"])
+                    and (not self._config.get("single_chunk_flag", False))
+                ):
                     break
 
                 logger.debug("Processing iteration_id: {}".format(iteration_id))
@@ -512,49 +521,47 @@ class DoppelGANgerTFModel(Model):
                             num_real_attribute=num_real_attribute,
                         )
 
-                        print(features.shape)
-                        print(attributes.shape)
+                    # if self._config.get("save_without_chunk", False):
+                    #     save_path = os.path.join(
+                    #         output_syn_data_folder, f"iteration_id-{iteration_id}"
+                    #     )
+                    #     os.makedirs(save_path, exist_ok=True)
+                    #     np.savez(
+                    #         os.path.join(save_path, "data.npz"),
+                    #         data_attribute=attributes,
+                    #         data_feature=features,
+                    #         data_gen_flag=gen_flags,
+                    #     )
 
-                    if self._config.get("save_without_chunk", False):
-                        save_path = os.path.join(
-                            output_syn_data_folder, f"iteration_id-{iteration_id}"
-                        )
-                        os.makedirs(save_path, exist_ok=True)
-                        np.savez(
-                            os.path.join(save_path, "data.npz"),
-                            data_attribute=attributes,
-                            data_feature=features,
-                            data_gen_flag=gen_flags,
-                        )
-                    elif not self._config["given_data_attribute_flag"]:
-                        save_path = os.path.join(output_syn_data_folder, "attr_raw")
-                        os.makedirs(save_path, exist_ok=True)
-                        np.savez(
-                            os.path.join(
-                                save_path,
-                                "chunk_id-{}.npz".format(self._config["chunk_id"]),
-                            ),
-                            data_attribute=attributes[0:split],
-                        )
-                        print(
-                            os.path.join(
-                                save_path,
-                                "chunk_id-{}.npz".format(self._config["chunk_id"]),
-                            )
-                        )
-                    else:
-                        # save attributes/features/gen_flags/self._config to
-                        # files
-
-                        logger.info(f"Generate to {output_syn_data_folder}")
-                        save_path = os.path.join(output_syn_data_folder, "feat_raw")
-                        os.makedirs(save_path, exist_ok=True)
-                        np.savez(
-                            os.path.join(
-                                save_path,
-                                "chunk_id-{}_iteration_id-{}.npz".format(
-                                    self._config["chunk_id"], iteration_id
+                    if not self._config["given_data_attribute_flag"]:
+                        # multi-chunk: generate attributes only
+                        if not self._config.get("single_chunk_flag", False):
+                            save_path = os.path.join(output_syn_data_folder, "attr_raw")
+                            os.makedirs(save_path, exist_ok=True)
+                            np.savez(
+                                os.path.join(
+                                    save_path,
+                                    "chunk_id-{}.npz".format(self._config["chunk_id"]),
                                 ),
+                                data_attribute=attributes[0:split],
+                            )
+                    # multi-chunk: generate features given attribute
+                    # single-chunk: co-generate attributes and features
+                    if self._config["given_data_attribute_flag"] or (
+                        (not self._config["given_data_attribute_flag"])
+                        and self._config.get("single_chunk_flag", False)
+                    ):
+                        logger.info(f"Generate to {output_syn_data_folder}")
+                        save_path = os.path.join(
+                            output_syn_data_folder,
+                            "feat_raw",
+                            f"chunk_id-{self._config['chunk_id']}",
+                        )
+                        os.makedirs(save_path, exist_ok=True)
+                        np.savez(
+                            os.path.join(
+                                save_path,
+                                f"iteration_id-{iteration_id}.npz",
                             ),
                             data_attribute=attributes,
                             data_feature=features,

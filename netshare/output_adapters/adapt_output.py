@@ -14,8 +14,9 @@ def adapt_output() -> None:
     1. Denormalize format (e.g. CSV to pcap, etc.)
     2. Export the data to the data destination (e.g. to S3 bucket, specific directory, etc.)
     """
+    # TODO: implement csv2pcap
     denormalized_format_dir = denormalize_files_format(
-        generate_api.get_generated_data_dir()
+        generate_api.get_best_generated_data_dir()
     )
     export_data(denormalized_format_dir)
 

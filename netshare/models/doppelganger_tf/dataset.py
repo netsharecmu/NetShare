@@ -75,15 +75,16 @@ class NetShareDataset(object):
             if not image_buffer.empty():
                 time.sleep(0.5)
                 continue
-            file_id = np.random.choice(len(files))
-            image = np.load(files[file_id])
-            image_ = {}
-            for k in image.files:
-                image_[k] = image[k]
-            image_ = transform(image_, config)
             try:
+                file_id = np.random.choice(len(files))
+                image = np.load(files[file_id], allow_pickle=True)
+                image_ = {}
+                for k in image.files:
+                    image_[k] = image[k]
+                image_ = transform(image_, config)
                 image_buffer.put(image_, block=False)
             except BaseException:
+                logger.error("data loader failed", exc_info=True)
                 pass
 
         logger.debug("data loader ended")
@@ -144,6 +145,12 @@ class NetShareDataset(object):
             data_attribute.append(image["data_attribute"])
             data_feature.append(image["data_feature"])
             data_gen_flag.append(image["data_gen_flag"])
+
+        if not set(a.shape for a in data_attribute) == {data_attribute[0].shape}:
+            raise ValueError(
+                "All data_attribute must have the same shape. Possible mitigation: the input data has been"
+                " changed but the internal directories haven't been cleaned."
+            )
 
         data_attribute = np.stack(data_attribute, axis=0)
         data_feature = np.stack(data_feature, axis=0)

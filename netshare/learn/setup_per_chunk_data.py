@@ -41,11 +41,7 @@ def apply_configuration_fields(
         field_instance = field_instances[field_config_to_key(field)]
         # Bit Field: (integer)
         if "bit" in field.get("encoding", ""):
-            this_df = original_df.apply(
-                lambda row: field_instance.normalize(row[field.column]),
-                axis="columns",
-                result_type="expand",
-            )
+            this_df = pd.DataFrame(field_instance.normalize(original_df[field.column]))
             this_df.columns = [f"{field.column}_{i}" for i in range(this_df.shape[1])]
             new_field_list += list(this_df.columns)
             new_df = pd.concat([new_df, this_df], axis=1)
@@ -103,12 +99,9 @@ def write_chunk_data(
 ) -> None:
     """
     This function writes the data of a single chunk using the learn_api.
-
-    TODO: Why do we store the cross_chunks_data for every chunk?
-        It creates trouble later when we try to load it in the postprocess phase.
     """
     learn_api.create_dirs(chunk_id)
-    learn_api.write_raw_chunk(df_per_chunk, chunk_id)
+    # learn_api.write_raw_chunk(df_per_chunk, chunk_id)  # Takes too much time and space. uncomment if needed.
     learn_api.write_data_train_npz(
         data_attribute=data_attribute,
         data_feature=data_feature,
@@ -129,7 +122,7 @@ def apply_timestamp_generation(
         and generate the normalized timestamp column if needed.
 
     There are two types of timestamp generation:
-    1. encoding = raw: Taking a specific column as another timestamp column. TODO: I don't understand why this is needed.
+    1. encoding = raw: Taking a specific column as another timestamp column.
     2. encoding = interarrival: For each tuple of session_key (old term: metadata), we take the start time of the flow a metadata column,
         and also take the diff between every packet to the previous one as a feature column.
     """
