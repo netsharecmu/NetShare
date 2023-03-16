@@ -175,7 +175,7 @@ class BitField(Field):
 
     def normalize(self, column: pd.Series) -> pd.DataFrame:
         if isinstance(column[0], str):
-            column = column.str[-64:].astype("int")
+            column = column.str[-self.num_bits :].astype("int")
 
         if self.truncate:
             column = column % (2 ** self.num_bits)
