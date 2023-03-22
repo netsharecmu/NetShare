@@ -21,18 +21,27 @@ import copy
 import math
 import os
 import pickle
+
 random.seed(42)
 
 
 # avoid type3 fonts
-matplotlib.rcParams['pdf.fonttype'] = 42
-matplotlib.rcParams['ps.fonttype'] = 42
-matplotlib.rcParams.update({'font.size': 15})
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+matplotlib.rcParams.update({"font.size": 15})
 
 # color-blindness friendly
-CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
-                  '#f781bf', '#a65628', '#984ea3',
-                  '#999999', '#e41a1c', '#dede00']
+CB_color_cycle = [
+    "#377eb8",
+    "#ff7f00",
+    "#4daf4a",
+    "#f781bf",
+    "#a65628",
+    "#984ea3",
+    "#999999",
+    "#e41a1c",
+    "#dede00",
+]
 # colors = {
 #     'blue':   [55,  126, 184],  #377eb8
 #     'orange': [255, 127, 0],    #ff7f00
@@ -51,7 +60,7 @@ dict_pr_str2int = {
     "GRE": 47,
     "ICMP": 1,
     "IPIP": 4,
-    "IPv6": 41,
+    "IPV6": 41,
     "TCP": 6,
     "UDP": 17,
     "RSVP": 46,
@@ -70,8 +79,8 @@ def jsd(p, q, type):
         pq_max_len = max(len(p), len(q))
         p += [0.0] * (pq_max_len - len(p))
         q += [0.0] * (pq_max_len - len(q))
-        assert (len(p) == len(q))
-        return distance.jensenshannon(p, q)**2
+        assert len(p) == len(q)
+        return distance.jensenshannon(p, q) ** 2
 
     elif type == "continuous":
         # min_ = min(min(p), min(q))
@@ -82,10 +91,8 @@ def jsd(p, q, type):
 
         # assume p is raw data
         # compute n_bins by FD on raw data; use across baselines
-        p_counts, p_bin_edges = np.histogram(
-            p, range=(min_, max_), bins="auto")
-        q_counts, q_bin_edges = np.histogram(
-            q, range=(min_, max_), bins=len(p_counts))
+        p_counts, p_bin_edges = np.histogram(p, range=(min_, max_), bins="auto")
+        q_counts, q_bin_edges = np.histogram(q, range=(min_, max_), bins=len(p_counts))
 
         # out of range
         q_arr = np.array(q)
@@ -99,7 +106,7 @@ def jsd(p, q, type):
             np.append(q_counts, len(q_arr_gt_realmax))
             np.append(p_counts, 0.0)
 
-        return distance.jensenshannon(p_counts, q_counts)**2
+        return distance.jensenshannon(p_counts, q_counts) ** 2
 
     else:
         raise ValueError("Unknown JSD data type")
@@ -124,16 +131,17 @@ def compute_IP_rank_distance(real_list, syn_list, type="EMD"):
     if type == "EMD":
         return wasserstein_distance(real_rank_list, syn_rank_list)
     elif type == "JSD":
-        return jsd(real_HH_count.values(),
-                   syn_HH_count.values(), type="discrete")
+        return jsd(real_HH_count.values(), syn_HH_count.values(), type="discrete")
     else:
         raise ValueError("Unknown distance metric!")
+
 
 # type == "freq": return the freq dict
 
 
 def compute_port_proto_distance(
-        real_list, syn_list, opt, prstr_raw=True, prstr_syn=True, type="TV"):
+    real_list, syn_list, opt, prstr_raw=True, prstr_syn=True, type="TV"
+):
     real_list = list(real_list)
     syn_list = list(syn_list)
 
@@ -223,18 +231,25 @@ def get_flowduration(df):
 
 
 def compute_metrics_netflow_v3(raw_df, syn_df):
-    '''JSD + EMD + ranking'''
+    """JSD + EMD + ranking"""
     metrics_dict = {}
 
     # IP popularity rank
     for metric in ["srcip", "dstip"]:
         metrics_dict[metric] = compute_IP_rank_distance(
-            raw_df[metric], syn_df[metric], type="JSD")
+            raw_df[metric], syn_df[metric], type="JSD"
+        )
 
     # TV distance for port/protocol
     for metric in ["srcport", "dstport", "proto"]:
         metrics_dict[metric] = compute_port_proto_distance(
-            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=True, type="JSD")
+            raw_df[metric],
+            syn_df[metric],
+            metric,
+            prstr_raw=True,
+            prstr_syn=True,
+            type="JSD",
+        )
 
     # ts, td, pkt, byt
     for metric in ["ts", "td", "pkt", "byt"]:
@@ -246,29 +261,46 @@ def compute_metrics_netflow_v3(raw_df, syn_df):
             metrics_dict[metric] = wasserstein_distance(raw_list, syn_list)
         else:
             metrics_dict[metric] = wasserstein_distance(
-                list(raw_df[metric]), list(syn_df[metric]))
+                list(raw_df[metric]), list(syn_df[metric])
+            )
 
     return metrics_dict
 
 
 def compute_metrics_zeeklog_v3(raw_df, syn_df):
-    '''JSD + EMD + ranking'''
+    """JSD + EMD + ranking"""
     metrics_dict = {}
 
     # IP popularity rank
     for metric in ["srcip", "dstip"]:
         metrics_dict[metric] = compute_IP_rank_distance(
-            raw_df[metric], syn_df[metric], type="JSD")
+            raw_df[metric], syn_df[metric], type="JSD"
+        )
 
     # TV distance for port/protocol
     for metric in ["srcport", "dstport", "proto"]:
         metrics_dict[metric] = compute_port_proto_distance(
-            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=True, type="JSD")
+            raw_df[metric],
+            syn_df[metric],
+            metric,
+            prstr_raw=True,
+            prstr_syn=True,
+            type="JSD",
+        )
 
     # ts,duration,orig_bytes,resp_bytes,missed_bytes,orig_pkts,
     # orig_ip_bytes,resp_pkts,resp_ip_bytes
-    for metric in ["ts", "duration", "orig_bytes", "resp_bytes", "missed_bytes",
-                   "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes"]:
+    for metric in [
+        "ts",
+        "duration",
+        "orig_bytes",
+        "resp_bytes",
+        "missed_bytes",
+        "orig_pkts",
+        "orig_ip_bytes",
+        "resp_pkts",
+        "resp_ip_bytes",
+    ]:
         if metric == "ts":
             raw_df = raw_df.sort_values("ts").reset_index()
             syn_df = syn_df.sort_values("ts").reset_index()
@@ -277,7 +309,8 @@ def compute_metrics_zeeklog_v3(raw_df, syn_df):
             metrics_dict[metric] = wasserstein_distance(raw_list, syn_list)
         else:
             metrics_dict[metric] = wasserstein_distance(
-                list(raw_df[metric]), list(syn_df[metric]))
+                list(raw_df[metric]), list(syn_df[metric])
+            )
 
     # TODO: Important!! How to define the JSD of service and conn_state?
 
@@ -285,18 +318,25 @@ def compute_metrics_zeeklog_v3(raw_df, syn_df):
 
 
 def compute_metrics_pcap_v3(raw_df, syn_df):
-    '''JSD + EMD + ranking'''
+    """JSD + EMD + ranking"""
     metrics_dict = {}
 
     # IP popularity rank
     for metric in ["srcip", "dstip"]:
         metrics_dict[metric] = compute_IP_rank_distance(
-            raw_df[metric], syn_df[metric], type="JSD")
+            raw_df[metric], syn_df[metric], type="JSD"
+        )
 
     # TV distance for port/protocol
     for metric in ["srcport", "dstport", "proto"]:
         metrics_dict[metric] = compute_port_proto_distance(
-            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=True, type="JSD")
+            raw_df[metric],
+            syn_df[metric],
+            metric,
+            prstr_raw=True,
+            prstr_syn=True,
+            type="JSD",
+        )
 
     # pkt_len
     for metric in ["pkt_len", "time"]:
@@ -313,7 +353,8 @@ def compute_metrics_pcap_v3(raw_df, syn_df):
             metrics_dict[metric] = wasserstein_distance(raw_list, syn_list)
         else:
             metrics_dict[metric] = wasserstein_distance(
-                list(raw_df[metric]), list(syn_df[metric]))
+                list(raw_df[metric]), list(syn_df[metric])
+            )
 
     # interarrival time
     # raw_df = raw_df.sort_values("time")
@@ -328,6 +369,7 @@ def compute_metrics_pcap_v3(raw_df, syn_df):
     raw_flowsize_list = list(raw_gk.size().values)
     syn_flowsize_list = list(syn_gk.size().values)
     metrics_dict["flow_size"] = wasserstein_distance(
-        raw_flowsize_list, syn_flowsize_list)
+        raw_flowsize_list, syn_flowsize_list
+    )
 
     return metrics_dict

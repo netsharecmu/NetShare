@@ -1,6 +1,6 @@
 {
     "global_config": {
-        "overwrite": false,
+        "overwrite": true,
         "original_data_file": "traces/1M/ugr16/raw.csv",
         "dataset_type": "netflow",
         "n_chunks": 10,

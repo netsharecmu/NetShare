@@ -24,12 +24,12 @@ def countList2cdf(count_list):
         if x not in dist_dict:
             dist_dict[x] = 0
         dist_dict[x] += 1
-    dist_dict = {k: v for k, v in sorted(
-        dist_dict.items(), key=lambda x: x[0])}
+    dist_dict = {k: v for k, v in sorted(dist_dict.items(), key=lambda x: x[0])}
     x = dist_dict.keys()
 
-    pdf = np.asarray(list(dist_dict.values()), dtype=float) / \
-        float(sum(dist_dict.values()))
+    pdf = np.asarray(list(dist_dict.values()), dtype=float) / float(
+        sum(dist_dict.values())
+    )
     cdf = np.cumsum(pdf)
 
     return x, cdf
@@ -46,25 +46,25 @@ def plot_cdf(count_list, xlabel, ylabel, title, filename, base_dir):
 
 
 def continuous_list_flag(l_):
-    '''
+    """
     # l: [1, 2, 3, 4]: True
     # [1, 3, 5, 7]: False
-    '''
+    """
     first_order_diff = np.diff(l_)
     return len(set(first_order_diff)) <= 1
 
 
 def chunks(a, n):
-    '''Split list *a* into *n* chunks evenly'''
+    """Split list *a* into *n* chunks evenly"""
     k, m = divmod(len(a), n)
-    return (a[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
+    return (a[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n))
 
 
 def divide_chunks(l_, n):
-    '''Yield successive n-sized chunks from l.'''
+    """Yield successive n-sized chunks from l."""
     # looping till length l
     for i in range(0, len(l_), n):
-        yield l_[i:i + n]
+        yield l_[i : i + n]
 
 
 def IP_int2str(IP_int):
@@ -83,8 +83,7 @@ def IPs_str2int(IPs_str):
     return [IP_str2int(i) for i in IPs_str]
 
 
-def df2chunks(big_raw_df, file_type,
-              split_type="fixed_size", n_chunks=10, eps=1e-5):
+def df2chunks(big_raw_df, file_type, split_type="fixed_size", n_chunks=10, eps=1e-5):
     if file_type == "pcap":
         time_col_name = "time"
     elif file_type == "netflow":
@@ -101,23 +100,29 @@ def df2chunks(big_raw_df, file_type,
     if split_type == "fixed_size":
         chunk_size = math.ceil(big_raw_df.shape[0] / n_chunks)
         for chunk_id in range(n_chunks):
-            df_chunk = big_raw_df.iloc[chunk_id *
-                                       chunk_size:((chunk_id + 1) * chunk_size)]
+            df_chunk = big_raw_df.iloc[
+                chunk_id * chunk_size : ((chunk_id + 1) * chunk_size)
+            ]
             dfs.append(df_chunk)
         return dfs, chunk_size
 
     elif split_type == "fixed_time":
-        time_evenly_spaced = np.linspace(big_raw_df[time_col_name].min(
-        ), big_raw_df[time_col_name].max(), num=n_chunks + 1)
-        time_evenly_spaced[-1] *= (1 + eps)
+        time_evenly_spaced = np.linspace(
+            big_raw_df[time_col_name].min(),
+            big_raw_df[time_col_name].max(),
+            num=n_chunks + 1,
+        )
+        time_evenly_spaced[-1] *= 1 + eps
 
-        chunk_time = (big_raw_df[time_col_name].max() -
-                      big_raw_df[time_col_name].min()) / n_chunks
+        chunk_time = (
+            big_raw_df[time_col_name].max() - big_raw_df[time_col_name].min()
+        ) / n_chunks
 
         for chunk_id in range(n_chunks):
             df_chunk = big_raw_df[
-                (big_raw_df[time_col_name] >= time_evenly_spaced[chunk_id]) &
-                (big_raw_df[time_col_name] < time_evenly_spaced[chunk_id + 1])]
+                (big_raw_df[time_col_name] >= time_evenly_spaced[chunk_id])
+                & (big_raw_df[time_col_name] < time_evenly_spaced[chunk_id + 1])
+            ]
             if len(df_chunk) == 0:
                 print("Raw chunk_id: {}, empty df_chunk!".format(chunk_id))
                 continue
@@ -130,13 +135,13 @@ def df2chunks(big_raw_df, file_type,
 
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
 def split_per_chunk(
-        config,
-        fields,
-        df_per_chunk,
-        embed_model,
-        global_max_flow_len,
-        chunk_id,
-        flowkeys_chunkidx=None,
+    config,
+    fields,
+    df_per_chunk,
+    embed_model,
+    global_max_flow_len,
+    chunk_id,
+    flowkeys_chunkidx=None,
 ):
     if config["dataset_type"] == "pcap":
         time_col = "time"
@@ -155,20 +160,20 @@ def split_per_chunk(
 
     # w/o DP: normalize time by per-chunk min/max
     if config["timestamp"] == "interarrival":
-        gk = df_per_chunk.groupby(
-            ["srcip", "dstip", "srcport", "dstport", "proto"])
+        gk = df_per_chunk.groupby(["srcip", "dstip", "srcport", "dstport", "proto"])
         flow_start_list = []
         interarrival_within_flow_list = []
         for group_name, df_group in gk:
             flow_start_list.append(df_group.iloc[0][time_col])
-            interarrival_within_flow_list += [0.0] + \
-                list(np.diff(df_group[time_col]))
+            interarrival_within_flow_list += [0.0] + list(np.diff(df_group[time_col]))
         fields["flow_start"].min_x = float(min(flow_start_list))
         fields["flow_start"].max_x = float(max(flow_start_list))
         fields["interarrival_within_flow"].min_x = float(
-            min(interarrival_within_flow_list))
+            min(interarrival_within_flow_list)
+        )
         fields["interarrival_within_flow"].max_x = float(
-            max(interarrival_within_flow_list))
+            max(interarrival_within_flow_list)
+        )
     elif config["timestamp"] == "raw":
         fields["ts"].min_x = float(df_per_chunk[time_col].min())
         fields["ts"].max_x = float(df_per_chunk[time_col].max())
@@ -176,7 +181,8 @@ def split_per_chunk(
     if "multichunk_dep" in split_name and flowkeys_chunkidx is None:
         raise ValueError(
             "Cross-chunk mechanism enabled, \
-                cross-chunk flow stats not provided!")
+                cross-chunk flow stats not provided!"
+        )
 
     metadata = ["srcip", "dstip", "srcport", "dstport", "proto"]
     gk = df_per_chunk.groupby(by=metadata)
@@ -196,27 +202,33 @@ def split_per_chunk(
 
         # metadata
         # word2vec
-        if encode_IP == 'word2vec':
-            attr_per_row += list(get_vector(embed_model,
-                                 str(group_name[0]), norm_option=True))
-            attr_per_row += list(get_vector(embed_model,
-                                 str(group_name[1]), norm_option=True))
+        if encode_IP == "word2vec":
+            attr_per_row += list(
+                get_vector(embed_model, str(group_name[0]), norm_option=True)
+            )
+            attr_per_row += list(
+                get_vector(embed_model, str(group_name[1]), norm_option=True)
+            )
         # bitwise
-        elif encode_IP == 'bit':
+        elif encode_IP == "bit":
             attr_per_row += fields["srcip"].normalize(group_name[0])
             attr_per_row += fields["dstip"].normalize(group_name[1])
 
-        attr_per_row += list(get_vector(embed_model,
-                             str(group_name[2]), norm_option=True))
-        attr_per_row += list(get_vector(embed_model,
-                             str(group_name[3]), norm_option=True))
-        attr_per_row += list(get_vector(embed_model,
-                             str(group_name[4]), norm_option=True))
+        attr_per_row += list(
+            get_vector(embed_model, str(group_name[2]), norm_option=True)
+        )
+        attr_per_row += list(
+            get_vector(embed_model, str(group_name[3]), norm_option=True)
+        )
+        attr_per_row += list(
+            get_vector(embed_model, str(group_name[4]), norm_option=True)
+        )
 
         # TODO: timestamp = raw doesn't have key called flow_start
         if config["timestamp"] == "interarrival":
             attr_per_row.append(
-                fields["flow_start"].normalize(df_group.iloc[0][time_col]))
+                fields["flow_start"].normalize(df_group.iloc[0][time_col])
+            )
 
         # cross-chunk generation
         if "multichunk_dep" in split_name:
@@ -228,28 +240,27 @@ def split_per_chunk(
 
                     for i in range(num_chunks):
                         if i in flowkeys_chunkidx[str(group_name)]:
-                            attr_per_row += fields["chunk_{}".format(
-                                i)].normalize(1.0)
+                            attr_per_row += fields["chunk_{}".format(i)].normalize(1.0)
                         else:
-                            attr_per_row += fields["chunk_{}".format(
-                                i)].normalize(0.0)
+                            attr_per_row += fields["chunk_{}".format(i)].normalize(0.0)
 
                 # flow does not start from this chunk
                 else:
                     attr_per_row += fields["startFromThisChunk"].normalize(0.0)
                     if split_name == "multichunk_dep_v1":
                         for i in range(num_chunks):
-                            attr_per_row += fields["chunk_{}".format(
-                                i)].normalize(0.0)
+                            attr_per_row += fields["chunk_{}".format(i)].normalize(0.0)
 
                     elif split_name == "multichunk_dep_v2":
                         for i in range(num_chunks):
                             if i in flowkeys_chunkidx[str(group_name)]:
-                                attr_per_row += fields["chunk_{}".format(
-                                    i)].normalize(1.0)
+                                attr_per_row += fields["chunk_{}".format(i)].normalize(
+                                    1.0
+                                )
                             else:
-                                attr_per_row += fields["chunk_{}".format(
-                                    i)].normalize(0.0)
+                                attr_per_row += fields["chunk_{}".format(i)].normalize(
+                                    0.0
+                                )
 
         data_attribute.append(attr_per_row)
 
@@ -261,11 +272,12 @@ def split_per_chunk(
             # timestamp: raw/interarrival
             if config["timestamp"] == "interarrival":
                 timeseries_per_step.append(
-                    fields["interarrival_within_flow"].normalize
-                    (interarrival_per_flow_list[row_index]))
+                    fields["interarrival_within_flow"].normalize(
+                        interarrival_per_flow_list[row_index]
+                    )
+                )
             elif config["timestamp"] == "raw":
-                timeseries_per_step.append(
-                    fields[time_col].normalize(row[time_col]))
+                timeseries_per_step.append(fields[time_col].normalize(row[time_col]))
 
             if file_type == "pcap":
                 timeseries_per_step.append(row["pkt_len"])
@@ -273,27 +285,32 @@ def split_per_chunk(
                 if config["full_IP_header"]:
                     for field in ["tos", "id", "flag", "off", "ttl"]:
                         if isinstance(fields[field], DiscreteField):
-                            timeseries_per_step += \
-                                fields[field].normalize(row[field])
+                            timeseries_per_step += fields[field].normalize(row[field])
                         else:
                             timeseries_per_step.append(row[field])
             elif file_type == "netflow":
                 timeseries_per_step += [row["td"], row["pkt"], row["byt"]]
-                for field in ['label', 'type']:
+                for field in ["label", "type"]:
                     if field in df_per_chunk.columns:
-                        timeseries_per_step += fields[field].normalize(
-                            row[field])
+                        timeseries_per_step += fields[field].normalize(row[field])
             elif file_type == "zeeklog":
 
                 # continuous fields
-                for field in ["duration", "orig_bytes", "resp_bytes", "missed_bytes",
-                              "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes"]:
+                for field in [
+                    "duration",
+                    "orig_bytes",
+                    "resp_bytes",
+                    "missed_bytes",
+                    "orig_pkts",
+                    "orig_ip_bytes",
+                    "resp_pkts",
+                    "resp_ip_bytes",
+                ]:
                     timeseries_per_step.append(row[field])
 
                 # discrete fields
                 for field in ["service", "conn_state"]:
                     timeseries_per_step += fields[field].normalize(row[field])
-
             feature_per_row.append(timeseries_per_step)
             data_gen_flag_per_row.append(1.0)
 
@@ -304,41 +321,50 @@ def split_per_chunk(
     data_feature = np.asarray(data_feature)
     data_gen_flag = np.asarray(data_gen_flag)
 
-    print("data_attribute: {}, {}GB in memory".format(
-        np.shape(data_attribute),
-        data_attribute.size * data_attribute.itemsize / 1024 / 1024 / 1024))
-    print("data_feature: {}, {}GB in memory".format(
-        np.shape(data_feature),
-        data_feature.size * data_feature.itemsize / 1024 / 1024 / 1024))
-    print("data_gen_flag: {}, {}GB in memory".format(
-        np.shape(data_gen_flag),
-        data_gen_flag.size * data_gen_flag.itemsize / 1024 / 1024 / 1024))
+    print(
+        "data_attribute: {}, {}GB in memory".format(
+            np.shape(data_attribute),
+            data_attribute.size * data_attribute.itemsize / 1024 / 1024 / 1024,
+        )
+    )
+    print(
+        "data_feature: {}, {}GB in memory".format(
+            np.shape(data_feature),
+            data_feature.size * data_feature.itemsize / 1024 / 1024 / 1024,
+        )
+    )
+    print(
+        "data_gen_flag: {}, {}GB in memory".format(
+            np.shape(data_gen_flag),
+            data_gen_flag.size * data_gen_flag.itemsize / 1024 / 1024 / 1024,
+        )
+    )
 
     data_attribute_output = []
     data_feature_output = []
 
-    if encode_IP == 'word2vec':
+    if encode_IP == "word2vec":
         for flow_key in ["srcip", "dstip"]:
             for i in range(word2vec_vecSize):
                 data_attribute_output.append(
-                    fields["{}_{}".format(flow_key, i)].getOutputType())
-    elif encode_IP == 'bit':
+                    fields["{}_{}".format(flow_key, i)].getOutputType()
+                )
+    elif encode_IP == "bit":
         data_attribute_output += fields["srcip"].getOutputType()
         data_attribute_output += fields["dstip"].getOutputType()
     for flow_key in ["srcport", "dstport", "proto"]:
         for i in range(word2vec_vecSize):
             data_attribute_output.append(
-                fields["{}_{}".format(flow_key, i)].getOutputType())
+                fields["{}_{}".format(flow_key, i)].getOutputType()
+            )
 
     if config["timestamp"] == "interarrival":
         data_attribute_output.append(fields["flow_start"].getOutputType())
 
     if "multichunk_dep" in split_name:
-        data_attribute_output.append(
-            fields["startFromThisChunk"].getOutputType())
+        data_attribute_output.append(fields["startFromThisChunk"].getOutputType())
         for i in range(num_chunks):
-            data_attribute_output.append(
-                fields["chunk_{}".format(i)].getOutputType())
+            data_attribute_output.append(fields["chunk_{}".format(i)].getOutputType())
 
     if config["timestamp"] == "interarrival":
         field_list = ["interarrival_within_flow"]
@@ -353,14 +379,23 @@ def split_per_chunk(
 
     elif file_type == "netflow":
         field_list += ["td", "pkt", "byt"]
-        for field in ['label', 'type']:
+        for field in ["label", "type"]:
             if field in df_per_chunk.columns:
                 field_list.append(field)
 
     elif file_type == "zeeklog":
-        field_list += ["duration", "orig_bytes", "resp_bytes", "missed_bytes",
-                       "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes",
-                       "service", "conn_state"]
+        field_list += [
+            "duration",
+            "orig_bytes",
+            "resp_bytes",
+            "missed_bytes",
+            "orig_pkts",
+            "orig_ip_bytes",
+            "resp_pkts",
+            "resp_ip_bytes",
+            "service",
+            "conn_state",
+        ]
 
     for field in field_list:
         field_output = fields[field].getOutputType()
@@ -372,5 +407,11 @@ def split_per_chunk(
     print("data_attribute_output:", len(data_attribute_output))
     print("data_feature_output:", len(data_feature_output))
 
-    return data_attribute, data_feature, data_gen_flag, \
-        data_attribute_output, data_feature_output, fields
+    return (
+        data_attribute,
+        data_feature,
+        data_gen_flag,
+        data_attribute_output,
+        data_feature_output,
+        fields,
+    )
