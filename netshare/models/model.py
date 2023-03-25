@@ -1,11 +1,14 @@
 import os
 from abc import ABC, abstractmethod
 
+import tensorflow as tf
+
 from netshare.utils import Tee
 
 
 class Model(ABC):
     def __init__(self, config):
+        tf.ConfigProto().gpu_options.allow_growth = True
         self._config = config
 
     @abstractmethod

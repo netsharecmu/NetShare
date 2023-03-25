@@ -478,7 +478,9 @@ class DoppelGANgerTFModel(Model):
                     checkpoint_dir, "iteration_id-{}".format(iteration_id)
                 )
                 if not os.path.exists(mid_checkpoint_dir):
-                    print("Not found {}".format(mid_checkpoint_dir))
+                    logger.debug(
+                        "Middle checkpoint dir not found {}".format(mid_checkpoint_dir)
+                    )
                     continue
                 else:
                     last_iteration_found = True
