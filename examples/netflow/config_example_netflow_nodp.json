@@ -1,0 +1,9 @@
+{
+    "global_config": {
+        "original_data_file": "../traces/ugr16/raw.csv",
+        "dataset_type": "netflow",
+        "n_chunks": 10,
+        "dp": false
+    },
+    "default": "netflow.json"
+}
