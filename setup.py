@@ -22,7 +22,7 @@ setup(
         "tqdm",
         "matplotlib",
         "pandas",
-        "sklearn",
+        "scikit-learn",
         "more-itertools",
         "gensim==3.8.3",
         "networkx",

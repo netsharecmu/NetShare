@@ -1,5 +1,6 @@
 {
     "global_config": {
+        "overwrite": true,
         "original_data_file": "../traces/caida-small/raw.pcap",
         "dataset_type": "pcap",
         "n_chunks": 10,
