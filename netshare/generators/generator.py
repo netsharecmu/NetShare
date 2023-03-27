@@ -7,7 +7,7 @@ import netshare.pre_post_processors as pre_post_processors
 import netshare.model_managers as model_managers
 import netshare.models as models
 import netshare.dashboard as dashboard
-from netshare.dashboard.dist_metrics import run_netflow_qualitative_plots_dashboard, run_pcap_qualitative_plots_dashboard, run_zeek_qualitative_plots
+from netshare.dashboard.dist_metrics import run_netflow_qualitative_plots_dashboard, run_pcap_qualitative_plots_dashboard
 
 from config_io import Config
 from ..configs import default as default_configs
@@ -40,15 +40,17 @@ class Generator(object):
 
         pre_post_processor_class = getattr(
             pre_post_processors, config['pre_post_processor']['class'])
-        pre_post_processor_config = config['pre_post_processor']['config']
+        pre_post_processor_config = Config(global_config)
+        pre_post_processor_config.update(
+            config['pre_post_processor']['config'])
         self._pre_post_processor = pre_post_processor_class(
-            config=pre_post_processor_config, global_config=global_config)
+            config=pre_post_processor_config)
 
         model_manager_class = getattr(
             model_managers, config['model_manager']['class'])
-        model_manager_config = config['model_manager']['config']
-        self._model_manager = model_manager_class(
-            config=model_manager_config, global_config=global_config)
+        model_manager_config = Config(global_config)
+        model_manager_config.update(config['model_manager']['config'])
+        self._model_manager = model_manager_class(config=model_manager_config)
 
         model_class = getattr(models, config['model']['class'])
         model_config = config['model']['config']
@@ -99,7 +101,8 @@ class Generator(object):
             output_folder=output_folder,
             log_folder=log_folder)
 
-    def _post_process(self, input_folder, output_folder, log_folder):
+    def _post_process(self, input_folder, output_folder,
+                      pre_processed_data_folder, log_folder):
         if not self._check_folder(output_folder):
             return False
         if not self._check_folder(log_folder):
@@ -107,6 +110,7 @@ class Generator(object):
         return self._pre_post_processor.post_process(
             input_folder=input_folder,
             output_folder=output_folder,
+            pre_processed_data_folder=pre_processed_data_folder,
             log_folder=log_folder)
 
     def _train(self, input_train_data_folder, output_model_folder, log_folder):
@@ -173,6 +177,8 @@ class Generator(object):
                 output_folder=self._get_post_processed_data_folder(
                     work_folder),
                 log_folder=self._get_post_processed_data_log_folder(
+                    work_folder),
+                pre_processed_data_folder=self._get_pre_processed_data_folder(
                     work_folder)):
             print('Failed to post-process data')
             return False
@@ -238,12 +244,6 @@ class Generator(object):
                 raw_data_path=os.path.join(
                     self._get_pre_processed_data_folder(work_folder),
                     "raw.csv"),
-                syn_data_path=syn_data_path,
-                plot_dir=self._get_visualization_folder(work_folder)
-            )
-        elif dataset_type == "zeeklog":
-            run_zeek_qualitative_plots(
-                raw_data_path=original_data_file,
                 syn_data_path=syn_data_path,
                 plot_dir=self._get_visualization_folder(work_folder)
             )

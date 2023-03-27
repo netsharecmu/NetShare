@@ -22,6 +22,11 @@ class DoppelGANgerTFModel(Model):
     def _train(self, input_train_data_folder, output_model_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
+        self._config["result_folder"] = getattr(
+            self._config, "result_folder", output_model_folder)
+        self._config["dataset"] = getattr(
+            self._config, "dataset", input_train_data_folder)
+
         # If Ray is disabled, reset TF graph
         if not ray.config.enabled:
             tf.reset_default_graph()
@@ -135,7 +140,7 @@ class DoppelGANgerTFModel(Model):
             gan = DoppelGANger(
                 sess=sess,
                 checkpoint_dir=checkpoint_dir,
-                pretrain_dir=self._config["pretrain_dir"],
+                pretrain_dir=getattr(self._config, "pretrain_dir", None),
                 sample_dir=sample_dir,
                 time_path=time_path,
                 batch_size=self._config["batch_size"],
@@ -179,7 +184,7 @@ class DoppelGANgerTFModel(Model):
             )
 
             gan.build()
-            gan.train(restore=self._config["restore"])
+            gan.train(restore=getattr(self._config, "restore", False))
 
         dataset.stop_data_loader()
         return True
@@ -187,6 +192,11 @@ class DoppelGANgerTFModel(Model):
     def _generate(self, input_train_data_folder,
                   input_model_folder, output_syn_data_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
+
+        self._config["result_folder"] = getattr(
+            self._config, "result_folder", input_model_folder)
+        self._config["dataset"] = getattr(
+            self._config, "dataset", input_train_data_folder)
 
         # If Ray is disabled, reset TF graph
         if not ray.config.enabled:
@@ -231,6 +241,8 @@ class DoppelGANgerTFModel(Model):
             num_real_samples += int(estimate_flowlen_dp([num_real_samples])[0])
 
         print("num_real_samples:", num_real_samples)
+        self._config["dataset_type"] = getattr(
+            self._config, "dataset_type", None)
         if self._config["dataset_type"] == "netflow":
             self._config["generate_num_train_sample"] = int(
                 1.25 * num_real_samples)
@@ -241,6 +253,12 @@ class DoppelGANgerTFModel(Model):
         elif self._config["dataset_type"] == "zeeklog":
             self._config["generate_num_train_sample"] = int(
                 1.25 * num_real_samples)
+            self._config["generate_num_test_sample"] = 0
+        else:
+            self._config["generate_num_train_sample"] = getattr(
+                self._config,
+                "generate_num_train_sample",
+                num_real_samples)
             self._config["generate_num_test_sample"] = 0
 
         if self._config["given_data_attribute_flag"]:
@@ -337,7 +355,7 @@ class DoppelGANgerTFModel(Model):
             gan = DoppelGANger(
                 sess=sess,
                 checkpoint_dir=checkpoint_dir,
-                pretrain_dir=self._config["pretrain_dir"],
+                pretrain_dir=getattr(self._config, "pretrain_dir", None),
                 sample_dir=sample_dir,
                 time_path=time_path,
                 batch_size=self._config["batch_size"],
@@ -386,6 +404,8 @@ class DoppelGANgerTFModel(Model):
                 self._config["generate_num_train_sample"] +
                 self._config["generate_num_test_sample"]
             )
+            print("self._config[generate_num_train_sample]",
+                  self._config["generate_num_train_sample"])
             print("total generated sample:", total_generate_num_sample)
 
             (
@@ -483,7 +503,19 @@ class DoppelGANgerTFModel(Model):
                         print(features.shape)
                         print(attributes.shape)
 
-                    if not self._config["given_data_attribute_flag"]:
+                    if getattr(self._config, "save_without_chunk", False):
+                        save_path = os.path.join(
+                            output_syn_data_folder,
+                            f"iteration_id-{iteration_id}")
+                        os.makedirs(save_path, exist_ok=True)
+                        np.savez(
+                            os.path.join(
+                                save_path,
+                                "data.npz"),
+                            data_attribute=attributes,
+                            data_feature=features,
+                            data_gen_flag=gen_flags)
+                    elif not self._config["given_data_attribute_flag"]:
                         save_path = os.path.join(
                             output_syn_data_folder, "attr_raw")
                         os.makedirs(save_path, exist_ok=True)
@@ -515,28 +547,11 @@ class DoppelGANgerTFModel(Model):
                                 "chunk_id-{}_iteration_id-{}.npz".format(
                                     self._config["chunk_id"], iteration_id)
                             ),
-                            attributes=attributes,
-                            features=features,
-                            gen_flags=gen_flags,
+                            data_attribute=attributes,
+                            data_feature=features,
+                            data_gen_flag=gen_flags,
                             config=self._config
                         )
-
-                        # syn_df = denormalize(
-                        #     attributes, features, gen_flags, self._config)
-                        # print(syn_df.shape)
-
-                        # save_path = os.path.join(
-                        #     output_syn_data_folder,
-                        #     "syn_dfs",
-                        #     "chunk_id-{}".format(self._config["chunk_id"]))
-                        # os.makedirs(save_path, exist_ok=True)
-                        # syn_df.to_csv(
-                        #     os.path.join(
-                        #         save_path,
-                        #         "syn_df_iteration_id-{}.csv".format(iteration_id)),
-                        #     index=False)
-
-                        # print("Number of packets this chunk:", np.sum(gen_flags))
 
             print("Done")
 

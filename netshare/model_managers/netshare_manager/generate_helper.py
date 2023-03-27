@@ -83,43 +83,48 @@ def _merge_attr(attr_raw_npz_folder, word2vec_size,
                 "chunk_id-{}.npz".format(chunkid))
         )["data_attribute"]
 
-        for row in raw_attr_chunk:
-            # if row[bit_idx_flagstart] < row[bit_idx_flagstart+1]:
-            if (
-                row[bit_idx_flagstart] < row[bit_idx_flagstart + 1]
-                and row[bit_idx_flagstart + 2 * chunkid + 2]
-                < row[bit_idx_flagstart + 2 * chunkid + 3]
-            ):
-                # this chunk
-                row_this_chunk = list(copy.deepcopy(row)[:bit_idx_flagstart])
-                row_this_chunk += [0.0, 1.0]
-                row_this_chunk += [1.0, 0.0] * (chunkid + 1)
-                for i in range(chunkid + 1, num_chunks):
-                    if (
-                        row[bit_idx_flagstart + 2 * i + 2]
-                        < row[bit_idx_flagstart + 2 * i + 3]
-                    ):
-                        row_this_chunk += [0.0, 1.0]
-                    else:
-                        row_this_chunk += [1.0, 0.0]
-                # dict_chunkid_attr[chunkid].append(row_this_chunk)
-                dict_chunkid_attr[chunkid].append(row)
+        if num_chunks > 1:
+            for row in raw_attr_chunk:
+                # if row[bit_idx_flagstart] < row[bit_idx_flagstart+1]:
+                if (
+                    row[bit_idx_flagstart] < row[bit_idx_flagstart + 1]
+                    and row[bit_idx_flagstart + 2 * chunkid + 2]
+                    < row[bit_idx_flagstart + 2 * chunkid + 3]
+                ):
+                    # this chunk
+                    row_this_chunk = list(
+                        copy.deepcopy(row)[
+                            :bit_idx_flagstart])
+                    row_this_chunk += [0.0, 1.0]
+                    row_this_chunk += [1.0, 0.0] * (chunkid + 1)
+                    for i in range(chunkid + 1, num_chunks):
+                        if (
+                            row[bit_idx_flagstart + 2 * i + 2]
+                            < row[bit_idx_flagstart + 2 * i + 3]
+                        ):
+                            row_this_chunk += [0.0, 1.0]
+                        else:
+                            row_this_chunk += [1.0, 0.0]
+                    # dict_chunkid_attr[chunkid].append(row_this_chunk)
+                    dict_chunkid_attr[chunkid].append(row)
 
-                # following chunks
-                # row_following_chunk = list(copy.deepcopy(row)[:bit_idx_flagstart])
-                # row_following_chunk += [1.0, 0.0]*(1+NUM_CHUNKS)
-                n_flows_startFromThisEpoch += 1
-                row_following_chunk = list(copy.deepcopy(row))
-                row_following_chunk[bit_idx_flagstart] = 1.0
-                row_following_chunk[bit_idx_flagstart + 1] = 0.0
+                    # following chunks
+                    # row_following_chunk = list(copy.deepcopy(row)[:bit_idx_flagstart])
+                    # row_following_chunk += [1.0, 0.0]*(1+NUM_CHUNKS)
+                    n_flows_startFromThisEpoch += 1
+                    row_following_chunk = list(copy.deepcopy(row))
+                    row_following_chunk[bit_idx_flagstart] = 1.0
+                    row_following_chunk[bit_idx_flagstart + 1] = 0.0
 
-                for i in range(chunkid + 1, num_chunks):
-                    if (
-                        row[bit_idx_flagstart + 2 * i + 2]
-                        < row[bit_idx_flagstart + 2 * i + 3]
-                    ):
-                        dict_chunkid_attr[i].append(row_following_chunk)
-                        # dict_chunkid_attr[i].append(row)
+                    for i in range(chunkid + 1, num_chunks):
+                        if (
+                            row[bit_idx_flagstart + 2 * i + 2]
+                            < row[bit_idx_flagstart + 2 * i + 3]
+                        ):
+                            dict_chunkid_attr[i].append(row_following_chunk)
+                            # dict_chunkid_attr[i].append(row)
+        else:
+            dict_chunkid_attr[chunkid] = raw_attr_chunk
 
         print(
             "n_flows_startFromThisEpoch / total flows: {}/{}".format(

@@ -1,0 +1,70 @@
+{
+    "global_config": {
+        "overwrite": false,
+        "original_data_file": "<file_path>"
+    },
+    "pre_post_processor": {
+        "class": "DGRowPerSamplePrePostProcessor",
+        "config": {
+            "num_train_samples": 50000,
+            "num_test_samples": 50000,
+            "metadata": [
+            ],
+            "timeseries": [
+            ]
+        }
+    },
+    "model_manager": {
+        "class": "DGModelManager",
+        "config": {
+        }
+    },
+    "model": {
+        "class": "DoppelGANgerTFModel",
+        "config": {
+            "batch_size": 100,
+            "sample_len": 10,
+            "iteration": 200000,
+            "vis_freq": 100000,
+            "vis_num_sample": 5,
+            "d_rounds": 1,
+            "g_rounds": 1,
+            "num_packing": 1,
+            "noise": true,
+            "attr_noise_type": "normal",
+            "feature_noise_type": "normal",
+            "rnn_mlp_num_layers": 0,
+            "feed_back": false,
+            "g_lr": 0.001,
+            "d_lr": 0.001,
+            "d_gp_coe": 10.0,
+            "gen_feature_num_layers": 1,
+            "gen_feature_num_units": 100,
+            "gen_attribute_num_layers": 3,
+            "gen_attribute_num_units": 100,
+            "disc_num_layers": 5,
+            "disc_num_units": 200,
+            "initial_state": "random",
+            "leaky_relu": false,
+            "attr_d_lr": 0.001,
+            "attr_d_gp_coe": 10.0,
+            "g_attr_d_coe": 1.0,
+            "attr_disc_num_layers": 5,
+            "attr_disc_num_units": 200,
+            "aux_disc": true,
+            "self_norm": true,
+            "fix_feature_network": false,
+            "debug": false,
+            "combined_disc": true,
+            "use_gt_lengths": false,
+            "use_uniform_lengths": false,
+            "num_cores": null,
+            "sn_mode": null,
+            "scale": 1.0,
+            "extra_checkpoint_freq": 20000,
+            "epoch_checkpoint_freq": 1000,
+            "dp_noise_multiplier": null,
+            "dp_l2_norm_clip": null
+        }
+    }
+}

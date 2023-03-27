@@ -53,9 +53,6 @@ dict_pr_str2int = {
     "RSVP": 46,
     "Other": 255,
     "255": 255,  # TEMP
-    "tcp": 6,
-    "udp": 17,
-    "icmp": 1
 }
 
 
@@ -79,14 +76,14 @@ def vals2cdf(vals):
 
 
 # syn_df_dict: {name: dict}
-def plot_cdf(raw_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=False, y_logscale=False, eps=1e-5):
+def plot_cdf(raw_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=False, y_logscale=False):
     plt.clf()
 
     if metric == "flow_size":
         x, cdf = vals2cdf(raw_df.groupby(
             ["srcip", "dstip", "srcport", "dstport", "proto"]).size().values)
     else:
-        x, cdf = vals2cdf(raw_df[metric]+eps)
+        x, cdf = vals2cdf(raw_df[metric])
 
     plt.plot(x, cdf, label="Real", color=CB_color_cycle[0], linewidth=5)
     idx = 1
@@ -105,7 +102,7 @@ def plot_cdf(raw_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=F
         elif metric == "td":
             x, cdf = vals2cdf(np.round(syn_df[metric]))
         else:
-            x, cdf = vals2cdf(syn_df[metric]+eps)
+            x, cdf = vals2cdf(syn_df[metric])
 
         if method == "NetShare":
             plt.plot(x, cdf, label=label_method,
@@ -190,9 +187,6 @@ def plot_bar(real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=
     elif metric == "proto":
         fig, axs = plt.subplots(len(syn_df_dict), 1, figsize=(8, 6))
         bar_width = 0.2
-    else:
-        fig, axs = plt.subplots(len(syn_df_dict), 1, figsize=(8, 6))
-        bar_width = 0.4
 
     subplot_idx = 0
     for method, syn_df in syn_df_dict.items():
@@ -202,9 +196,6 @@ def plot_bar(real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=
         elif data_type == "pcap":
             real_dict, syn_dict = compute_port_proto_distance(
                 real_df[metric], syn_df[metric], opt=metric, prstr_raw=True, prstr_syn=False, type="freq")
-        elif data_type == "zeek":
-            real_dict, syn_dict = compute_port_proto_distance(
-                real_df[metric], syn_df[metric], opt=metric, prstr_raw=True, prstr_syn=True, type="freq")
         else:
             raise ValueError(
                 "Non-valid data type! Must be either netflow or pcap")
@@ -216,9 +207,6 @@ def plot_bar(real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=
         elif metric == "proto":
             x = [6, 17]
             x_plot = ["TCP", "UDP", "Others"]
-        else:
-            x = list(real_dict.keys())
-            x_plot = list(real_dict.keys())
 
         y_real = [real_dict[i] for i in x]
         y_syn = [syn_dict[i] for i in x]
@@ -478,26 +466,6 @@ def compute_port_proto_distance(real_list, syn_list, opt, prstr_raw=True, prstr_
         elif type == "JSD":
             return jsd(real_dict.values(), syn_dict.values(), type="discrete")
         elif type == "freq":
-            return real_dict, syn_dict
-        else:
-            raise ValueError("Unknown distance metric!")
-    else:
-        real_dict = Counter(real_list)
-        real_keys = list(real_dict.keys())
-        syn_dict = {}
-        syn_dict_ = Counter(syn_list)
-        for k in real_keys:
-            if k not in syn_dict_:
-                syn_dict[k] = 0
-            else:
-                syn_dict[k] = syn_dict_[k]
-        # convert to freq-based
-        for k, v in real_dict.items():
-            real_dict[k] = float(v) / float(len(real_list))
-        for k, v in syn_dict.items():
-            syn_dict[k] = float(v) / float(len(syn_list))
-
-        if type == "freq":
             return real_dict, syn_dict
         else:
             raise ValueError("Unknown distance metric!")
@@ -1108,83 +1076,6 @@ def run_pcap_qualitative_plots_dashboard(raw_data_path, syn_data_path, plot_dir)
         "pkt_len": "Packet size (bytes)",
         "flow_size": "Flow size (# of packets perflow)"
     }.items():
-        plot_cdf(
-            raw_df=raw_df,
-            syn_df_dict=syn_df_dict,
-            xlabel=xlabel,
-            ylabel="CDF",
-            plot_loc=os.path.join(
-                plot_dir,
-                "cdf_{}.png".format(metric)),
-            metric=metric,
-            x_logscale=(metric != "td")
-        )
-
-
-def run_zeek_qualitative_plots(raw_data_path, syn_data_path, plot_dir):
-    raw_df = pd.read_csv(raw_data_path)
-    os.makedirs(plot_dir, exist_ok=True)
-
-    # print(raw_df.head())
-    syn_df_dict = {}
-    # for method in ["PAC-GAN", "PacketCGAN", "Flow-WGAN", "NetShare"]:
-    for method in ["NetShare"]:
-        syn_df = pd.read_csv(syn_data_path)
-        syn_df_dict[method] = syn_df
-
-    for metric, xlabel in {
-        "srcip": "Source IP popularity rank (log-scale)",
-        "dstip": "Dest. IP popularity rank (log-sacle)",
-    }.items():
-        print("metric:", metric)
-        plot_HH(
-            real_df=raw_df,
-            syn_df_dict=syn_df_dict,
-            xlabel=xlabel,
-            ylabel="Relative frequency (log-scale)",
-            plot_loc=os.path.join(
-                plot_dir,
-                "hh_{}.png".format(metric)
-            ),
-            metric=metric,
-            x_logscale=True,
-            y_logscale=True
-        )
-
-    for metric, xlabel in {
-        "srcport": "Top {} service source port number".format(N_TOPK_SERVICE_PORTS),
-        "dstport": "Top {} service destination port number".format(N_TOPK_SERVICE_PORTS),
-        "proto": "IP Protocol",
-        "service": "Application protocol ID sent over connection",
-        "conn_state": "Connection state"
-    }.items():
-        print("metric:", metric)
-        plot_bar(
-            real_df=raw_df,
-            # syn_df_dict={k: syn_df_dict[k] for k in ["CTGAN"]},
-            syn_df_dict=syn_df_dict,
-            xlabel=xlabel,
-            ylabel="Relative frequency",
-            plot_loc=os.path.join(
-                plot_dir,
-                "bar_{}.png".format(metric)
-            ),
-            metric=metric,
-            x_logscale=False,
-            y_logscale=False,
-            data_type="zeek"
-        )
-
-    for metric, xlabel in {
-        "duration": "How long connetion lasted (seconds)",
-        "ts": "timestamp of first packet",
-        "orig_bytes": "Number of payload bytes originator sent",
-        "resp_bytes": "Number of payload bytes responder sent",
-        "missed_bytes": "Number of bytes missed (packet loss)",
-        "orig_ip_bytes": "Number of originator IP bytes",
-        "resp_ip_bytes": "Number of responder IP bytes"
-    }.items():
-        print("metric:", metric)
         plot_cdf(
             raw_df=raw_df,
             syn_df_dict=syn_df_dict,

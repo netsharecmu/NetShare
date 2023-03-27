@@ -1,5 +1,7 @@
 import os
 import math
+import copy
+import pickle
 import ipaddress
 
 import pandas as pd
@@ -83,19 +85,28 @@ def IPs_str2int(IPs_str):
     return [IP_str2int(i) for i in IPs_str]
 
 
-def df2chunks(big_raw_df, file_type,
-              split_type="fixed_size", n_chunks=10, eps=1e-5):
-    if file_type == "pcap":
-        time_col_name = "time"
-    elif file_type == "netflow":
-        time_col_name = "ts"
-    elif file_type == "zeeklog":
-        time_col_name = "ts"
-    else:
-        raise ValueError("Unknown file type")
+def df2chunks(big_raw_df,
+              config_timestamp,
+              split_type="fixed_size",
+              n_chunks=10,
+              eps=1e-5):
+
+    if n_chunks > 1 and \
+            ((not config_timestamp["column"]) or (not config_timestamp["generation"])):
+        raise ValueError(
+            "Trying to split into multiple chunks by timestamp but no timestamp is provided!")
 
     # sanity sort
-    big_raw_df = big_raw_df.sort_values(time_col_name)
+    if config_timestamp["generation"] and \
+            config_timestamp["column"]:
+        time_col_name = config_timestamp["column"]
+        big_raw_df = big_raw_df.sort_values(time_col_name)
+
+    if n_chunks == 1:
+
+        chunk_time = (big_raw_df[time_col_name].max() -
+                      big_raw_df[time_col_name].min()) / n_chunks
+        return [big_raw_df], chunk_time
 
     dfs = []
     if split_type == "fixed_size":
@@ -128,249 +139,279 @@ def df2chunks(big_raw_df, file_type,
         raise ValueError("Unknown split type")
 
 
+def apply_per_field(
+        original_df,
+        config_fields,
+        field_instances,
+        embed_model=None):
+    original_df.reset_index(drop=True, inplace=True)
+    new_df = copy.deepcopy(original_df)
+    new_field_list = []
+    for i, field in enumerate(config_fields):
+        field_instance = field_instances[i]
+        # Bit Field: (integer)
+        if 'bit' in getattr(field, 'encoding', ''):
+            this_df = original_df.apply(
+                lambda row: field_instance.normalize(row[field.column]), axis='columns', result_type='expand')
+            this_df.columns = [
+                f'{field.column}_{i}' for i in range(this_df.shape[1])]
+            new_field_list += list(this_df.columns)
+            new_df = pd.concat([new_df, this_df], axis=1)
+
+        # word2vec field: (any)
+        if 'word2vec' in getattr(field, 'encoding', ''):
+            this_df = original_df.apply(
+                lambda row: get_vector(embed_model, str(
+                    row[field.column]), norm_option=True),
+                axis='columns', result_type='expand')
+            this_df.columns = [
+                f'{field.column}_{i}' for i in range(this_df.shape[1])]
+            new_field_list += list(this_df.columns)
+            new_df = pd.concat([new_df, this_df], axis=1)
+
+        # Categorical field: (string | integer)
+        if 'categorical' in getattr(field, 'encoding', ''):
+            this_df = pd.DataFrame(field_instance.normalize(
+                original_df[field.column].to_numpy()))
+            this_df.columns = [
+                f'{field.column}_{i}' for i in range(this_df.shape[1])]
+            new_field_list += list(this_df.columns)
+            new_df = pd.concat([new_df, this_df], axis=1)
+
+        # Continuous Field: (float)
+        if field.type == "float":
+            new_df[field.column] = field_instance.normalize(
+                original_df[field.column].to_numpy().reshape(-1, 1))
+            new_field_list.append(field.column)
+
+    return new_df, new_field_list
+
+
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
 def split_per_chunk(
-        config,
-        fields,
-        df_per_chunk,
-        embed_model,
-        global_max_flow_len,
-        chunk_id,
-        flowkeys_chunkidx=None,
+    config,
+    metadata_fields,
+    timeseries_fields,
+    df_per_chunk,
+    embed_model,
+    global_max_flow_len,
+    chunk_id,
+    data_out_dir,
+    flowkeys_chunkidx=None,
 ):
-    if config["dataset_type"] == "pcap":
-        time_col = "time"
-    elif config["dataset_type"] == "netflow":
-        time_col = "ts"
-    elif config["dataset_type"] == "zeeklog":
-        time_col = "ts"
-    else:
-        raise ValueError("Unknown dataset type")
-
     split_name = config["split_name"]
-    word2vec_vecSize = config["word2vec_vecSize"]
-    file_type = config["dataset_type"]
-    encode_IP = config["encode_IP"]
-    num_chunks = config["n_chunks"]
+    metadata_cols = [m for m in config["metadata"]]
+
+    df_per_chunk, new_metadata_list = apply_per_field(
+        original_df=df_per_chunk,
+        config_fields=config["metadata"],
+        field_instances=metadata_fields,
+        embed_model=embed_model
+    )
+
+    df_per_chunk, new_timeseries_list = apply_per_field(
+        original_df=df_per_chunk,
+        config_fields=config["timeseries"],
+        field_instances=timeseries_fields,
+        embed_model=embed_model
+    )
+    print("df_per_chunk:", df_per_chunk.shape)
+
+    # Multi-chunk related field instances
+    # n_chunk=1 reduces to plain DoppelGANger
+    if config["n_chunks"] > 1:
+        metadata_fields.append(DiscreteField(
+            name="startFromThisChunk",
+            choices=[0.0, 1.0]
+        ))
+
+        for chunk_id in range(config["n_chunks"]):
+            metadata_fields.append(DiscreteField(
+                name="chunk_{}".format(chunk_id),
+                choices=[0.0, 1.0]
+            ))
 
     # w/o DP: normalize time by per-chunk min/max
-    if config["timestamp"] == "interarrival":
-        gk = df_per_chunk.groupby(
-            ["srcip", "dstip", "srcport", "dstport", "proto"])
-        flow_start_list = []
-        interarrival_within_flow_list = []
-        for group_name, df_group in gk:
-            flow_start_list.append(df_group.iloc[0][time_col])
-            interarrival_within_flow_list += [0.0] + \
-                list(np.diff(df_group[time_col]))
-        fields["flow_start"].min_x = float(min(flow_start_list))
-        fields["flow_start"].max_x = float(max(flow_start_list))
-        fields["interarrival_within_flow"].min_x = float(
-            min(interarrival_within_flow_list))
-        fields["interarrival_within_flow"].max_x = float(
-            max(interarrival_within_flow_list))
-    elif config["timestamp"] == "raw":
-        fields["ts"].min_x = float(df_per_chunk[time_col].min())
-        fields["ts"].max_x = float(df_per_chunk[time_col].max())
+    if config["timestamp"]["generation"]:
+        if "column" not in config["timestamp"]:
+            raise ValueError(
+                'Timestamp generation is enabled! "column" must be set...')
+        time_col = config["timestamp"]["column"]
 
-    if "multichunk_dep" in split_name and flowkeys_chunkidx is None:
-        raise ValueError(
-            "Cross-chunk mechanism enabled, \
-                cross-chunk flow stats not provided!")
+        if config["timestamp"]["encoding"] == "interarrival":
+            gk = df_per_chunk.groupby([m.column for m in metadata_cols])
+            flow_start_list = list(gk.first()[time_col])
+            metadata_fields.append(ContinuousField(
+                name="flow_start",
+                norm_option=getattr(
+                    Normalization, config["timestamp"].normalization),
+                min_x=min(flow_start_list),
+                max_x=max(flow_start_list)
+            ))
+            flow_start_list = metadata_fields[-1].normalize(
+                np.array(flow_start_list).reshape(-1, 1))
 
-    metadata = ["srcip", "dstip", "srcport", "dstport", "proto"]
-    gk = df_per_chunk.groupby(by=metadata)
+            interarrival_within_flow_list = list(
+                gk[time_col].diff().fillna(0.0))
+            df_per_chunk["interarrival_within_flow"] = interarrival_within_flow_list
+            timeseries_fields.insert(0, ContinuousField(
+                name="interarrival_within_flow",
+                norm_option=getattr(
+                    Normalization, config["timestamp"].normalization),
+                min_x=min(interarrival_within_flow_list),
+                max_x=max(interarrival_within_flow_list)
+            ))
+            df_per_chunk["interarrival_within_flow"] = timeseries_fields[0].normalize(
+                df_per_chunk["interarrival_within_flow"].to_numpy().reshape(-1, 1))
+            new_timeseries_list.insert(0, "interarrival_within_flow")
 
-    data_attribute = []
+        elif config["timestamp"]["encoding"] == "raw":
+            timeseries_fields.insert(0, ContinuousField(
+                name=getattr(
+                    config["timestamp"], "name", config["timestamp"]["column"]),
+                norm_option=getattr(
+                    Normalization, config["timestamp"].normalization),
+                min_x=min(df_per_chunk[time_col]),
+                max_x=max(df_per_chunk[time_col])
+            ))
+            df_per_chunk[time_col] = timeseries_fields[0].normalize(
+                df_per_chunk[time_col].to_numpy().reshape(-1, 1)
+            )
+            new_timeseries_list.insert(0, time_col)
+        else:
+            raise ValueError("Timestamp encoding can be only \
+            `interarrival` or 'raw")
+
+    print("new_metadata_list:", new_metadata_list)
+    print("new_timeseries_list:", new_timeseries_list)
+
+    gk = df_per_chunk.groupby(new_metadata_list)
+    data_attribute = np.array(list(gk.groups.keys()))
     data_feature = []
     data_gen_flag = []
-    num_flows_startFromThisChunk = 0
-
+    flow_tags = []
+    fields_dict = {f.name: f for f in metadata_fields + timeseries_fields}
     for group_name, df_group in tqdm(gk):
         # RESET INDEX TO MAKE IT START FROM ZERO
         df_group = df_group.reset_index(drop=True)
+        data_feature.append(df_group[new_timeseries_list].to_numpy())
+        data_gen_flag.append([1.0] * len(df_group))
 
         attr_per_row = []
-        feature_per_row = []
-        data_gen_flag_per_row = []
+        if config["n_chunks"] > 1:
+            if flowkeys_chunkidx is None:
+                raise ValueError(
+                    "Cross-chunk mechanism enabled, \
+                    cross-chunk flow stats not provided!")
+            ori_group_name = tuple(
+                df_group.iloc[0][[m.column for m in config["metadata"]]])
 
-        # metadata
-        # word2vec
-        if encode_IP == 'word2vec':
-            attr_per_row += list(get_vector(embed_model,
-                                 str(group_name[0]), norm_option=True))
-            attr_per_row += list(get_vector(embed_model,
-                                 str(group_name[1]), norm_option=True))
-        # bitwise
-        elif encode_IP == 'bit':
-            attr_per_row += fields["srcip"].normalize(group_name[0])
-            attr_per_row += fields["dstip"].normalize(group_name[1])
-
-        attr_per_row += list(get_vector(embed_model,
-                             str(group_name[2]), norm_option=True))
-        attr_per_row += list(get_vector(embed_model,
-                             str(group_name[3]), norm_option=True))
-        attr_per_row += list(get_vector(embed_model,
-                             str(group_name[4]), norm_option=True))
-
-        # TODO: timestamp = raw doesn't have key called flow_start
-        if config["timestamp"] == "interarrival":
-            attr_per_row.append(
-                fields["flow_start"].normalize(df_group.iloc[0][time_col]))
-
-        # cross-chunk generation
-        if "multichunk_dep" in split_name:
-            if str(group_name) in flowkeys_chunkidx:  # sanity check
+            # MULTI-CHUNK TAGS: TO BE OPTIMIZED FOR PERFORMANCE
+            if str(ori_group_name) in flowkeys_chunkidx:  # sanity check
                 # flow starts from this chunk
-                if flowkeys_chunkidx[str(group_name)][0] == chunk_id:
-                    attr_per_row += fields["startFromThisChunk"].normalize(1.0)
-                    num_flows_startFromThisChunk += 1
+                if flowkeys_chunkidx[str(ori_group_name)][0] == chunk_id:
+                    # attr_per_row += list(
+                    # fields_dict["startFromThisChunk"].normalize(1.0))
+                    attr_per_row += [0.0, 1.0]
+                    # num_flows_startFromThisChunk += 1
 
-                    for i in range(num_chunks):
-                        if i in flowkeys_chunkidx[str(group_name)]:
-                            attr_per_row += fields["chunk_{}".format(
-                                i)].normalize(1.0)
+                    for i in range(config["n_chunks"]):
+                        if i in flowkeys_chunkidx[str(ori_group_name)]:
+                            # attr_per_row += list(fields_dict["chunk_{}".format(
+                            #     i)].normalize(1.0))
+                            attr_per_row += [0.0, 1.0]
                         else:
-                            attr_per_row += fields["chunk_{}".format(
-                                i)].normalize(0.0)
+                            # attr_per_row += list(fields_dict["chunk_{}".format(
+                            #     i)].normalize(0.0))
+                            attr_per_row += [1.0, 0.0]
 
                 # flow does not start from this chunk
                 else:
-                    attr_per_row += fields["startFromThisChunk"].normalize(0.0)
+                    # attr_per_row += list(
+                    #     fields_dict["startFromThisChunk"].normalize(0.0))
+                    attr_per_row += [1.0, 0.0]
                     if split_name == "multichunk_dep_v1":
-                        for i in range(num_chunks):
-                            attr_per_row += fields["chunk_{}".format(
-                                i)].normalize(0.0)
+                        for i in range(config["n_chunks"]):
+                            # attr_per_row += list(fields_dict["chunk_{}".format(
+                            #     i)].normalize(0.0))
+                            attr_per_row += [1.0, 0.0]
 
                     elif split_name == "multichunk_dep_v2":
-                        for i in range(num_chunks):
-                            if i in flowkeys_chunkidx[str(group_name)]:
-                                attr_per_row += fields["chunk_{}".format(
-                                    i)].normalize(1.0)
+                        for i in range(config["n_chunks"]):
+                            if i in flowkeys_chunkidx[str(ori_group_name)]:
+                                # attr_per_row += list(
+                                #     fields_dict["chunk_{}".format(i)].normalize(1.0))
+                                attr_per_row += [0.0, 1.0]
                             else:
-                                attr_per_row += fields["chunk_{}".format(
-                                    i)].normalize(0.0)
-
-        data_attribute.append(attr_per_row)
-
-        # measurement
-        interarrival_per_flow_list = [0.0] + list(np.diff(df_group[time_col]))
-        for row_index, row in df_group.iterrows():
-            timeseries_per_step = []
-
-            # timestamp: raw/interarrival
-            if config["timestamp"] == "interarrival":
-                timeseries_per_step.append(
-                    fields["interarrival_within_flow"].normalize
-                    (interarrival_per_flow_list[row_index]))
-            elif config["timestamp"] == "raw":
-                timeseries_per_step.append(
-                    fields[time_col].normalize(row[time_col]))
-
-            if file_type == "pcap":
-                timeseries_per_step.append(row["pkt_len"])
-                # full IP header
-                if config["full_IP_header"]:
-                    for field in ["tos", "id", "flag", "off", "ttl"]:
-                        if isinstance(fields[field], DiscreteField):
-                            timeseries_per_step += \
-                                fields[field].normalize(row[field])
-                        else:
-                            timeseries_per_step.append(row[field])
-            elif file_type == "netflow":
-                timeseries_per_step += [row["td"], row["pkt"], row["byt"]]
-                for field in ['label', 'type']:
-                    if field in df_per_chunk.columns:
-                        timeseries_per_step += fields[field].normalize(
-                            row[field])
-            elif file_type == "zeeklog":
-
-                # continuous fields
-                for field in ["duration", "orig_bytes", "resp_bytes", "missed_bytes",
-                              "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes"]:
-                    timeseries_per_step.append(row[field])
-
-                # discrete fields
-                for field in ["service", "conn_state"]:
-                    timeseries_per_step += fields[field].normalize(row[field])
-
-            feature_per_row.append(timeseries_per_step)
-            data_gen_flag_per_row.append(1.0)
-
-        data_feature.append(feature_per_row)
-        data_gen_flag.append(data_gen_flag_per_row)
+                                # attr_per_row += list(
+                                #     fields_dict["chunk_{}".format(i)].normalize(0.0))
+                                attr_per_row += [1.0, 0.0]
+                flow_tags.append(attr_per_row)
+            else:
+                raise ValueError(
+                    f"{ori_group_name} not found in the raw file!")
+    if config["n_chunks"] > 1:
+        data_attribute = np.concatenate(
+            (data_attribute, np.array(flow_tags)), axis=1)
+    if config["timestamp"]["generation"] and \
+            config["timestamp"]["encoding"] == "interarrival":
+        data_attribute = np.concatenate(
+            (data_attribute, np.array(flow_start_list).reshape(-1, 1)), axis=1)
 
     data_attribute = np.asarray(data_attribute)
     data_feature = np.asarray(data_feature)
     data_gen_flag = np.asarray(data_gen_flag)
-
     print("data_attribute: {}, {}GB in memory".format(
         np.shape(data_attribute),
-        data_attribute.size * data_attribute.itemsize / 1024 / 1024 / 1024))
+        data_attribute.size * data_attribute.itemsize / (10**9)))
     print("data_feature: {}, {}GB in memory".format(
         np.shape(data_feature),
-        data_feature.size * data_feature.itemsize / 1024 / 1024 / 1024))
+        data_feature.size * data_feature.itemsize / (10**9)))
     print("data_gen_flag: {}, {}GB in memory".format(
         np.shape(data_gen_flag),
-        data_gen_flag.size * data_gen_flag.itemsize / 1024 / 1024 / 1024))
+        data_gen_flag.size * data_gen_flag.itemsize / (10**9)))
 
-    data_attribute_output = []
-    data_feature_output = []
+    # Write files
+    os.makedirs(data_out_dir, exist_ok=True)
+    df_per_chunk.to_csv(os.path.join(data_out_dir, "raw.csv"), index=False)
 
-    if encode_IP == 'word2vec':
-        for flow_key in ["srcip", "dstip"]:
-            for i in range(word2vec_vecSize):
-                data_attribute_output.append(
-                    fields["{}_{}".format(flow_key, i)].getOutputType())
-    elif encode_IP == 'bit':
-        data_attribute_output += fields["srcip"].getOutputType()
-        data_attribute_output += fields["dstip"].getOutputType()
-    for flow_key in ["srcport", "dstport", "proto"]:
-        for i in range(word2vec_vecSize):
-            data_attribute_output.append(
-                fields["{}_{}".format(flow_key, i)].getOutputType())
+    num_rows = data_attribute.shape[0]
+    os.makedirs(os.path.join(
+        data_out_dir, "data_train_npz"), exist_ok=True)
+    gt_lengths = []
+    for row_id in range(num_rows):
+        gt_lengths.append(sum(data_gen_flag[row_id]))
+        np.savez(os.path.join(
+            data_out_dir,
+            "data_train_npz", f"data_train_{row_id}.npz"),
+            data_feature=data_feature[row_id],
+            data_attribute=data_attribute[row_id],
+            data_gen_flag=data_gen_flag[row_id],
+            global_max_flow_len=[global_max_flow_len],
+        )
+    np.save(os.path.join(data_out_dir, "gt_lengths"), gt_lengths)
 
-    if config["timestamp"] == "interarrival":
-        data_attribute_output.append(fields["flow_start"].getOutputType())
-
-    if "multichunk_dep" in split_name:
-        data_attribute_output.append(
-            fields["startFromThisChunk"].getOutputType())
-        for i in range(num_chunks):
-            data_attribute_output.append(
-                fields["chunk_{}".format(i)].getOutputType())
-
-    if config["timestamp"] == "interarrival":
-        field_list = ["interarrival_within_flow"]
-    elif config["timestamp"] == "raw":
-        field_list = [time_col]
-
-    if file_type == "pcap":
-        if config["full_IP_header"]:
-            field_list += ["pkt_len", "tos", "id", "flag", "off", "ttl"]
-        else:
-            field_list += ["pkt_len"]
-
-    elif file_type == "netflow":
-        field_list += ["td", "pkt", "byt"]
-        for field in ['label', 'type']:
-            if field in df_per_chunk.columns:
-                field_list.append(field)
-
-    elif file_type == "zeeklog":
-        field_list += ["duration", "orig_bytes", "resp_bytes", "missed_bytes",
-                       "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes",
-                       "service", "conn_state"]
-
-    for field in field_list:
-        field_output = fields[field].getOutputType()
-        if isinstance(field_output, list):
-            data_feature_output += field_output
-        else:
-            data_feature_output.append(field_output)
-
-    print("data_attribute_output:", len(data_attribute_output))
-    print("data_feature_output:", len(data_feature_output))
-
-    return data_attribute, data_feature, data_gen_flag, \
-        data_attribute_output, data_feature_output, fields
+    with open(os.path.join(
+            data_out_dir, 'data_attribute_output.pkl'), 'wb') as f:
+        data_attribute_output = []
+        for v in metadata_fields:
+            if isinstance(v, BitField):
+                data_attribute_output += v.getOutputType()
+            else:
+                data_attribute_output.append(v.getOutputType())
+        pickle.dump(data_attribute_output, f)
+    with open(os.path.join(
+            data_out_dir, 'data_feature_output.pkl'), 'wb') as f:
+        data_feature_output = []
+        for v in timeseries_fields:
+            if isinstance(v, BitField):
+                data_feature_output += v.getOutputType()
+            else:
+                data_feature_output.append(v.getOutputType())
+        pickle.dump(data_feature_output, f)
+    with open(os.path.join(
+            data_out_dir, 'data_attribute_fields.pkl'), 'wb') as f:
+        pickle.dump(metadata_fields, f)
+    with open(os.path.join(
+            data_out_dir, 'data_feature_fields.pkl'), 'wb') as f:
+        pickle.dump(timeseries_fields, f)

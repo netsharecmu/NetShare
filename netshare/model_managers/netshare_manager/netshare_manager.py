@@ -18,7 +18,6 @@ class NetShareManager(ModelManager):
 
         configs = _load_config(
             config_dict={
-                **self._global_config,
                 **self._config,
                 **model_config},
             input_train_data_folder=input_train_data_folder,
@@ -48,7 +47,6 @@ class NetShareManager(ModelManager):
                   output_syn_data_folder, log_folder, create_new_model, model_config):
         configs = _load_config(
             config_dict={
-                **self._global_config,
                 **self._config,
                 **model_config},
             input_train_data_folder=input_train_data_folder,
