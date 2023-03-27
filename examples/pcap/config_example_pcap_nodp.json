@@ -1,9 +1,0 @@
-{
-    "global_config": {
-        "original_data_file": "../traces/caida/raw.pcap",
-        "dataset_type": "pcap",
-        "n_chunks": 10,
-        "dp": false
-    },
-    "default": "pcap.json"
-}
