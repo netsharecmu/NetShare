@@ -31,7 +31,7 @@
         }
     },
     "model": {
-        "class": "DoppelGANgerTFModel",
+        "class": "DoppelGANgerTorchModel",
         "config": {
             "batch_size": 100,
             "sample_len": [
@@ -80,7 +80,8 @@
             "extra_checkpoint_freq": 20000,
             "epoch_checkpoint_freq": 1000,
             "dp_noise_multiplier": null,
-            "dp_l2_norm_clip": null
+            "dp_l2_norm_clip": null,
+            "use_adaptive_rolling": false
         }
     }
 }

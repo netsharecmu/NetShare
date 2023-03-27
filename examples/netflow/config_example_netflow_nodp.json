@@ -95,11 +95,11 @@
         }
     },
     "model": {
-        "class": "DoppelGANgerTFModel",
+        "class": "DoppelGANgerTorchModel",
         "config": {
             "batch_size": 100,
             "sample_len": [
-                10
+                1
             ],
             "sample_len_expand": true,
             "iteration": 4,
