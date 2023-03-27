@@ -19,6 +19,8 @@ setup(
     packages=find_packages(),
     install_requires=[
         "torch",
+        "tensorboard",
+        "opacus",
         "tqdm",
         "matplotlib",
         "pandas",
