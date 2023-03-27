@@ -36,7 +36,9 @@ class DoppelGANgerTorchModel(Model):
             data_gen_flag,
             data_feature_outputs,
             data_attribute_outputs,
-        ) = load_data(self._config["dataset"])
+        ) = load_data(
+            path=self._config["dataset"],
+            sample_len=self._config["sample_len"])
         num_real_attribute = len(data_attribute_outputs)
 
         # self-norm if applicable
