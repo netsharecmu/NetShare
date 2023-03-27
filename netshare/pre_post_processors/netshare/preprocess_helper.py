@@ -91,8 +91,9 @@ def df2chunks(big_raw_df,
               n_chunks=10,
               eps=1e-5):
 
-    if n_chunks > 1 and \
-            ((not config_timestamp["column"]) or (not config_timestamp["generation"])):
+    if n_chunks > 1 and (
+        (not config_timestamp["column"]) or (
+            not config_timestamp["generation"])):
         raise ValueError(
             "Trying to split into multiple chunks by timestamp but no timestamp is provided!")
 
@@ -151,8 +152,8 @@ def apply_per_field(
         field_instance = field_instances[i]
         # Bit Field: (integer)
         if 'bit' in getattr(field, 'encoding', ''):
-            this_df = original_df.apply(
-                lambda row: field_instance.normalize(row[field.column]), axis='columns', result_type='expand')
+            this_df = original_df.apply(lambda row: field_instance.normalize(
+                row[field.column]), axis='columns', result_type='expand')
             this_df.columns = [
                 f'{field.column}_{i}' for i in range(this_df.shape[1])]
             new_field_list += list(this_df.columns)
@@ -282,8 +283,8 @@ def split_per_chunk(
             raise ValueError("Timestamp encoding can be only \
             `interarrival` or 'raw")
 
-    print("new_metadata_list:", new_metadata_list)
-    print("new_timeseries_list:", new_timeseries_list)
+    # print("new_metadata_list:", new_metadata_list)
+    # print("new_timeseries_list:", new_timeseries_list)
 
     gk = df_per_chunk.groupby(new_metadata_list)
     data_attribute = np.array(list(gk.groups.keys()))
@@ -295,7 +296,7 @@ def split_per_chunk(
         # RESET INDEX TO MAKE IT START FROM ZERO
         df_group = df_group.reset_index(drop=True)
         data_feature.append(df_group[new_timeseries_list].to_numpy())
-        data_gen_flag.append([1.0] * len(df_group))
+        data_gen_flag.append(np.ones((len(df_group),), dtype=float) * 1.0)
 
         attr_per_row = []
         if config["n_chunks"] > 1:
@@ -359,8 +360,17 @@ def split_per_chunk(
             (data_attribute, np.array(flow_start_list).reshape(-1, 1)), axis=1)
 
     data_attribute = np.asarray(data_attribute)
-    data_feature = np.asarray(data_feature)
-    data_gen_flag = np.asarray(data_gen_flag)
+    data_feature = np.stack(
+        [np.pad(
+            arr,
+            ((0, global_max_flow_len - arr.shape[0]), (0, 0)),
+            mode='constant',
+            constant_values=0) for arr in data_feature])
+    data_gen_flag = np.stack([np.pad(
+        arr,
+        ((0, global_max_flow_len - arr.shape[0])),
+        mode='constant',
+        constant_values=0) for arr in data_gen_flag])
     print("data_attribute: {}, {}GB in memory".format(
         np.shape(data_attribute),
         data_attribute.size * data_attribute.itemsize / (10**9)))

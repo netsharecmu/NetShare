@@ -4,7 +4,7 @@ from netshare import Generator
 
 if __name__ == '__main__':
     # Change to False if you would not like to use Ray
-    ray.config.enabled = True
+    ray.config.enabled = False
     ray.init(address="auto")
 
     # configuration file
@@ -15,7 +15,7 @@ if __name__ == '__main__':
     # if you are using Ray with multi-machine setup
     # since Ray has bugs when dealing with relative paths.
     # generator.train_and_generate(
-        # work_folder=f'../results/test-ugr16-{random.randint(0, 1000000)}')
+    # work_folder=f'../results/test-ugr16-{random.randint(0, 1000000)}')
     generator.train(work_folder=f'../results/test-ugr16')
 
     ray.shutdown()
