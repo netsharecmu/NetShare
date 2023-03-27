@@ -15,11 +15,10 @@ setup(
     author_email="yyin4@andrew.cmu.edu",
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     packages=find_packages(),
     install_requires=[
-        "tensorflow==1.15",
-        "tensorflow-privacy==0.5.0",
+        "torch",
         "tqdm",
         "matplotlib",
         "pandas",
@@ -40,16 +39,15 @@ setup(
         "multiprocess",
         "addict",
         "config_io==0.4.0",
-        "flask"
+        "flask",
     ],  # add any additional packages that
     # needs to be installed along with your package. Eg: 'caer'
-
-    keywords=['python', 'netshare'],
+    keywords=["python", "netshare"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Education",
         "Programming Language :: Python :: 3.6",
         "Operating System :: MacOS :: MacOS X",
-        "Operating System :: Microsoft :: Windows",
-    ]
+        "Operating System :: POSIX :: Linux"
+    ],
 )
