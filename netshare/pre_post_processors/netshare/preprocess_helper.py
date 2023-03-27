@@ -384,22 +384,12 @@ def split_per_chunk(
     # Write files
     os.makedirs(data_out_dir, exist_ok=True)
     df_per_chunk.to_csv(os.path.join(data_out_dir, "raw.csv"), index=False)
-
-    num_rows = data_attribute.shape[0]
-    os.makedirs(os.path.join(
-        data_out_dir, "data_train_npz"), exist_ok=True)
-    gt_lengths = []
-    for row_id in range(num_rows):
-        gt_lengths.append(sum(data_gen_flag[row_id]))
-        np.savez(os.path.join(
-            data_out_dir,
-            "data_train_npz", f"data_train_{row_id}.npz"),
-            data_feature=data_feature[row_id],
-            data_attribute=data_attribute[row_id],
-            data_gen_flag=data_gen_flag[row_id],
-            global_max_flow_len=[global_max_flow_len],
-        )
-    np.save(os.path.join(data_out_dir, "gt_lengths"), gt_lengths)
+    np.savez(
+        os.path.join(data_out_dir, "data_train.npz"),
+        data_attribute=data_attribute,
+        data_feature=data_feature,
+        data_gen_flag=data_gen_flag
+    )
 
     with open(os.path.join(
             data_out_dir, 'data_attribute_output.pkl'), 'wb') as f:
