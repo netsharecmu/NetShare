@@ -92,7 +92,7 @@ class DoppelGANgerTorchModel(Model):
         )
 
         dg.train(
-            epochs=10,
+            epochs=self._config["epochs"],
             data_feature=data_feature,
             data_attribute=data_attribute,
             data_gen_flag=data_gen_flag,

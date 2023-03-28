@@ -102,9 +102,9 @@
                 5
             ],
             "sample_len_expand": true,
-            "iteration": 4,
+            "epochs": 10,
             "extra_checkpoint_freq": 1,
-            "epoch_checkpoint_freq": 1
+            "epoch_checkpoint_freq": 2
         }
     }
 }
