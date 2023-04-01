@@ -59,18 +59,19 @@ class NetShareManager(ModelManager):
             output_syn_data_folder=output_syn_data_folder
         )
 
-        print("Start generating attributes ...")
-        objs = []
-        for config_idx, config in enumerate(configs):
-            objs.append(
-                _generate_attr.remote(
-                    create_new_model=create_new_model,
-                    configs=configs,
-                    config_idx=config_idx,
-                    log_folder=log_folder))
-        _ = ray.get(objs)
-        time.sleep(10)
-        print("Finish generating attributes")
+        # print("Start generating attributes ...")
+        # objs = []
+        # for config_idx, config in enumerate(configs):
+        #     objs.append(
+        #         _generate_attr.remote(
+        #             create_new_model=create_new_model,
+        #             configs=configs,
+        #             config_idx=config_idx,
+        #             log_folder=log_folder))
+        # _ = ray.get(objs)
+        # time.sleep(10)
+        # print("Finish generating attributes")
+
         # print("Start merging attributes ...")
         # objs = []
         # for config_group in config_group_list:
