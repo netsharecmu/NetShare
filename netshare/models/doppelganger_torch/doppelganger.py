@@ -61,6 +61,9 @@ class DoppelGANger(object):
         # Please ignore these params if use_attr_discriminator = False
         attr_discriminator_num_layers=5,
         attr_discriminator_num_units=200,
+        # Pretrain-related
+        restore=False,
+        pretrain_dir=None
     ):
 
         self.checkpoint_dir = checkpoint_dir
@@ -102,6 +105,9 @@ class DoppelGANger(object):
 
         self.attr_discriminator_num_layers = attr_discriminator_num_layers
         self.attr_discriminator_num_units = attr_discriminator_num_units
+
+        self.restore = restore
+        self.pretrain_dir = pretrain_dir
 
         self.EPS = 1e-8
 
@@ -416,6 +422,17 @@ class DoppelGANger(object):
         return attr_dis_gp
 
     def _train(self, dataset):
+        if self.restore and self.pretrain_dir is None:
+            raise ValueError("restore=True but no pretrain_dir is set!")
+        if self.restore:
+            if self.pretrain_dir is None:
+                raise ValueError("restore=True but no pretrain_dir is set!")
+            if not os.path.exists(self.pretrain_dir):
+                raise ValueError(
+                    f"Model path {self.pretrain_dir} does not exist!")
+            print(f"Load pre-trained model from {self.pretrain_dir}...")
+            self.load(self.pretrain_dir)
+
         self.generator.train()
         self.discriminator.train()
         if self.use_attr_discriminator:
