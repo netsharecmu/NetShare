@@ -139,29 +139,29 @@ def _configs2configsgroup(
                     if chunk_id == 0:
                         chunk0_idx = config_id
                         configs[config_id]["restore"] = False
-                        iteration_range = list(
+                        epoch_range = list(
                             range(
-                                configs[config_id]["extra_checkpoint_freq"]-1,
-                                configs[config_id]["iteration"],
-                                configs[config_id]["extra_checkpoint_freq"]))
-                        iteration_range.reverse()
+                                configs[config_id]["epoch_checkpoint_freq"]-1,
+                                configs[config_id]["epochs"],
+                                configs[config_id]["epoch_checkpoint_freq"]))
+                        epoch_range.reverse()
 
                         pretrain_dir = None
                         # use last available ckpt
                         if configs[config_id]["skip_chunk0_train"]:
-                            last_iteration_found = False
-                            for iteration_id in iteration_range:
-                                if last_iteration_found:
+                            last_epoch_found = False
+                            for epoch_id in epoch_range:
+                                if last_epoch_found:
                                     break
                                 ckpt_dir = os.path.join(
                                     configs[config_id]["result_folder"],
                                     "checkpoint",
-                                    "iteration_id-{}".format(iteration_id)
+                                    "epoch_id-{}".format(epoch_id)
                                 )
                                 if os.path.exists(ckpt_dir):
-                                    last_iteration_found = True
+                                    last_epoch_found = True
 
-                            if not last_iteration_found:
+                            if not last_epoch_found:
                                 raise ValueError(
                                     "Skipping chunk0 training but "
                                     "chunk0 has no available ckpt at {}! "
@@ -185,8 +185,8 @@ def _configs2configsgroup(
                             pretrain_dir = os.path.join(
                                 configs[config_id]["result_folder"],
                                 "checkpoint",
-                                "iteration_id-{}".format(
-                                    configs[config_id]["iteration"]-1)
+                                "epoch_id-{}.pt".format(
+                                    epoch_range[0])
                             )
 
                         configs[config_id]["pretrain_dir"] = pretrain_dir
@@ -194,8 +194,8 @@ def _configs2configsgroup(
                     else:
                         configs[config_id]["restore"] = True
                         configs[config_id]["pretrain_dir"] = pretrain_dir
-                        configs[config_id]["iteration"] = int(
-                            configs[config_id]["iteration"] /
+                        configs[config_id]["epochs"] = int(
+                            configs[config_id]["epochs"] /
                             configs[config_id]["pretrain_non_dp_reduce_time"])
 
             else:

@@ -18,7 +18,6 @@ except BaseException:
 
 
 class DoppelGANger(object):
-    # Hasn't included num_packing and dp
     def __init__(
         self,
         # General training related parameters
@@ -108,7 +107,8 @@ class DoppelGANger(object):
 
         self.MODEL_NAME = "model"
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu")
 
         if self.max_sequence_len % self.sample_len != 0:
             raise Exception("length must be a multiple of sample_len")
@@ -118,7 +118,8 @@ class DoppelGANger(object):
         self.is_build = False
 
         self.feature_dim = np.sum([t.dim for t in self.data_feature_outputs])
-        self.attribute_dim = np.sum([t.dim for t in self.data_attribute_outputs])
+        self.attribute_dim = np.sum(
+            [t.dim for t in self.data_attribute_outputs])
         self._build()
 
     def check_data(self):
@@ -138,7 +139,8 @@ class DoppelGANger(object):
         if self.data_feature.shape[2] != np.sum(
             [t.dim for t in self.data_feature_outputs]
         ):
-            raise Exception("feature dimension does not match data_feature_outputs")
+            raise Exception(
+                "feature dimension does not match data_feature_outputs")
 
         if len(self.data_gen_flag.shape) != 2:
             raise Exception("data_gen_flag should be 2 dimension")
@@ -180,22 +182,22 @@ class DoppelGANger(object):
 
         generated_data_list = []
         for n_batch in range(num_batches):
-            real_attribute_noise = self._gen_attribute_input_noise(self.batch_size).to(
-                self.device
-            )
-            addi_attribute_noise = self._gen_attribute_input_noise(self.batch_size).to(
-                self.device
-            )
+            real_attribute_noise = self._gen_attribute_input_noise(
+                self.batch_size).to(
+                self.device)
+            addi_attribute_noise = self._gen_attribute_input_noise(
+                self.batch_size).to(
+                self.device)
             feature_input_noise = self._gen_feature_input_noise(
                 self.batch_size, self.sample_time
             ).to(self.device)
 
             if given_attribute is not None and given_attribute is not None:
                 batch_given_attribute = given_attribute[
-                    n_batch * self.batch_size : (n_batch + 1) * self.batch_size
+                    n_batch * self.batch_size: (n_batch + 1) * self.batch_size
                 ]
                 batch_given_attribute_discrete = given_attribute_discrete[
-                    n_batch * self.batch_size : (n_batch + 1) * self.batch_size
+                    n_batch * self.batch_size: (n_batch + 1) * self.batch_size
                 ]
             else:
                 batch_given_attribute = None
@@ -275,7 +277,8 @@ class DoppelGANger(object):
             )
 
         if "generator_optimizer_state_dict" in state:
-            self.opt_generator.load_state_dict(state["generator_optimizer_state_dict"])
+            self.opt_generator.load_state_dict(
+                state["generator_optimizer_state_dict"])
             self.opt_discriminator.load_state_dict(
                 state["discriminator_optimizer_state_dict"]
             )
@@ -346,7 +349,9 @@ class DoppelGANger(object):
         self.is_build = True
 
     def _gen_attribute_input_noise(self, batch_size):
-        return torch.randn(size=[int(batch_size), int(self.attribute_latent_dim)])
+        return torch.randn(
+            size=[int(batch_size),
+                  int(self.attribute_latent_dim)])
 
     def _gen_feature_input_noise(self, batch_size, length):
         return torch.randn(
@@ -354,10 +359,12 @@ class DoppelGANger(object):
         )
 
     def _calculate_gp_dis(
-        self, batch_size, fake_feature, real_feature, fake_attribute, real_attribute
-    ):
+            self, batch_size, fake_feature, real_feature, fake_attribute,
+            real_attribute):
 
-        alpha_dim2 = torch.FloatTensor(batch_size, 1).uniform_(1).to(self.device)
+        alpha_dim2 = torch.FloatTensor(
+            batch_size, 1).uniform_(1).to(
+            self.device)
         alpha_dim3 = torch.unsqueeze(alpha_dim2, 2).to(self.device)
         differences_input_feature = fake_feature - real_feature
         interpolates_input_feature = (
@@ -384,8 +391,11 @@ class DoppelGANger(object):
 
         return dis_loss_gp
 
-    def _calculate_gp_attr_dis(self, batch_size, fake_attribute, real_attribute):
-        alpha_dim2 = torch.FloatTensor(batch_size, 1).uniform_(1).to(self.device)
+    def _calculate_gp_attr_dis(
+            self, batch_size, fake_attribute, real_attribute):
+        alpha_dim2 = torch.FloatTensor(
+            batch_size, 1).uniform_(1).to(
+            self.device)
         differences_input_attribute = fake_attribute - real_attribute
         interpolates_input_attribute = real_attribute + (
             alpha_dim2 * differences_input_attribute
@@ -472,7 +482,8 @@ class DoppelGANger(object):
                         fake_attribute_list.append(fake_attribute)
                         fake_feature_list.append(fake_feature)
 
-                    packed_fake_attribute = torch.cat(fake_attribute_list, dim=1)
+                    packed_fake_attribute = torch.cat(
+                        fake_attribute_list, dim=1)
                     packed_fake_feature = torch.cat(fake_feature_list, dim=1)
 
                     num_attrs = real_attribute.size()[1]
@@ -522,8 +533,10 @@ class DoppelGANger(object):
                     loss_dict["d_loss"] = dis_loss
 
                     if self.use_attr_discriminator:
-                        attr_dis_real = self.attr_discriminator(packed_real_attribute)
-                        attr_dis_fake = self.attr_discriminator(packed_fake_attribute)
+                        attr_dis_real = self.attr_discriminator(
+                            packed_real_attribute)
+                        attr_dis_fake = self.attr_discriminator(
+                            packed_fake_attribute)
 
                         attr_dis_loss_fake = torch.mean(attr_dis_fake)
                         attr_dis_loss_real = -torch.mean(attr_dis_real)
@@ -560,7 +573,8 @@ class DoppelGANger(object):
                     )
                     gen_loss_dis = -torch.mean(dis_fake)
                     if self.use_attr_discriminator:
-                        attr_dis_fake = self.attr_discriminator(packed_fake_attribute)
+                        attr_dis_fake = self.attr_discriminator(
+                            packed_fake_attribute)
                         gen_loss_attr_dis = -torch.mean(attr_dis_fake)
                         gen_loss = gen_loss_dis + self.g_attr_d_coe * gen_loss_attr_dis
                     else:
@@ -580,7 +594,8 @@ class DoppelGANger(object):
                 iteration += 1
 
             if (epoch + 1) % self.epoch_checkpoint_freq == 0:
-                ckpt_path = os.path.join(self.checkpoint_dir, f"epoch-{epoch}.pt")
+                ckpt_path = os.path.join(
+                    self.checkpoint_dir, f"epoch_id-{epoch}.pt")
                 self.save(ckpt_path)
 
             with open(self.time_path, "a") as f:
@@ -610,7 +625,8 @@ class DoppelGANger(object):
                 )
         else:
             given_attribute = torch.from_numpy(given_attribute)
-            given_attribute_discrete = torch.from_numpy(given_attribute_discrete)
+            given_attribute_discrete = torch.from_numpy(
+                given_attribute_discrete)
             with torch.no_grad():
                 attribute, attribute_discrete, feature = self.generator(
                     real_attribute_noise=real_attribute_noise,
@@ -630,8 +646,12 @@ class DoppelGANger(object):
             )
         self.writer.add_scalar("loss/g", loss_dict["g_loss"], iteration)
 
-        self.writer.add_scalar("loss/d/fake", loss_dict["d_loss_fake"], iteration)
-        self.writer.add_scalar("loss/d/real", loss_dict["d_loss_real"], iteration)
+        self.writer.add_scalar(
+            "loss/d/fake", loss_dict["d_loss_fake"],
+            iteration)
+        self.writer.add_scalar(
+            "loss/d/real", loss_dict["d_loss_real"],
+            iteration)
         self.writer.add_scalar("loss/d/gp", loss_dict["d_loss_gp"], iteration)
         self.writer.add_scalar("loss/d", loss_dict["d_loss"], iteration)
 
@@ -645,4 +665,6 @@ class DoppelGANger(object):
             self.writer.add_scalar(
                 "loss/attr_d/gp", loss_dict["attr_d_loss_gp"], iteration
             )
-            self.writer.add_scalar("loss/attr_d", loss_dict["attr_d_loss"], iteration)
+            self.writer.add_scalar(
+                "loss/attr_d", loss_dict["attr_d_loss"],
+                iteration)

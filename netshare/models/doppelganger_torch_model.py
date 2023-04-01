@@ -89,6 +89,7 @@ class DoppelGANgerTorchModel(Model):
             attr_d_gp_coe=self._config["attr_d_gp_coe"],
             g_attr_d_coe=self._config["g_attr_d_coe"],
             use_adaptive_rolling=self._config["use_adaptive_rolling"],
+            epoch_checkpoint_freq=self._config["epoch_checkpoint_freq"]
         )
 
         dg.train(

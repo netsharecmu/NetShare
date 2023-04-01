@@ -102,7 +102,7 @@
                 5
             ],
             "sample_len_expand": true,
-            "epochs": 10,
+            "epochs": 17,
             "extra_checkpoint_freq": 1,
             "epoch_checkpoint_freq": 2
         }
