@@ -203,7 +203,7 @@ class DoppelGANgerTorchModel(Model):
         epoch_range = list(
             range(
                 self._config["epoch_checkpoint_freq"] - 1,
-                self._config["epoch"],
+                self._config["epochs"],
                 self._config["epoch_checkpoint_freq"],
             )
         )
@@ -217,7 +217,7 @@ class DoppelGANgerTorchModel(Model):
 
             print("Processing epoch_id: {}".format(epoch_id))
             mid_checkpoint_dir = os.path.join(
-                checkpoint_dir, "epoch_id-{}".format(epoch_id)
+                checkpoint_dir, "epoch_id-{}.pt".format(epoch_id)
             )
             if not os.path.exists(mid_checkpoint_dir):
                 print("Not found {}".format(mid_checkpoint_dir))
