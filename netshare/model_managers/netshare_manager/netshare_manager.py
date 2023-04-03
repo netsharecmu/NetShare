@@ -7,6 +7,7 @@ from .netshare_util import _load_config, _configs2configsgroup
 import netshare.ray as ray
 import os
 import time
+import json
 
 import pandas as pd
 
@@ -27,6 +28,11 @@ class NetShareManager(ModelManager):
             configs=configs,
             generation_flag=False)
         print(config_group_list)
+        with open(os.path.join(output_model_folder, "configs_train.json"), 'w') as f:
+            json.dump({
+                "configs": configs,
+                "config_group_list": config_group_list
+            }, f, indent=4)
 
         objs = []
         for config_group_id, config_group in enumerate(config_group_list):
@@ -58,6 +64,12 @@ class NetShareManager(ModelManager):
             generation_flag=True,
             output_syn_data_folder=output_syn_data_folder
         )
+
+        with open(os.path.join(output_syn_data_folder, "configs_generate.json"), 'w') as f:
+            json.dump({
+                "configs": configs,
+                "config_group_list": config_group_list
+            }, f, indent=4)
 
         print("Start generating attributes ...")
         objs = []
