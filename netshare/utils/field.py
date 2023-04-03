@@ -76,6 +76,7 @@ class DiscreteField(Field):
         if not isinstance(choices, list):
             raise Exception("choices should be a list")
         self.choices = choices
+        self.dim_x = len(choices)
 
     def normalize(self, x):
         if not isinstance(x, (list, np.ndarray)):
@@ -107,6 +108,7 @@ class BitField(Field):
         super(BitField, self).__init__(*args, **kwargs)
 
         self.num_bits = num_bits
+        self.dim_x = num_bits*2  # each bit is a 2-category discrete variable
 
     def normalize(self, decimal_x):
         bin_x = bin(int(decimal_x))[2:].zfill(self.num_bits)

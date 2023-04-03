@@ -6,6 +6,7 @@ import os
 import json
 import importlib
 import random
+import pickle
 import pandas as pd
 import socket
 import struct
@@ -43,14 +44,23 @@ def _generate_attr(
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
 def _merge_attr(
     attr_raw_npz_folder,
-    config_group
+    config_group,
+    configs
 ):
-    if not pcap_interarrival:
-        bit_idx_flagstart = 128 + word2vec_size * 3
-    else:
-        bit_idx_flagstart = 128 + word2vec_size * 3
+    num_chunks = len(config_group["config_ids"])
+    chunk0_idx = config_group["config_ids"][0]
+    chunk0_config = configs[chunk0_idx]
+    print("chunk0 config:", configs[chunk0_idx])
 
-    print("PCAP_INTERARRIVAL:", pcap_interarrival)
+    # Find flow tag starting point
+    with open(os.path.join(chunk0_config["dataset"], "data_attribute_fields.pkl"), 'rb') as f:
+        data_attribute_fields = pickle.load(f)
+    bit_idx_flagstart = 0
+    for field_idx, field in enumerate(data_attribute_fields):
+        if field.name != "startFromThisChunk":
+            bit_idx_flagstart += field.dim_x
+        else:
+            break
     print("bit_idx_flagstart:", bit_idx_flagstart)
 
     attr_clean_npz_folder = os.path.join(

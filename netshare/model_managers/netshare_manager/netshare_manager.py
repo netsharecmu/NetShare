@@ -59,18 +59,18 @@ class NetShareManager(ModelManager):
             output_syn_data_folder=output_syn_data_folder
         )
 
-        # print("Start generating attributes ...")
-        # objs = []
-        # for config_idx, config in enumerate(configs):
-        #     objs.append(
-        #         _generate_attr.remote(
-        #             create_new_model=create_new_model,
-        #             configs=configs,
-        #             config_idx=config_idx,
-        #             log_folder=log_folder))
-        # _ = ray.get(objs)
-        # time.sleep(10)
-        # print("Finish generating attributes")
+        print("Start generating attributes ...")
+        objs = []
+        for config_idx, config in enumerate(configs):
+            objs.append(
+                _generate_attr.remote(
+                    create_new_model=create_new_model,
+                    configs=configs,
+                    config_idx=config_idx,
+                    log_folder=log_folder))
+        _ = ray.get(objs)
+        time.sleep(10)
+        print("Finish generating attributes")
 
         print("Start merging attributes ...")
         objs = []
@@ -82,24 +82,25 @@ class NetShareManager(ModelManager):
                 _merge_attr.remote(
                     attr_raw_npz_folder=os.path.join(
                         eval_root_folder, "attr_raw"),
-                    config_group=config_group)
+                    config_group=config_group,
+                    configs=configs)
             )
         _ = ray.get(objs)
         time.sleep(10)
         print("Finish merging attributes...")
 
-        # print("Start generating features given attributes ...")
-        # objs = []
-        # for config_idx, config in enumerate(configs):
-        #     objs.append(
-        #         _generate_given_attr.remote(
-        #             create_new_model=create_new_model,
-        #             configs=configs,
-        #             config_idx=config_idx,
-        #             log_folder=log_folder))
-        # _ = ray.get(objs)
-        # time.sleep(10)
-        # print("Finish generating features given attributes ...")
+        print("Start generating features given attributes ...")
+        objs = []
+        for config_idx, config in enumerate(configs):
+            objs.append(
+                _generate_given_attr.remote(
+                    create_new_model=create_new_model,
+                    configs=configs,
+                    config_idx=config_idx,
+                    log_folder=log_folder))
+        _ = ray.get(objs)
+        time.sleep(10)
+        print("Finish generating features given attributes ...")
 
         # _merge_syn_df(
         #     configs=configs,
