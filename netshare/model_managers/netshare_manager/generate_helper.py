@@ -41,8 +41,10 @@ def _generate_attr(
 
 
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
-def _merge_attr(attr_raw_npz_folder, word2vec_size,
-                pcap_interarrival, num_chunks):
+def _merge_attr(
+    attr_raw_npz_folder,
+    config_group
+):
     if not pcap_interarrival:
         bit_idx_flagstart = 128 + word2vec_size * 3
     else:
