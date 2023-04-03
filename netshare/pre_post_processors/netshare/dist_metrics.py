@@ -12,7 +12,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
-import tensorflow as tf
 import sys
 import configparser
 import json
@@ -234,7 +233,9 @@ def compute_metrics_netflow_v3(raw_df, syn_df):
     # TV distance for port/protocol
     for metric in ["srcport", "dstport", "proto"]:
         metrics_dict[metric] = compute_port_proto_distance(
-            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=True, type="JSD")
+            raw_df[metric],
+            syn_df[metric],
+            metric, prstr_raw=True, prstr_syn=True, type="JSD")
 
     # ts, td, pkt, byt
     for metric in ["ts", "td", "pkt", "byt"]:
@@ -263,7 +264,9 @@ def compute_metrics_zeeklog_v3(raw_df, syn_df):
     # TV distance for port/protocol
     for metric in ["srcport", "dstport", "proto"]:
         metrics_dict[metric] = compute_port_proto_distance(
-            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=True, type="JSD")
+            raw_df[metric],
+            syn_df[metric],
+            metric, prstr_raw=True, prstr_syn=True, type="JSD")
 
     # ts,duration,orig_bytes,resp_bytes,missed_bytes,orig_pkts,
     # orig_ip_bytes,resp_pkts,resp_ip_bytes
@@ -296,7 +299,9 @@ def compute_metrics_pcap_v3(raw_df, syn_df):
     # TV distance for port/protocol
     for metric in ["srcport", "dstport", "proto"]:
         metrics_dict[metric] = compute_port_proto_distance(
-            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=True, type="JSD")
+            raw_df[metric],
+            syn_df[metric],
+            metric, prstr_raw=True, prstr_syn=True, type="JSD")
 
     # pkt_len
     for metric in ["pkt_len", "time"]:

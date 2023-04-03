@@ -8,7 +8,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
-import tensorflow as tf
 import sys
 import configparser
 import json
@@ -76,7 +75,8 @@ def vals2cdf(vals):
 
 
 # syn_df_dict: {name: dict}
-def plot_cdf(raw_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=False, y_logscale=False):
+def plot_cdf(raw_df, syn_df_dict, xlabel, ylabel, plot_loc, metric,
+             x_logscale=False, y_logscale=False):
     plt.clf()
 
     if metric == "flow_size":
@@ -136,7 +136,8 @@ def get_HH_unordered(df, col_key):
     return [i+1 for i in range(len(HH_density))], list(HH_density.values())
 
 
-def plot_HH(real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=False, y_logscale=False):
+def plot_HH(real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric,
+            x_logscale=False, y_logscale=False):
     plt.clf()
 
     x, y = get_HH_unordered(real_df, metric)
@@ -177,7 +178,8 @@ def get_common_service_port(real_dict, topN=10):
     return topN_service_ports
 
 
-def plot_bar(real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=False, y_logscale=False, data_type="netflow"):
+def plot_bar(real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric,
+             x_logscale=False, y_logscale=False, data_type="netflow"):
     plt.clf()
 
     if metric == "srcport" or metric == "dstport":
@@ -192,10 +194,14 @@ def plot_bar(real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=
     for method, syn_df in syn_df_dict.items():
         if data_type == "netflow":
             real_dict, syn_dict = compute_port_proto_distance(
-                real_df[metric], syn_df[metric], opt=metric, prstr_raw=True, prstr_syn=False, type="freq")
+                real_df[metric],
+                syn_df[metric],
+                opt=metric, prstr_raw=True, prstr_syn=False, type="freq")
         elif data_type == "pcap":
             real_dict, syn_dict = compute_port_proto_distance(
-                real_df[metric], syn_df[metric], opt=metric, prstr_raw=True, prstr_syn=False, type="freq")
+                real_df[metric],
+                syn_df[metric],
+                opt=metric, prstr_raw=True, prstr_syn=False, type="freq")
         else:
             raise ValueError(
                 "Non-valid data type! Must be either netflow or pcap")
@@ -245,7 +251,9 @@ def plot_bar(real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=
     plt.savefig(plot_loc, bbox_inches="tight", dpi=300)
 
 
-def plot_bar_port(real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logscale=False, y_logscale=False, data_type="netflow"):
+def plot_bar_port(
+        real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric,
+        x_logscale=False, y_logscale=False, data_type="netflow"):
     plt.clf()
 
     if metric == "srcport" or metric == "dstport":
@@ -260,10 +268,14 @@ def plot_bar_port(real_df, syn_df_dict, xlabel, ylabel, plot_loc, metric, x_logs
     for method, syn_df in syn_df_dict.items():
         if data_type == "netflow":
             real_dict, syn_dict = compute_port_proto_distance(
-                real_df[metric], syn_df[metric], opt=metric, prstr_raw=True, prstr_syn=False, type="freq")
+                real_df[metric],
+                syn_df[metric],
+                opt=metric, prstr_raw=True, prstr_syn=False, type="freq")
         elif data_type == "pcap":
             real_dict, syn_dict = compute_port_proto_distance(
-                real_df[metric], syn_df[metric], opt=metric, prstr_raw=True, prstr_syn=False, type="freq")
+                real_df[metric],
+                syn_df[metric],
+                opt=metric, prstr_raw=True, prstr_syn=False, type="freq")
         else:
             raise ValueError(
                 "Non-valid data type! Must be either netflow or pcap")
@@ -390,14 +402,18 @@ def compute_IP_rank_distance(real_list, syn_list, type="EMD"):
     if type == "EMD":
         return wasserstein_distance(real_rank_list, syn_rank_list)
     elif type == "JSD":
-        return jsd(real_HH_count.values(), syn_HH_count.values(), type="discrete")
+        return jsd(
+            real_HH_count.values(),
+            syn_HH_count.values(),
+            type="discrete")
     else:
         raise ValueError("Unknown distance metric!")
 
 # type == "freq": return the freq dict
 
 
-def compute_port_proto_distance(real_list, syn_list, opt, prstr_raw=True, prstr_syn=True, type="TV"):
+def compute_port_proto_distance(
+        real_list, syn_list, opt, prstr_raw=True, prstr_syn=True, type="TV"):
     real_list = list(real_list)
     syn_list = list(syn_list)
 
@@ -550,7 +566,9 @@ def compute_metrics_netflow_v2(raw_df, syn_df):
     # TV distance for port/protocol
     for metric in ["srcport", "dstport", "proto"]:
         metrics_dict[metric] = compute_port_proto_distance(
-            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=False, type="JSD")
+            raw_df[metric],
+            syn_df[metric],
+            metric, prstr_raw=True, prstr_syn=False, type="JSD")
 
     # ts, td, pkt, byt
     for metric in ["ts", "td", "pkt", "byt"]:
@@ -573,7 +591,9 @@ def compute_metrics_netflow_v3(raw_df, syn_df):
     # TV distance for port/protocol
     for metric in ["srcport", "dstport", "proto"]:
         metrics_dict[metric] = compute_port_proto_distance(
-            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=True, type="JSD")
+            raw_df[metric],
+            syn_df[metric],
+            metric, prstr_raw=True, prstr_syn=True, type="JSD")
 
     # ts, td, pkt, byt
     for metric in ["ts", "td", "pkt", "byt"]:
@@ -603,7 +623,9 @@ def compute_metrics_pcap_v2(raw_df, syn_df):
     # TV distance for port/protocol
     for metric in ["srcport", "dstport", "proto"]:
         metrics_dict[metric] = compute_port_proto_distance(
-            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=False, type="JSD")
+            raw_df[metric],
+            syn_df[metric],
+            metric, prstr_raw=True, prstr_syn=False, type="JSD")
 
     # pkt_len
     for metric in ["pkt_len", "time"]:
@@ -645,7 +667,9 @@ def compute_metrics_pcap_v3(raw_df, syn_df):
     # TV distance for port/protocol
     for metric in ["srcport", "dstport", "proto"]:
         metrics_dict[metric] = compute_port_proto_distance(
-            raw_df[metric], syn_df[metric], metric, prstr_raw=True, prstr_syn=True, type="JSD")
+            raw_df[metric],
+            syn_df[metric],
+            metric, prstr_raw=True, prstr_syn=True, type="JSD")
 
     # pkt_len
     for metric in ["pkt_len", "time"]:
@@ -782,10 +806,11 @@ def run_netflow_qualitative_plots():
             )
 
         for metric, xlabel in {
-            "srcport": "Top {} service source port number".format(N_TOPK_SERVICE_PORTS),
-            "dstport": "Top {} service destination port number".format(N_TOPK_SERVICE_PORTS),
-            "proto": "IP Protocol"
-        }.items():
+            "srcport": "Top {} service source port number".format(
+                N_TOPK_SERVICE_PORTS),
+            "dstport": "Top {} service destination port number".format(
+                N_TOPK_SERVICE_PORTS),
+                "proto": "IP Protocol"}.items():
             print("metric:", metric)
             plot_bar(
                 real_df=raw_df,
@@ -824,7 +849,8 @@ def run_netflow_qualitative_plots():
             )
 
 
-def run_netflow_qualitative_plots_dashboard(raw_data_path, syn_data_path, plot_dir):
+def run_netflow_qualitative_plots_dashboard(
+        raw_data_path, syn_data_path, plot_dir):
     raw_df = pd.read_csv(raw_data_path)
     os.makedirs(plot_dir, exist_ok=True)
 
@@ -854,10 +880,11 @@ def run_netflow_qualitative_plots_dashboard(raw_data_path, syn_data_path, plot_d
         )
 
     for metric, xlabel in {
-        "srcport": "Top {} service source port number".format(N_TOPK_SERVICE_PORTS),
-        "dstport": "Top {} service destination port number".format(N_TOPK_SERVICE_PORTS),
-        "proto": "IP Protocol"
-    }.items():
+        "srcport": "Top {} service source port number".format(
+            N_TOPK_SERVICE_PORTS),
+        "dstport": "Top {} service destination port number".format(
+            N_TOPK_SERVICE_PORTS),
+            "proto": "IP Protocol"}.items():
         print("metric:", metric)
         plot_bar(
             real_df=raw_df,
@@ -907,7 +934,9 @@ def run_pcap_dist_metrics():
 
         raw_df = pd.read_csv(os.path.join(data_baseDir, dataset, "raw.csv"))
 
-        for method in ["CTGAN-A", "CTGAN-B", "PAC-GAN", "PacketCGAN", "Flow-WGAN", "NetShare"]:
+        for method in [
+            "CTGAN-A", "CTGAN-B", "PAC-GAN", "PacketCGAN", "Flow-WGAN",
+                "NetShare"]:
             meta_metric_dict_pcap[dataset][method] = {}
             for synid in range(3):
                 syn_df_file = os.path.join(
@@ -981,10 +1010,11 @@ def run_pcap_qualitative_plots():
             )
 
         for metric, xlabel in {
-            "srcport": "Top {} service source port number".format(N_TOPK_SERVICE_PORTS),
-            "dstport": "Top {} service destination port number".format(N_TOPK_SERVICE_PORTS),
-            "proto": "IP Protocol"
-        }.items():
+            "srcport": "Top {} service source port number".format(
+                N_TOPK_SERVICE_PORTS),
+            "dstport": "Top {} service destination port number".format(
+                N_TOPK_SERVICE_PORTS),
+                "proto": "IP Protocol"}.items():
             print("metric:", metric)
             plot_bar(
                 real_df=raw_df,
@@ -1021,7 +1051,8 @@ def run_pcap_qualitative_plots():
 # raw_data_path: csv format
 
 
-def run_pcap_qualitative_plots_dashboard(raw_data_path, syn_data_path, plot_dir):
+def run_pcap_qualitative_plots_dashboard(
+        raw_data_path, syn_data_path, plot_dir):
     raw_df = pd.read_csv(raw_data_path)
     os.makedirs(plot_dir, exist_ok=True)
 
@@ -1051,10 +1082,11 @@ def run_pcap_qualitative_plots_dashboard(raw_data_path, syn_data_path, plot_dir)
         )
 
     for metric, xlabel in {
-        "srcport": "Top {} service source port number".format(N_TOPK_SERVICE_PORTS),
-        "dstport": "Top {} service destination port number".format(N_TOPK_SERVICE_PORTS),
-        "proto": "IP Protocol"
-    }.items():
+        "srcport": "Top {} service source port number".format(
+            N_TOPK_SERVICE_PORTS),
+        "dstport": "Top {} service destination port number".format(
+            N_TOPK_SERVICE_PORTS),
+            "proto": "IP Protocol"}.items():
         print("metric:", metric)
         plot_bar(
             real_df=raw_df,
@@ -1092,7 +1124,9 @@ def run_pcap_qualitative_plots_dashboard(raw_data_path, syn_data_path, plot_dir)
 def run_netflow_dist_metrics_privacy():
     for dataset in ["ugr16"]:
         raw_df = pd.read_csv("../data/1M/{}/raw.csv".format(dataset))
-        for filename in ["syn_df_dpnaive.csv", "syn_df_dp_public_diff.csv",     "syn_df_dp_public_same.csv"]:
+        for filename in [
+            "syn_df_dpnaive.csv", "syn_df_dp_public_diff.csv",
+                "syn_df_dp_public_same.csv"]:
             fidelity_list = []
 
             # for dp_multi in [0.01, 0.1, 0.5, 1.0, 2.0, 3.0, 4.0]:
@@ -1118,7 +1152,9 @@ def run_netflow_dist_metrics_privacy():
 def run_pcap_dist_metrics_privacy():
     for dataset in ["caida"]:
         raw_df = pd.read_csv("../data/1M/{}/raw.csv".format(dataset))
-        for filename in ["syn_df_dpnaive.csv", "syn_df_dp_public_diff.csv",     "syn_df_dp_public_same.csv"]:
+        for filename in [
+            "syn_df_dpnaive.csv", "syn_df_dp_public_diff.csv",
+                "syn_df_dp_public_same.csv"]:
             fidelity_list = []
 
             # for dp_multi in [0.01, 0.1, 0.5, 1.0, 2.0, 3.0, 4.0]:
@@ -1243,7 +1279,8 @@ def run_caida_flowsize():
         raw_df = pd.read_csv(os.path.join(data_baseDir, dataset, "raw.csv"))
 
         syn_df_dict = {}
-        for method in ["CTGAN-B", "PAC-GAN", "PacketCGAN", "Flow-WGAN", "NetShare"]:
+        for method in [
+                "CTGAN-B", "PAC-GAN", "PacketCGAN", "Flow-WGAN", "NetShare"]:
             syn_df = pd.read_csv(os.path.join(
                 data_baseDir, dataset, method, "syn1.csv".format(method)))
             syn_df_dict[method] = syn_df

@@ -365,6 +365,8 @@ class DoppelGANgerGenerator(torch.nn.Module):
             -1, feature_input_noise.shape[1], -1
         ).detach()
         feature_input = torch.cat((feature_input_, feature_input_noise), dim=2)
+        print(
+            f"attrbute_: {attribute_.dtype}, feature_input_: {feature_input_.dtype}, feature_input: {feature_input_.dtype}")
 
         ##########
         if self.use_adaptive_rolling:
@@ -404,6 +406,9 @@ class DoppelGANgerGenerator(torch.nn.Module):
             feature.append(torch.cat((_zeros, _ones), 2))
             feature = torch.cat(feature, dim=1)
         else:
+            print(feature_input.shape, feature_input.dtype)
+            print(h0.shape, h0.dtype)
+            print(c0.shape, c0.dtype)
             feature_rnn_output_tmp, _ = self.lstm_module(
                 feature_input, (h0, c0)
             )
