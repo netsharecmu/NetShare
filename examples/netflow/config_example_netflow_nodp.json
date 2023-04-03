@@ -99,7 +99,9 @@
         "config": {
             "batch_size": 100,
             "sample_len": [
-                1
+                1,
+                5,
+                10
             ],
             "sample_len_expand": true,
             "epochs": 17,
