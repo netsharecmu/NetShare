@@ -5,6 +5,7 @@ import datetime
 import numpy as np
 from tqdm import tqdm
 from .network import DoppelGANgerGenerator, Discriminator, AttrDiscriminator
+from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.tensorboard import SummaryWriter
 
@@ -177,7 +178,6 @@ class DoppelGANger(object):
         given_attribute_discrete=None,
         return_gen_flag_feature=False,
     ):
-
         if self.is_build == False:
             raise Exception("model has not been trained")
 
@@ -186,18 +186,26 @@ class DoppelGANger(object):
         if num_samples % self.batch_size != 0:
             num_batches += 1
 
+        real_attribute_noise = self._gen_attribute_input_noise(num_samples).to(
+            self.device
+        )
+        addi_attribute_noise = self._gen_attribute_input_noise(num_samples).to(
+            self.device
+        )
+        feature_input_noise = self._gen_feature_input_noise(
+            num_samples, self.sample_time
+        ).to(self.device)
+        h0 = Variable(
+            torch.normal(
+                0, 1, (self.generator.feature_num_layers, num_samples, self.generator.feature_num_units)
+            )).to(self.device)
+        c0 = Variable(
+            torch.normal(
+                0, 1, (self.generator.feature_num_layers, num_samples, self.generator.feature_num_units)
+            )).to(self.device)
+
         generated_data_list = []
         for n_batch in range(num_batches):
-            real_attribute_noise = self._gen_attribute_input_noise(
-                self.batch_size).to(
-                self.device)
-            addi_attribute_noise = self._gen_attribute_input_noise(
-                self.batch_size).to(
-                self.device)
-            feature_input_noise = self._gen_feature_input_noise(
-                self.batch_size, self.sample_time
-            ).to(self.device)
-
             if given_attribute is not None and given_attribute is not None:
                 batch_given_attribute = given_attribute[
                     n_batch * self.batch_size: (n_batch + 1) * self.batch_size
@@ -211,13 +219,20 @@ class DoppelGANger(object):
 
             generated_data_list.append(
                 self._generate(
-                    real_attribute_noise=real_attribute_noise,
-                    addi_attribute_noise=addi_attribute_noise,
-                    feature_input_noise=feature_input_noise,
+                    real_attribute_noise=real_attribute_noise
+                    [n_batch * self.batch_size: (n_batch + 1) * self.batch_size],
+                    addi_attribute_noise=addi_attribute_noise
+                    [n_batch * self.batch_size: (n_batch + 1) * self.batch_size],
+                    feature_input_noise=feature_input_noise
+                    [n_batch * self.batch_size: (n_batch + 1) * self.batch_size],
+                    h0=h0
+                    [:, n_batch * self.batch_size: (n_batch + 1) * self.
+                     batch_size, :],
+                    c0=c0
+                    [:, n_batch * self.batch_size: (n_batch + 1) * self.
+                     batch_size, :],
                     given_attribute=batch_given_attribute,
-                    given_attribute_discrete=batch_given_attribute_discrete,
-                )
-            )
+                    given_attribute_discrete=batch_given_attribute_discrete,))
 
         attribute, attribute_discrete, feature = tuple(
             np.concatenate(d, axis=0) for d in zip(*generated_data_list)
@@ -489,11 +504,21 @@ class DoppelGANger(object):
                         feature_input_noise = self._gen_feature_input_noise(
                             self.batch_size, self.sample_time
                         ).to(self.device)
+                        h0 = Variable(
+                            torch.normal(
+                                0, 1, (self.generator.feature_num_layers, self.batch_size, self.generator.feature_num_units)
+                            )).to(self.device)
+                        c0 = Variable(
+                            torch.normal(
+                                0, 1, (self.generator.feature_num_layers, self.batch_size, self.generator.feature_num_units)
+                            )).to(self.device)
 
                         fake_attribute, _, fake_feature = self.generator(
                             real_attribute_noise,
                             addi_attribute_noise,
                             feature_input_noise,
+                            h0,
+                            c0
                         )
 
                         fake_attribute_list.append(fake_attribute)
@@ -624,6 +649,8 @@ class DoppelGANger(object):
         real_attribute_noise,
         addi_attribute_noise,
         feature_input_noise,
+        h0,
+        c0,
         given_attribute=None,
         given_attribute_discrete=None,
     ):
@@ -639,6 +666,8 @@ class DoppelGANger(object):
                     real_attribute_noise=real_attribute_noise,
                     addi_attribute_noise=addi_attribute_noise,
                     feature_input_noise=feature_input_noise,
+                    h0=h0,
+                    c0=c0
                 )
         else:
             given_attribute = torch.from_numpy(given_attribute)
@@ -649,6 +678,8 @@ class DoppelGANger(object):
                     real_attribute_noise=real_attribute_noise,
                     addi_attribute_noise=addi_attribute_noise,
                     feature_input_noise=feature_input_noise,
+                    h0=h0,
+                    c0=c0,
                     given_attribute=given_attribute,
                     given_attribute_discrete=given_attribute_discrete,
                 )

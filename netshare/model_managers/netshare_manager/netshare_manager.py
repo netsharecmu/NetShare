@@ -91,18 +91,18 @@ class NetShareManager(ModelManager):
         # time.sleep(10)
         # print("Finish merging attributes...")
 
-        # print("Start generating features given attributes ...")
-        # objs = []
-        # for config_idx, config in enumerate(configs):
-        #     objs.append(
-        #         _generate_given_attr.remote(
-        #             create_new_model=create_new_model,
-        #             configs=configs,
-        #             config_idx=config_idx,
-        #             log_folder=log_folder))
-        # _ = ray.get(objs)
-        # time.sleep(10)
-        # print("Finish generating features given attributes ...")
+        print("Start generating features given attributes ...")
+        objs = []
+        for config_idx, config in enumerate(configs):
+            objs.append(
+                _generate_given_attr.remote(
+                    create_new_model=create_new_model,
+                    configs=configs,
+                    config_idx=config_idx,
+                    log_folder=log_folder))
+        _ = ray.get(objs)
+        time.sleep(10)
+        print("Finish generating features given attributes ...")
 
         # _merge_syn_df(
         #     configs=configs,

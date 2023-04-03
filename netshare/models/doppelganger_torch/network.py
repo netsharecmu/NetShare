@@ -220,17 +220,6 @@ class DoppelGANgerGenerator(torch.nn.Module):
                 )
 
         # Define the feature generator
-        self.h0 = Variable(
-            torch.normal(
-                0, 1, (self.feature_num_layers, self.batch_size, self.feature_num_units)
-            )
-        ).to(self.device)
-        self.c0 = Variable(
-            torch.normal(
-                0, 1, (self.feature_num_layers, self.batch_size, self.feature_num_units)
-            )
-        ).to(self.device)
-
         self.lstm_module = torch.nn.LSTM(
             self.real_attribute_out_dim
             + self.addi_attribute_out_dim
@@ -294,6 +283,8 @@ class DoppelGANgerGenerator(torch.nn.Module):
         real_attribute_noise,
         addi_attribute_noise,
         feature_input_noise,
+        h0,
+        c0,
         given_attribute=None,
         given_attribute_discrete=None,
     ):
@@ -377,7 +368,7 @@ class DoppelGANgerGenerator(torch.nn.Module):
 
         ##########
         if self.use_adaptive_rolling:
-            hn, cn = self.h0, self.c0
+            hn, cn = h0, c0
             feature = []
             batch_size = feature_input.size()[0]
             steps = feature_input.size()[1]
@@ -414,7 +405,7 @@ class DoppelGANgerGenerator(torch.nn.Module):
             feature = torch.cat(feature, dim=1)
         else:
             feature_rnn_output_tmp, _ = self.lstm_module(
-                feature_input, (self.h0, self.c0)
+                feature_input, (h0, c0)
             )
 
             feature = []

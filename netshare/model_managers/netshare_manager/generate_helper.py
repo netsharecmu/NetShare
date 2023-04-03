@@ -46,7 +46,7 @@ def _merge_attr(attr_raw_npz_folder, word2vec_size,
     if not pcap_interarrival:
         bit_idx_flagstart = 128 + word2vec_size * 3
     else:
-        bit_idx_flagstart = 128 + word2vec_size * 3 + 1
+        bit_idx_flagstart = 128 + word2vec_size * 3
 
     print("PCAP_INTERARRIVAL:", pcap_interarrival)
     print("bit_idx_flagstart:", bit_idx_flagstart)
@@ -57,8 +57,10 @@ def _merge_attr(attr_raw_npz_folder, word2vec_size,
     os.makedirs(attr_clean_npz_folder, exist_ok=True)
 
     dict_chunkid_attr = {}
+    dict_chunkid_attr_discrete = {}
     for chunkid in tqdm(range(num_chunks)):
         dict_chunkid_attr[chunkid] = []
+        dict_chunkid_attr_discrete[chunkid] = []
 
     for chunkid in tqdm(range(num_chunks)):
         n_flows_startFromThisEpoch = 0
@@ -82,9 +84,14 @@ def _merge_attr(attr_raw_npz_folder, word2vec_size,
                 attr_raw_npz_folder,
                 "chunk_id-{}.npz".format(chunkid))
         )["data_attribute"]
+        raw_attr_discrete_chunk = np.load(
+            os.path.join(
+                attr_raw_npz_folder,
+                "chunk_id-{}.npz".format(chunkid))
+        )["data_attribute_discrete"]
 
         if num_chunks > 1:
-            for row in raw_attr_chunk:
+            for row_idx, row in enumerate(raw_attr_chunk):
                 # if row[bit_idx_flagstart] < row[bit_idx_flagstart+1]:
                 if (
                     row[bit_idx_flagstart] < row[bit_idx_flagstart + 1]
@@ -107,6 +114,8 @@ def _merge_attr(attr_raw_npz_folder, word2vec_size,
                             row_this_chunk += [1.0, 0.0]
                     # dict_chunkid_attr[chunkid].append(row_this_chunk)
                     dict_chunkid_attr[chunkid].append(row)
+                    dict_chunkid_attr_discrete[chunkid].append(
+                        raw_attr_discrete_chunk[row_idx])
 
                     # following chunks
                     # row_following_chunk = list(copy.deepcopy(row)[:bit_idx_flagstart])
@@ -116,15 +125,23 @@ def _merge_attr(attr_raw_npz_folder, word2vec_size,
                     row_following_chunk[bit_idx_flagstart] = 1.0
                     row_following_chunk[bit_idx_flagstart + 1] = 0.0
 
+                    row_discrete_following_chunk = list(
+                        copy.deepcopy(raw_attr_discrete_chunk[row_idx]))
+                    row_discrete_following_chunk[bit_idx_flagstart] = 1.0
+                    row_discrete_following_chunk[bit_idx_flagstart + 1] = 0.0
+
                     for i in range(chunkid + 1, num_chunks):
                         if (
                             row[bit_idx_flagstart + 2 * i + 2]
                             < row[bit_idx_flagstart + 2 * i + 3]
                         ):
                             dict_chunkid_attr[i].append(row_following_chunk)
+                            dict_chunkid_attr_discrete[i].append(
+                                row_discrete_following_chunk)
                             # dict_chunkid_attr[i].append(row)
         else:
             dict_chunkid_attr[chunkid] = raw_attr_chunk
+            dict_chunkid_attr_discrete[chunkid] = raw_attr_discrete_chunk
 
         print(
             "n_flows_startFromThisEpoch / total flows: {}/{}".format(
@@ -139,10 +156,10 @@ def _merge_attr(attr_raw_npz_folder, word2vec_size,
         n_merged_attrs += len(attr_clean)
         np.savez(
             os.path.join(
-                attr_clean_npz_folder,
-                "chunk_id-{}.npz".format(chunkid)),
+                attr_clean_npz_folder, "chunk_id-{}.npz".format(chunkid)),
             data_attribute=np.asarray(attr_clean),
-        )
+            data_attribute_discrete=np.asarray(
+                dict_chunkid_attr_discrete[chunkid]))
 
     print("n_merged_attrs:", n_merged_attrs)
 

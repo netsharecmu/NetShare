@@ -172,10 +172,10 @@ class DoppelGANgerTorchModel(Model):
             attr_d_gp_coe=self._config["attr_d_gp_coe"],
             g_attr_d_coe=self._config["g_attr_d_coe"],
             use_adaptive_rolling=self._config["use_adaptive_rolling"],
-            epoch_checkpoint_freq=self._config["epoch_checkpoint_freq"],
+            epoch_checkpoint_freq=self._config
+            ["epoch_checkpoint_freq"],
             restore=getattr(self._config, "restore", False),
-            pretrain_dir=self._config["pretrain_dir"]
-        )
+            pretrain_dir=self._config["pretrain_dir"])
 
         if self._config["given_data_attribute_flag"]:
             print("Generating from a given data attribute!")
@@ -191,9 +191,9 @@ class DoppelGANgerTorchModel(Model):
                 "data_attribute"]
             given_data_attribute_discrete = np.load(given_attr_npz_file)[
                 "data_attribute_discrete"]
-            print("given_data_attribute:", given_data_attribute.shape)
-            print("given_data_attribute_discrete:",
-                  given_data_attribute_discrete)
+            # print("given_data_attribute:", given_data_attribute.shape)
+            # print("given_data_attribute_discrete:",
+            #       given_data_attribute_discrete)
         else:
             print("Generating w/o given data attribute!")
             given_data_attribute = None
@@ -231,23 +231,22 @@ class DoppelGANgerTorchModel(Model):
                     )
                 )
 
+                num_samples = (data_attribute.shape[0] if ((given_data_attribute is None) and (
+                    given_data_attribute_discrete is None)) else given_data_attribute.shape[0])
+
                 dg.load(mid_checkpoint_dir)
                 print("Finished loading")
 
                 (
-                    features, attributes, attributes_discrete, gen_flags,
-                    lengths) = dg.generate(
-                    num_samples=data_attribute.shape[0]
-                    if (given_data_attribute is None)
-                    and (given_data_attribute_discrete is None) else
-                    given_data_attribute.shape[0],
+                    features,
+                    attributes,
+                    attributes_discrete,
+                    gen_flags,
+                    lengths
+                ) = dg.generate(
+                    num_samples=num_samples,
                     given_attribute=given_data_attribute,
                     given_attribute_discrete=given_data_attribute_discrete)
-
-                print(features.shape)
-                print(attributes.shape)
-                print(gen_flags.shape)
-                print(lengths.shape)
 
                 if self._config["self_norm"]:
                     features, attributes = renormalize_per_sample(
@@ -294,12 +293,13 @@ class DoppelGANgerTorchModel(Model):
                     ))
                 else:
                     save_path = os.path.join(
-                        output_syn_data_folder, "feat_raw")
+                        output_syn_data_folder,
+                        "feat_raw",
+                        f"chunk_id-{self._config['chunk_id']}")
                     os.makedirs(save_path, exist_ok=True)
                     np.savez(
                         os.path.join(
                             save_path,
-                            f"chunk_id-{self._config['chunk_id']}",
                             f"epoch_id-{epoch_id}.npz"
                         ),
                         data_attribute=attributes,
