@@ -20,6 +20,10 @@ class DuplicateWriter(object):
         for file_object in self._file_objects:
             file_object.flush()
 
+    def close(self):
+        for file_object in self._file_objects:
+            file_object.close()
+
 
 class Tee(object):
     def __init__(self, stdout_path, stderr_path):

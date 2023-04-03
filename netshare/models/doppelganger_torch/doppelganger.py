@@ -670,13 +670,9 @@ class DoppelGANger(object):
                     c0=c0
                 )
         else:
-            print(
-                f"given_attribute in _generate before: {given_attribute.shape}, {given_attribute.dtype}")
             given_attribute = torch.from_numpy(given_attribute).float()
             given_attribute_discrete = torch.from_numpy(
                 given_attribute_discrete).float()
-            print(
-                f"given_attribute in _generate after: {given_attribute.shape}, {given_attribute.dtype}")
             with torch.no_grad():
                 attribute, attribute_discrete, feature = self.generator(
                     real_attribute_noise=real_attribute_noise,
