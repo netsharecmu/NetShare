@@ -4,11 +4,24 @@
         "original_data_file": "traces/1M/ugr16/raw.csv",
         "dataset_type": "netflow",
         "n_chunks": 10,
-        "dp": false
+        "dp": false,
+        "allowed_data_types": [
+            "ip_string",
+            "integer",
+            "float",
+            "string"
+        ],
+        "allowed_data_encodings": [
+            "categorical",
+            "bit",
+            "word2vec_port",
+            "word2vec_proto"
+        ]
     },
     "pre_post_processor": {
         "class": "NetsharePrePostProcessor",
         "config": {
+            "max_flow_len": null,
             "norm_option": 0,
             "split_name": "multichunk_dep_v2",
             "df2chunks": "fixed_time",

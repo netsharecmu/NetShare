@@ -3,29 +3,13 @@
         "original_data_file": "../../traces/ugr16-small/raw.csv",
         "overwrite": true,
         "dataset_meta_type": "single_event_per_row",
-        "dataset_type": null,
-        "n_chunks": 2,
-        "dp": false,
-        "allowed_data_types": [
-            "ip_string",
-            "integer",
-            "float",
-            "string"
-        ],
-        "allowed_data_encodings": [
-            "categorical",
-            "bit",
-            "word2vec_port",
-            "word2vec_proto"
-        ]
+        "dataset_type": "netflow",
+        "n_chunks": 2
     },
     "default": "netflow.json",
     "pre_post_processor": {
         "class": "NetsharePrePostProcessor",
         "config": {
-            "num_train_samples": 50000,
-            "num_test_samples": 50000,
-            "max_flow_len": null,
             "timestamp": {
                 "column": "ts",
                 "generation": true,
@@ -104,10 +88,9 @@
                 10
             ],
             "sample_len_expand": true,
-            "epochs": 17,
+            "epochs": 20,
             "extra_checkpoint_freq": 1,
-            "epoch_checkpoint_freq": 2,
-            "use_adaptive_rolling": false
+            "epoch_checkpoint_freq": 5
         }
     }
 }
