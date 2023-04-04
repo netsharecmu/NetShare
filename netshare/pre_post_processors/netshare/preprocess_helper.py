@@ -226,9 +226,9 @@ def split_per_chunk(
             choices=[0.0, 1.0]
         ))
 
-        for chunk_id in range(config["n_chunks"]):
+        for i in range(config["n_chunks"]):
             metadata_fields.append(DiscreteField(
-                name="chunk_{}".format(chunk_id),
+                name="chunk_{}".format(i),
                 choices=[0.0, 1.0]
             ))
 
@@ -291,7 +291,6 @@ def split_per_chunk(
     data_feature = []
     data_gen_flag = []
     flow_tags = []
-    fields_dict = {f.name: f for f in metadata_fields + timeseries_fields}
     for group_name, df_group in tqdm(gk):
         # RESET INDEX TO MAKE IT START FROM ZERO
         df_group = df_group.reset_index(drop=True)
