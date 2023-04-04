@@ -1,8 +1,8 @@
 {
     "global_config": {
         "overwrite": false,
-        "original_data_file": "traces/1M/caida/raw.pcap",
-        "dataset_type": "pcap",
+        "original_data_file": "traces/1M/ugr16/raw.csv",
+        "dataset_type": "netflow",
         "n_chunks": 10,
         "dp": false,
         "allowed_data_types": [
@@ -26,73 +26,7 @@
             "split_name": "multichunk_dep_v2",
             "df2chunks": "fixed_time",
             "full_IP_header": true,
-            "encode_IP": "bit",
-            "timestamp": {
-                "column": "ts",
-                "generation": true,
-                "encoding": "interarrival",
-                "normalization": "ZERO_ONE"
-            },
-            "word2vec": {
-                "vec_size": 10,
-                "model_name": "word2vec_vecSize",
-                "annoy_n_trees": 100,
-                "pretrain_model_path": null
-            },
-            "metadata": [
-                {
-                    "column": "srcip",
-                    "type": "integer",
-                    "encoding": "bit",
-                    "n_bits": 32
-                },
-                {
-                    "column": "dstip",
-                    "type": "integer",
-                    "encoding": "bit",
-                    "n_bits": 32
-                },
-                {
-                    "column": "srcport",
-                    "type": "integer",
-                    "encoding": "word2vec_port"
-                },
-                {
-                    "column": "dstport",
-                    "type": "integer",
-                    "encoding": "word2vec_port"
-                },
-                {
-                    "column": "proto",
-                    "type": "string",
-                    "encoding": "word2vec_proto"
-                }
-            ],
-            "timeseries": [
-                {
-                    "column": "td",
-                    "type": "float",
-                    "normalization": "ZERO_ONE",
-                    "log1p_norm": true
-                },
-                {
-                    "column": "pkt",
-                    "type": "float",
-                    "normalization": "ZERO_ONE",
-                    "log1p_norm": true
-                },
-                {
-                    "column": "byt",
-                    "type": "float",
-                    "normalization": "ZERO_ONE",
-                    "log1p_norm": true
-                },
-                {
-                    "column": "type",
-                    "type": "string",
-                    "encoding": "categorical"
-                }
-            ]
+            "encode_IP": "bit"
         }
     },
     "model_manager": {
@@ -107,18 +41,16 @@
         }
     },
     "model": {
-        "class": "DoppelGANgerTFModel",
+        "class": "DoppelGANgerTorchModel",
         "config": {
             "batch_size": 100,
             "sample_len": [
+                1,
                 5,
-                10,
-                25,
-                50,
-                100
+                10
             ],
             "sample_len_expand": true,
-            "iteration": 80000,
+            "iteration": 200000,
             "vis_freq": 100000,
             "vis_num_sample": 5,
             "d_rounds": 5,
@@ -155,10 +87,11 @@
             "num_cores": null,
             "sn_mode": null,
             "scale": 1.0,
-            "extra_checkpoint_freq": 4000,
+            "extra_checkpoint_freq": 20000,
             "epoch_checkpoint_freq": 1000,
             "dp_noise_multiplier": null,
-            "dp_l2_norm_clip": null
+            "dp_l2_norm_clip": null,
+            "use_adaptive_rolling": false
         }
     }
 }

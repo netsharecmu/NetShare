@@ -90,7 +90,6 @@ class NetsharePrePostProcessor(PrePostProcessor):
             df = pd.read_csv(input_folder)
             df.to_csv(os.path.join(output_folder, "raw.csv"), index=False)
 
-        print("dataset meta type:", self._config["dataset_meta_type"])
         print("dataset type:", self._config["dataset_type"])
 
         metadata_cols = [m for m in self._config["metadata"]]

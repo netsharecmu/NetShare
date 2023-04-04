@@ -2,11 +2,11 @@
     "global_config": {
         "original_data_file": "../../traces/ugr16-small/raw.csv",
         "overwrite": true,
-        "dataset_meta_type": "single_event_per_row",
         "dataset_type": "netflow",
-        "n_chunks": 2
+        "n_chunks": 2,
+        "dp": false
     },
-    "default": "netflow.json",
+    "default": "single_event_per_row.json",
     "pre_post_processor": {
         "class": "NetsharePrePostProcessor",
         "config": {
