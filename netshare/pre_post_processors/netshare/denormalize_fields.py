@@ -101,14 +101,6 @@ def write_to_csv(
             if f in raw_timeseries_filed_names
         ]
 
-        print(
-            f"session_titles: {session_titles}, timeseries_titles: {timeseries_titles}")
-        print(
-            f"raw_metadata: {raw_metadata_field_names}, raw_timeseries: {raw_timeseries_filed_names}")
-        # print(f"timeseries: {timeseries_numpy}")
-        print(f"timeseries: {timeseries_numpy.shape}")
-        print(f"timeseries_titles_idx: {timeseries_titles_idx}")
-
         if config["timestamp"].get("generation", False):
             timeseries_titles.append(config["timestamp"]["column"])
             if config["timestamp"]["encoding"] == "interarrival":

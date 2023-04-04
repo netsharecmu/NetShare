@@ -27,20 +27,28 @@ class Field(object):
 
 
 class ContinuousField(Field):
-    def __init__(self, norm_option, min_x=None, max_x=None, dim_x=1,
-                 *args, **kwargs):
+    def __init__(
+            self, norm_option, min_x=None, max_x=None, dim_x=1,
+            log1p_norm=False, *args, **kwargs):
         super(ContinuousField, self).__init__(*args, **kwargs)
 
         self.min_x = min_x
         self.max_x = max_x
         self.norm_option = norm_option
         self.dim_x = dim_x
+        self.log1p_norm = log1p_norm
+        if self.log1p_norm:
+            self.min_x = np.log1p(self.min_x)
+            self.max_x = np.log1p(self.max_x)
 
     # Normalize x in [a, b]: x' = (b-a)(x-min x)/(max x - minx) + a
     def normalize(self, x):
         if x.shape[-1] != self.dim_x:
             raise ValueError(f"Dimension is {x.shape[-1]}. "
                              f"Expected dimension is {self.dim_x}")
+        if self.log1p_norm:
+            x = np.log1p(x)
+
         # [0, 1] normalization
         if self.norm_option == Normalization.ZERO_ONE:
             return np.asarray((x - self.min_x) / (self.max_x - self.min_x))
@@ -58,15 +66,20 @@ class ContinuousField(Field):
                              f"Expected dimension is {self.dim_x}")
         # [0, 1] normalization
         if self.norm_option == Normalization.ZERO_ONE:
-            return norm_x * float(self.max_x - self.min_x) + self.min_x
+            to_return = norm_x * float(self.max_x - self.min_x) + self.min_x
 
         # [-1, 1] normalization
         elif self.norm_option == Normalization.MINUSONE_ONE:
-            return (norm_x + 1) / 2.0 * \
+            to_return = (norm_x + 1) / 2.0 * \
                 float(self.max_x - self.min_x) + self.min_x
 
         else:
             raise Exception("Not valid normalization option!")
+
+        if self.log1p_norm:
+            to_return = np.expm1(to_return)
+
+        return to_return
 
     def getOutputType(self):
         return Output(
