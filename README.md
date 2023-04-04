@@ -1,28 +1,25 @@
 # Practical GAN-based Synthetic IP Header Trace Generation using NetShare
 
-**Update 8/23/2022: We are currently porting full funtionalities from the branch [`camera-ready`](https://github.com/netsharecmu/NetShare/tree/camera-ready) as a python package. Please checkout [`camera-ready`](https://github.com/netsharecmu/NetShare/tree/camera-ready) branch if you would like to replicate all the experiments in the [paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)**.
+[[paper (SIGCOMM 2022)](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)]
+[[talk (SIGCOMM 2022)](https://www.youtube.com/watch?v=mWnFIncjtWg)]
+[[web service demo](https://drive.google.com/file/d/1vPuneEb14A2w7fKyCJ41NAHzsvpLQP5H/view)]
 
-[[paper (SIGCOMM 2022)](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)][[talk (SIGCOMM 2022)](https://www.youtube.com/watch?v=mWnFIncjtWg)][[web service demo](https://drive.google.com/file/d/1vPuneEb14A2w7fKyCJ41NAHzsvpLQP5H/view)]
-
-**Authors:** [[Yucheng Yin](https://sniperyyc.com/)] [[Zinan Lin](http://www.andrew.cmu.edu/user/zinanl/)] [[Minhao Jin](https://www.linkedin.com/in/minhao-jin-1328b8164/)] [[Giulia Fanti](https://www.andrew.cmu.edu/user/gfanti/)] [[Vyas Sekar](https://users.ece.cmu.edu/~vsekar/)]
+**Authors:** 
+[[Yucheng Yin](https://sniperyyc.com/)]
+[[Zinan Lin](http://www.andrew.cmu.edu/user/zinanl/)]
+[[Minhao Jin](https://www.linkedin.com/in/minhao-jin-1328b8164/)]
+[[Giulia Fanti](https://www.andrew.cmu.edu/user/gfanti/)]
+[[Vyas Sekar](https://users.ece.cmu.edu/~vsekar/)]
 
 **Abstract:** We explore the feasibility of using Generative Adversarial Networks (GANs) to automatically learn generative models to generate synthetic packet- and flow header traces for network-ing tasks (e.g., telemetry, anomaly detection, provisioning). We identify key fidelity, scalability, and privacy challenges and tradeoffs in existing GAN-based approaches. By synthesizing domain-specific insights with recent advances in machine learning and privacy, we identify design choices to tackle these challenges. Building on these insights, we develop an end-to-end framework, NetShare. We evaluate NetShare on six diverse packet header traces and find that: (1) across distributional metrics and traces, it achieves 46% more accuracy than baselines, and (2) it meets users’ requirements of downstream tasks in evaluating accuracy and rank ordering of candidate approaches.
 
-# Overview
-<p align="center">
-  <img width="550" src="doc/figs/overview.png">
-</p>
-<p align="center">
-  Figure 1: Overview of the NetShare workflow
-</p>
+# News
+[2023.04] Woohoo! New version released with a list of new features:
+- Replace tensorflow 1.15 with torch
+- Support generic dataset formats
+- Add [SDMetrics](https://github.com/netsharecmu/SDMetrics_timeseries/tree/master/sdmetrics) for data visualization
 
-As shown in Figure 1, we envision a common workflow for NetShare: real data (e.g., PCAPs) stream in as different epochs, where each Di could represent the pcap generated on Day i or Hour i. The entire workflow splits into two phases:
-
-- **Offline stage (*optional*):** a few epochs of *real data* is merged into one giant trace and is fed into the hyperparameter tuning process along with the fidelity specification. The fidelity spec specifies users' fidelity requirements among different hyperparameter settings and training snapshots. A typical fidelity spec could be choosing the parameters/snapshot with lowest Jensen-Shannon divergence or choosing the setup with the best performance of a particular downstream task (e.g., anomaly detection).
-
-- **Online stage:** After the *optional* hyperparameter selection process, new streaming *real data* (e.g., Di+1, ...) is fed into the model training and generation part with the hyperparameter chosen during the offline stage. Note that if you find the *synthetic data* (Di+1') and *real data* (Di+1), you may repeat the hyperparameter tuning process in the offline stage.
-
-**Note that in our [SIGCOMM paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251) version, we only include the offline stage where hyperparameter tuning is compulsory. This overview is a more complete workflow we envision in the real-world deployment.**
+[2022.08]: The outdated [`camera-ready`](https://github.com/netsharecmu/NetShare/tree/camera-ready) branch holds the scripts we used to run all the experiments in the [paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251).
 
 # Datasets
 ***We are adding more datasets! Feel free to add your own and contribute!***
@@ -152,10 +149,6 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 }
 ```
 
-**Tip #2: If you would like to skip the training for existing datasets, you may load some of our pre-trained models to generate directly.**
-
-*Placeholder: we will this part soon.*
-
 # Codebase structure (for *dev* purpose)
 ```
 ├── doc                       # (tentative) NetShare tutorials and APIs
@@ -205,3 +198,8 @@ Part of the source code is adapated from the following open-source projects:
 - [BSN](https://github.com/fjxmlzn/BSN)
 - [Ray](https://github.com/ray-project/ray)
 - [config_io](https://github.com/fjxmlzn/config_io)
+- [SDMetrics](https://github.com/sdv-dev/SDMetrics)
+
+# TODOs:
+- [ ] Bump Python version to 3.9
+- [ ] Hyperparameter selection using SDMetrics
