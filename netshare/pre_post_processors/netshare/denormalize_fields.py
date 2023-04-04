@@ -1,5 +1,6 @@
 import csv
 import os
+import json
 import random
 from typing import Dict, List
 
@@ -174,15 +175,19 @@ def write_to_csv(
                     writer.writerow(session_data_per_session + timeseries_data)
 
 
-def denormalize_fields() -> None:
+def denormalize_fields(
+    generated_data_folder
+):
     """
     This function denormalizes the data in the generated_data folder using the attributes and features fields that were created in the pre-process step.
     Last, it writes the denormalized data to a csv file under the same directory hierarchy as the created data.
 
     :return: the path to the denormalized data.
     """
-    configs, config_group_list = create_chunks_configurations(
-        generation_flag=True)
+    with open(os.path.join(generated_data_folder, "configs_generate.json"), 'r') as f:
+        data = json.load(f)
+        configs = data["configs"]
+        config_group_list = data["config_group_list"]
 
     for config in tqdm(configs):
         session_key_fields = list(learn_api.get_attributes_fields(

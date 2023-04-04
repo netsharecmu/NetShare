@@ -32,6 +32,7 @@ from netshare.utils import Tee, Output, output
 from netshare.utils import Normalization
 from netshare.utils import ContinuousField, DiscreteField, BitField
 from netshare.utils import exec_cmd
+from .denormalize_fields import denormalize_fields
 
 EPS = 1e-8
 
@@ -130,8 +131,8 @@ class NetsharePrePostProcessor(PrePostProcessor):
                 raise ValueError('"column" should be a string')
             if 'type' not in field or \
                     field.type not in self._config["allowed_data_types"]:
-                raise ValueError(
-                    '"type" must be specified as ({})'.format(" | ".join(self._config["allowed_data_types"])))
+                raise ValueError('"type" must be specified as ({})'.format(
+                    " | ".join(self._config["allowed_data_types"])))
 
             field_name = getattr(field, 'name', field.column)
 
@@ -377,6 +378,10 @@ class NetsharePrePostProcessor(PrePostProcessor):
     def _post_process(self, input_folder, output_folder,
                       pre_processed_data_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
+
+        denormalize_fields(
+            generated_data_folder=input_folder
+        )
 
         # with open(os.path.join(
         #         pre_processed_data_folder,
