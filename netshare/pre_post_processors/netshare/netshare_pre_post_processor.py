@@ -44,10 +44,11 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
         # single file
         if os.path.isfile(input_folder):
-            if not input_folder.endswith(".csv"):
+            if not (input_folder.endswith(".csv") or
+                    input_folder.endswith(".pcap")):
                 raise ValueError(
-                    "Uncompatible file format! "
-                    "Please convert your dataset as instructued to supported <csv> formats...")
+                    f"Uncompatible file format {input_folder}! "
+                    "Please convert your dataset as instructued to supported <pcap>/<csv> formats...")
             print(input_folder)
         # TODO: support multiple files
         else:
@@ -183,7 +184,8 @@ class NetsharePrePostProcessor(PrePostProcessor):
                     raise ValueError(
                         '"encoding=cateogrical" can be only used for "type=(string | integer)"')
                 field_instance = DiscreteField(
-                    choices=list(set(df[field.column])),
+                    choices=getattr(
+                        field, 'choices', list(set(df[field.column]))),
                     name=getattr(field, 'name', field.column))
 
             # Continuous Field: (float)
@@ -191,8 +193,8 @@ class NetsharePrePostProcessor(PrePostProcessor):
                 field_instance = ContinuousField(
                     name=field_name,
                     norm_option=getattr(Normalization, field.normalization),
-                    min_x=min(df[field.column]) - EPS,
-                    max_x=max(df[field.column]) + EPS,
+                    min_x=getattr(field, 'min_x', min(df[field.column])) - EPS,
+                    max_x=getattr(field, 'max_x', max(df[field.column])) + EPS,
                     dim_x=1
                 )
                 if getattr(field, 'log1p_norm', False):

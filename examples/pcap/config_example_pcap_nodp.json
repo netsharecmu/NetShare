@@ -1,10 +1,116 @@
 {
     "global_config": {
-        "overwrite": true,
         "original_data_file": "../../traces/caida-small/raw.pcap",
+        "overwrite": true,
         "dataset_type": "pcap",
-        "n_chunks": 10,
+        "n_chunks": 2,
         "dp": false
     },
-    "default": "pcap.json"
+    "default": "single_event_per_row.json",
+    "pre_post_processor": {
+        "class": "NetsharePrePostProcessor",
+        "config": {
+            "timestamp": {
+                "column": "time",
+                "generation": true,
+                "encoding": "interarrival",
+                "normalization": "ZERO_ONE"
+            },
+            "word2vec": {
+                "vec_size": 10,
+                "model_name": "word2vec_vecSize",
+                "annoy_n_trees": 100,
+                "pretrain_model_path": null
+            },
+            "metadata": [
+                {
+                    "column": "srcip",
+                    "type": "integer",
+                    "encoding": "bit",
+                    "n_bits": 32
+                },
+                {
+                    "column": "dstip",
+                    "type": "integer",
+                    "encoding": "bit",
+                    "n_bits": 32
+                },
+                {
+                    "column": "srcport",
+                    "type": "integer",
+                    "encoding": "word2vec_port"
+                },
+                {
+                    "column": "dstport",
+                    "type": "integer",
+                    "encoding": "word2vec_port"
+                },
+                {
+                    "column": "proto",
+                    "type": "string",
+                    "encoding": "word2vec_proto"
+                }
+            ],
+            "timeseries": [
+                {
+                    "column": "pkt_len",
+                    "type": "float",
+                    "normalization": "ZERO_ONE"
+                },
+                {
+                    "column": "tos",
+                    "type": "float",
+                    "normalization": "ZERO_ONE",
+                    "min_x": 0.0,
+                    "max_x": 255.0
+                },
+                {
+                    "column": "id",
+                    "type": "float",
+                    "normalization": "ZERO_ONE",
+                    "min_x": 0.0,
+                    "max_x": 65535.0
+                },
+                {
+                    "column": "flag",
+                    "type": "integer",
+                    "encoding": "categorical",
+                    "choices": [
+                        0,
+                        1,
+                        2
+                    ]
+                },
+                {
+                    "column": "off",
+                    "type": "float",
+                    "normalization": "ZERO_ONE",
+                    "min_x": 0.0,
+                    "max_x": 8191.0
+                },
+                {
+                    "column": "ttl",
+                    "type": "float",
+                    "normalization": "ZERO_ONE",
+                    "min_x": 0.0,
+                    "max_x": 255.0
+                }
+            ]
+        }
+    },
+    "model": {
+        "class": "DoppelGANgerTorchModel",
+        "config": {
+            "batch_size": 100,
+            "sample_len": [
+                1,
+                5,
+                10
+            ],
+            "sample_len_expand": true,
+            "epochs": 20,
+            "extra_checkpoint_freq": 1,
+            "epoch_checkpoint_freq": 5
+        }
+    }
 }

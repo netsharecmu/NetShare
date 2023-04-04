@@ -24,9 +24,7 @@
             "max_flow_len": null,
             "norm_option": 0,
             "split_name": "multichunk_dep_v2",
-            "df2chunks": "fixed_time",
-            "full_IP_header": true,
-            "encode_IP": "bit"
+            "df2chunks": "fixed_time"
         }
     },
     "model_manager": {

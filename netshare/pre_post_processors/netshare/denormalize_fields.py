@@ -79,29 +79,35 @@ def write_to_csv(
 
     with open(csv_path, "w") as f:
         writer = csv.writer(f)
-        session_titles = _get_fields_names(session_key_fields)
-        timeseries_titles = _get_fields_names(timeseries_fields)
         raw_metadata_field_names = [
             col.column for col in (config["metadata"])
         ]
         raw_timeseries_filed_names = [
             col.column for col in config["timeseries"]]
         session_titles = [
-            f for i, f in enumerate(session_titles)
+            f for i, f in enumerate(_get_fields_names(session_key_fields))
             if f in raw_metadata_field_names]
         session_titles_idx = [
-            i for i, f in enumerate(session_titles)
+            i for i, f in enumerate(_get_fields_names(session_key_fields))
             if f in raw_metadata_field_names]
         timeseries_titles = [
             f
-            for i, f in enumerate(timeseries_titles)
+            for i, f in enumerate(_get_fields_names(timeseries_fields))
             if f in raw_timeseries_filed_names
         ]
         timeseries_titles_idx = [
             i
-            for i, f in enumerate(timeseries_titles)
+            for i, f in enumerate(_get_fields_names(timeseries_fields))
             if f in raw_timeseries_filed_names
         ]
+
+        print(
+            f"session_titles: {session_titles}, timeseries_titles: {timeseries_titles}")
+        print(
+            f"raw_metadata: {raw_metadata_field_names}, raw_timeseries: {raw_timeseries_filed_names}")
+        # print(f"timeseries: {timeseries_numpy}")
+        print(f"timeseries: {timeseries_numpy.shape}")
+        print(f"timeseries_titles_idx: {timeseries_titles_idx}")
 
         if config["timestamp"].get("generation", False):
             timeseries_titles.append(config["timestamp"]["column"])
