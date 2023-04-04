@@ -195,10 +195,9 @@ class NetsharePrePostProcessor(PrePostProcessor):
                     norm_option=getattr(Normalization, field.normalization),
                     min_x=getattr(field, 'min_x', min(df[field.column])) - EPS,
                     max_x=getattr(field, 'max_x', max(df[field.column])) + EPS,
-                    dim_x=1
+                    dim_x=1,
+                    log1p_norm=getattr(field, 'log1p_norm', False)
                 )
-                if getattr(field, 'log1p_norm', False):
-                    df[field.column] = np.log1p(df[field.column])
 
             if field in self._config.metadata:
                 metadata_fields.append(field_instance)
