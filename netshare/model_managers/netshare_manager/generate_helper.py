@@ -189,15 +189,3 @@ def _generate_given_attr(create_new_model, configs, config_idx,
         input_model_folder=config["result_folder"],
         output_syn_data_folder=config["eval_root_folder"],
         log_folder=log_folder)
-
-# ===================== TODO: move merge_syn_df to postprocess ================
-
-
-def get_per_chunk_df(chunk_folder):
-    '''chunk_folder: "chunk_id-0"'''
-    df_names = [file for file in os.listdir(
-        chunk_folder) if file.endswith(".csv")]
-    assert (len(df_names) > 0)
-    df = pd.read_csv(os.path.join(chunk_folder, df_names[0]))
-
-    return df

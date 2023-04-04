@@ -114,12 +114,4 @@ class NetShareManager(ModelManager):
         time.sleep(10)
         print("Finish generating features given attributes ...")
 
-        # _merge_syn_df(
-        #     configs=configs,
-        #     config_group_list=config_group_list,
-        #     big_raw_df=pd.read_csv(os.path.join(
-        #         input_train_data_folder, "raw.csv")),
-        #     output_syn_data_folder=output_syn_data_folder
-        # )
-
         return True
