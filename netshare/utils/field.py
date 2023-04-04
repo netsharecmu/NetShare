@@ -1,6 +1,13 @@
+import os
+import json
 import numpy as np
 import pandas as pd
+from typing import Any, Dict, List
+from collections import defaultdict
+from annoy import AnnoyIndex
+
 from .output import Normalization, OutputType, Output
+from ..pre_post_processors.netshare.embedding_helper import get_vector, get_original_obj, get_original_objs
 
 EPS = 1e-8
 
@@ -108,7 +115,7 @@ class BitField(Field):
         super(BitField, self).__init__(*args, **kwargs)
 
         self.num_bits = num_bits
-        self.dim_x = num_bits*2  # each bit is a 2-category discrete variable
+        self.dim_x = 2*num_bits
 
     def normalize(self, decimal_x):
         bin_x = bin(int(decimal_x))[2:].zfill(self.num_bits)
@@ -128,36 +135,78 @@ class BitField(Field):
         return bits
 
     def denormalize(self, bin_x):
-        if not isinstance(bin_x, list):
-            raise Exception("Bit array should be a list")
-
-        assert len(bin_x) == 2 * self.num_bits, "length of bit array is wrong!"
-
-        bits = "0b"
-        for i in range(self.num_bits):
-            index = np.argmax(bin_x[2 * i:2 * (i + 1)])
-
-            if index == 0:
-                bits += "0"
-
-            elif index == 1:
-                bits += "1"
-
-            else:
-                raise Exception("Bits array is ZERO or ONE!")
-
-        decimal_x = int(bits, 2)
-
-        return decimal_x
+        if len(bin_x.shape) == 3:
+            # This is a timeseries field
+            a, b, c = bin_x.shape
+            if self.num_bits * 2 != c:
+                raise ValueError(
+                    f"Dimension is {c}. Expected dimension is {self.num_bits * 2}"
+                )
+            return self.denormalize(
+                bin_x.reshape(a * b, c)).to_numpy().reshape(
+                a, b)
+        df_bin = pd.DataFrame(bin_x)
+        chosen_bits = (df_bin > df_bin.shift(axis=1)).drop(
+            range(0, self.num_bits * 2, 2), axis=1
+        )
+        return chosen_bits.dot(1 << np.arange(self.num_bits - 1, -1, -1))
 
     def getOutputType(self):
         outputs = []
 
         for i in range(self.num_bits):
-            outputs.append(
-                Output(
-                    type_=OutputType.DISCRETE,
-                    dim=2
-                ))
+            outputs.append(Output(type_=OutputType.DISCRETE, dim=2))
 
         return outputs
+
+
+class Word2VecField(Field):
+    def __init__(
+            self, word2vec_size, pre_processed_data_folder, word2vec_type, *
+            args, **kwargs):
+        super(Word2VecField, self).__init__(*args, **kwargs)
+
+        self.word2vec_size = word2vec_size
+        self.preprocessed_data_folder = pre_processed_data_folder
+        self.word2vec_type = word2vec_type
+        self.dim_x = word2vec_size
+        self.norm_option = Normalization.MINUSONE_ONE
+
+    def normalize(self, x, embed_model):
+        return np.array(
+            [get_vector(embed_model, str(xi), norm_option=True) for xi in x]
+        )
+
+    def denormalize(self, norm_x):
+        # load Annoy and Dict
+        type_ann = AnnoyIndex(self.word2vec_size, 'angular')
+        type_ann.load(os.path.join(
+            self.preprocessed_data_folder,
+            f"{self.word2vec_type}_ann.ann"))
+        with open(os.path.join(self.preprocessed_data_folder, f"{self.word2vec_type}_dict.json"), 'r') as f:
+            type_dict = json.load(f)
+
+        if len(norm_x.shape) == 3:
+            # This is a timeseries field
+            return np.array(
+                [
+                    get_original_objs(
+                        ann=type_ann,
+                        vectors=x,
+                        dic={int(k): v for k, v in type_dict.items()}
+                    )
+                    for x in norm_x
+                ]
+            )
+        return np.asarray(get_original_objs(
+            ann=type_ann,
+            vectors=norm_x,
+            dic={int(k): v for k, v in type_dict.items()}
+        ))
+
+    def getOutputType(self):
+        return Output(
+            type_=OutputType.CONTINUOUS,
+            dim=self.dim_x,
+            normalization=self.norm_option
+        )

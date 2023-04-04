@@ -24,13 +24,14 @@ import csv
 
 from .util import denormalize, _merge_syn_df, _recalulate_config_ids_in_each_config_group
 from .word2vec_embedding import word2vec_train
+from .embedding_helper import build_annoy_dictionary_word2vec
 from .preprocess_helper import countList2cdf, continuous_list_flag, plot_cdf
 from .preprocess_helper import df2chunks, split_per_chunk
 # from .postprocess_helper import
 from ..pre_post_processor import PrePostProcessor
 from netshare.utils import Tee, Output, output
 from netshare.utils import Normalization
-from netshare.utils import ContinuousField, DiscreteField, BitField
+from netshare.utils import ContinuousField, DiscreteField, BitField, Word2VecField
 from netshare.utils import exec_cmd
 from .denormalize_fields import denormalize_fields
 
@@ -110,6 +111,8 @@ class NetsharePrePostProcessor(PrePostProcessor):
                 print("Loading pretrained `big` Word2Vec model...")
                 word2vec_model = Word2Vec.load(
                     self._config["word2vec"]["pretrain_model_path"])
+                word2vec_model_path = self._config["word2vec"][
+                    "pretrain_model_path"]
             else:
                 word2vec_model_path = word2vec_train(
                     df=df,
@@ -120,6 +123,21 @@ class NetsharePrePostProcessor(PrePostProcessor):
                     annoy_n_trees=self._config["word2vec"]["annoy_n_trees"]
                 )
                 word2vec_model = Word2Vec.load(word2vec_model_path)
+
+            print("Building annoy dictionary word2vec...")
+            dict_type_annDictPair = build_annoy_dictionary_word2vec(
+                df=df,
+                model_path=word2vec_model_path,
+                word2vec_cols=word2vec_cols,
+                word2vec_size=self._config["word2vec"]["vec_size"],
+                n_trees=self._config["word2vec"]["annoy_n_trees"]
+            )
+
+            for type, annDictPair in dict_type_annDictPair.items():
+                annDictPair[0].save(os.path.join(
+                    output_folder, f"{type}_ann.ann"))
+                with open(os.path.join(output_folder, f"{type}_dict.json"), 'w') as f:
+                    json.dump(annDictPair[1], f)
 
         # Create field instances.
         metadata_fields = []
@@ -154,11 +172,11 @@ class NetsharePrePostProcessor(PrePostProcessor):
 
             # word2vec field: (any)
             if 'word2vec' in getattr(field, 'encoding', ''):
-                field_instance = ContinuousField(
-                    name=field_name,
-                    norm_option=Normalization.MINUSONE_ONE,  # l2-norm
-                    dim_x=self._config["word2vec"]["vec_size"]
-                )
+                field_instance = Word2VecField(
+                    name=getattr(field, 'name', field.column),
+                    word2vec_size=self._config["word2vec"]["vec_size"],
+                    pre_processed_data_folder=output_folder,
+                    word2vec_type=field.encoding.split('_')[1])
 
             # Categorical field: (string | integer)
             if 'categorical' in getattr(field, 'encoding', ''):
@@ -380,7 +398,10 @@ class NetsharePrePostProcessor(PrePostProcessor):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
         denormalize_fields(
-            generated_data_folder=input_folder
+            config_pre_post_processor=self._config,
+            pre_processed_data_folder=pre_processed_data_folder,
+            generated_data_folder=input_folder,
+            post_processed_data_folder=output_folder
         )
 
         # with open(os.path.join(

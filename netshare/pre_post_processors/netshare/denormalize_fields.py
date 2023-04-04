@@ -2,6 +2,7 @@ import csv
 import os
 import json
 import random
+import pickle
 from typing import Dict, List
 
 import numpy as np
@@ -37,9 +38,9 @@ def _denormalize_by_fields_list(
 
     for field in fields_list:
         if is_session_key:
-            sub_data = normalized_data[:, dim: dim + field.get_output_dim()]
+            sub_data = normalized_data[:, dim: dim + field.dim_x]
         else:
-            sub_data = normalized_data[:, :, dim: dim + field.get_output_dim()]
+            sub_data = normalized_data[:, :, dim: dim + field.dim_x]
 
         sub_data = field.denormalize(sub_data)
 
@@ -50,7 +51,7 @@ def _denormalize_by_fields_list(
         if not is_session_key and len(sub_data.shape) == 2:
             sub_data = np.expand_dims(sub_data, axis=2)
         denormalized_data.append(sub_data)
-        dim += field.get_output_dim()
+        dim += field.dim_x
     return denormalized_data
 
 
@@ -81,7 +82,7 @@ def write_to_csv(
         session_titles = _get_fields_names(session_key_fields)
         timeseries_titles = _get_fields_names(timeseries_fields)
         raw_metadata_field_names = [
-            col.column for col in (config["session_key"] or config["metadata"])
+            col.column for col in (config["metadata"])
         ]
         raw_timeseries_filed_names = [
             col.column for col in config["timeseries"]]
@@ -166,17 +167,21 @@ def write_to_csv(
             # remove duplicated session keys
             if tuple(session_data_per_session) in session_key_set:
                 logger.debug(
-                    f"Session key {session_data_per_session} already exists!")
+                    "Session key {session_data_per_session} already exists!")
                 continue
             session_key_set.add(tuple(session_data_per_session))
             for j in range(data_gen_per_session.shape[0]):
-                if data_gen_per_session[j] == 1.0:
-                    timeseries_data = timeseries_per_session[j].tolist()
-                    writer.writerow(session_data_per_session + timeseries_data)
+                timeseries_data = timeseries_per_session[j].tolist()
+                writer.writerow(session_data_per_session + timeseries_data)
+                if data_gen_per_session[j] == 0.0:
+                    break
 
 
 def denormalize_fields(
-    generated_data_folder
+    config_pre_post_processor,
+    pre_processed_data_folder,
+    generated_data_folder,
+    post_processed_data_folder
 ):
     """
     This function denormalizes the data in the generated_data folder using the attributes and features fields that were created in the pre-process step.
@@ -190,11 +195,20 @@ def denormalize_fields(
         config_group_list = data["config_group_list"]
 
     for config in tqdm(configs):
-        session_key_fields = list(learn_api.get_attributes_fields(
-            chunk_id=config["chunk_id"]).values())
-        timeseries_fields = list(
-            learn_api.get_feature_fields(chunk_id=config["chunk_id"]).values()
-        )
+        with open(os.path.join(
+            pre_processed_data_folder,
+            f"chunkid-{config['chunk_id']}",
+            "data_attribute_fields.pkl"
+        ), 'rb') as f:
+            session_key_fields = list(pickle.load(f))
+
+        with open(os.path.join(
+            pre_processed_data_folder,
+            f"chunkid-{config['chunk_id']}",
+            "data_feature_fields.pkl"
+        ), 'rb') as f:
+            timeseries_fields = list(pickle.load(f))
+
         # Each configuration has multiple iteration ckpts
         per_chunk_basedir = os.path.join(
             config["eval_root_folder"],
@@ -215,9 +229,8 @@ def denormalize_fields(
                 unnormalized_timeseries, timeseries_fields, is_session_key=False
             )
 
-            csv_root_folder = config["eval_root_folder"].replace(
-                get_raw_generated_data_dir(), get_generated_data_dir()
-            )
+            csv_root_folder = csv_root_folder = config["eval_root_folder"].replace(
+                generated_data_folder, post_processed_data_folder)
             csv_filename = f.replace(".npz", ".csv")
             write_to_csv(
                 csv_folder=os.path.join(
@@ -229,5 +242,5 @@ def denormalize_fields(
                 timeseries=timeseries,
                 data_gen_flag=data_gen_flag,
                 filename=csv_filename,
-                config=config,
+                config=config_pre_post_processor,
             )
