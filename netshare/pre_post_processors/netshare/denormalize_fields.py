@@ -227,8 +227,8 @@ def denormalize_fields(
                 unnormalized_timeseries, timeseries_fields, is_session_key=False
             )
 
-            csv_root_folder = csv_root_folder = config["eval_root_folder"].replace(
-                generated_data_folder, post_processed_data_folder)
+            csv_root_folder = os.path.join(
+                config["eval_root_folder"], "syn_dfs")
             csv_filename = f.replace(".npz", ".csv")
             write_to_csv(
                 csv_folder=os.path.join(
