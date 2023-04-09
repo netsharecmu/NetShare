@@ -1,39 +1,26 @@
 import inspect
-import pickle
-import ipaddress
 import copy
-import time
-import more_itertools
 import os
-import re
-import math
 import json
-import pickle
 import ctypes
-import pkgutil
 import shutil
 
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import netshare.ray as ray
 
 from gensim.models import Word2Vec
 from tqdm import tqdm
-import csv
 
-from .util import denormalize, _merge_syn_df, _recalulate_config_ids_in_each_config_group
 from .word2vec_embedding import word2vec_train
 from .embedding_helper import build_annoy_dictionary_word2vec
 from .preprocess_helper import countList2cdf, continuous_list_flag, plot_cdf
 from .preprocess_helper import df2chunks, split_per_chunk
-# from .postprocess_helper import
 from ..pre_post_processor import PrePostProcessor
-from netshare.utils import Tee, Output, output
 from netshare.utils import Normalization
 from netshare.utils import ContinuousField, DiscreteField, BitField, Word2VecField
 from netshare.utils import exec_cmd
 from .denormalize_fields import denormalize_fields
+from .choose_best_model import choose_best_model
 
 EPS = 1e-8
 
@@ -362,111 +349,11 @@ class NetsharePrePostProcessor(PrePostProcessor):
             post_processed_data_folder=output_folder
         )
 
-        # with open(os.path.join(
-        #         pre_processed_data_folder,
-        #         "chunkid-0",
-        #         'data_attribute_fields.pkl'), 'rb') as f:
-        #     metadata_fields = pickle.load(f)
-        # with open(os.path.join(
-        #         pre_processed_data_folder,
-        #         "chunkid-0",
-        #         'data_feature_fields.pkl'), 'rb') as f:
-        #     timeseries_fields = pickle.load(f)
-
-        # paths = [os.path.join(input_folder, p)
-        #          for p in os.listdir(input_folder)]
-
-        # for path in paths:
-        #     feat_raw_path = os.path.join(path, "feat_raw")
-        #     syn_path = os.path.join(path, "syn_dfs")
-        #     os.makedirs(syn_path, exist_ok=True)
-
-        #     data_files = os.listdir(feat_raw_path)
-
-        #     for d in data_files:
-        #         data_path = os.path.join(feat_raw_path, d)
-        #         data = np.load(data_path, allow_pickle=True)
-        #         unnormalized_metadata = data["data_attribute"]
-        #         unnormalized_timeseries = data["data_feature"]
-        #         data_gen_flag = data["data_gen_flag"]
-        #         config = data["config"][()]
-
-        #         timeseries = []
-        #         metadata = []
-        #         dim = 0
-
-        #         for field_i, field in enumerate(metadata_fields):
-        #             print(type(field))
-        #             if isinstance(field, BitField):
-        #                 field_dims = sum(f.dim for f in field.getOutputType())
-        #                 bits_ = unnormalized_metadata[
-        #                     :, dim: dim + field_dims].tolist()
-        #                 sub_metadata = np.array(
-        #                     [field.denormalize(b) for b in bits_])
-        #             elif 'word2vec' in getattr(field, 'encoding', ''):
-        #                 field_dims = field.getOutputType().dim
-        #                 get_original_objs
-        #             else:
-        #                 field_dims = field.getOutputType().dim
-        #                 sub_metadata = field.denormalize(
-        #                     unnormalized_metadata[
-        #                         :, dim: dim + field_dims])
-        #             if getattr(self._config.metadata[field_i], 'log1p_norm',
-        #                        False):
-        #                 sub_metadata = np.exp(sub_metadata) - 1
-        #             if isinstance(field, ContinuousField):
-        #                 sub_metadata = sub_metadata[:, 0]
-        #             metadata.append(sub_metadata)
-        #             dim += field_dims
-        #         assert dim == unnormalized_metadata.shape[1]
-
-        #         exit()
-
-        #         # dim = 0
-        #         # for field_i, field in enumerate(timeseries_fields):
-        #         #     if isinstance(field, BitField):
-        #         #         field_dims = sum(f.dim for f in field.getOutputType())
-        #         #         bits_ = unnormalized_metadata[
-        #         #             :, dim: dim + field_dims].tolist()
-        #         #         sub_metadata = np.array(
-        #         #             [field.denormalize(b) for b in bits_])
-        #         #     else:
-        #         #         field_dims = field.getOutputType().dim
-        #         #         sub_metadata = field.denormalize(
-        #         #             unnormalized_metadata[
-        #         #                 :, dim: dim + field_dims])
-        #         #     if getattr(self._config.metadata[field_i], 'log1p_norm',
-        #         #                False):
-        #         #         sub_metadata = np.exp(sub_metadata) - 1
-        #         #     if isinstance(field, ContinuousField):
-        #         #         sub_metadata = sub_metadata[:, 0]
-        #         #     metadata.append(sub_metadata)
-        #         #     dim += field_dims
-        #         # assert dim == unnormalized_metadata.shape[1]
-
-        #         chunk_id, iteration_id = re.search(
-        #             r"chunk_id-(\d+)_iteration_id-(\d+).npz", d).groups()
-
-        #         save_path = os.path.join(
-        #             syn_path,
-        #             "chunk_id-{}".format(chunk_id))
-        #         os.makedirs(save_path, exist_ok=True)
-        #         timeseries_array = np.array(timeseries).transpose(1, 2, 0)
-        #         metadata_array = np.array(metadata).transpose(1, 0)
-        #         with open(os.path.join(
-        #                 save_path,
-        #                 "syn_df_iteration_id-{}.csv".format(iteration_id)), "w") as f:
-        #             writer = csv.writer(f)
-        #             writer.writerow(
-        #                 [field.name for field in metadata_fields] +
-        #                 [field.name for field in timeseries_fields])
-        #             for i in tqdm(range(unnormalized_timeseries.shape[0])):
-        #                 for j in range(unnormalized_timeseries.shape[1]):
-        #                     if data_gen_flag[i][j] == 1.0:
-        #                         writer.writerow(
-        #                             list(
-        #                                 metadata_array[i]) +
-        #                             list(
-        #                                 timeseries_array[i][j]))
+        denormalize_fields(
+            config_pre_post_processor=self._config,
+            pre_processed_data_folder=pre_processed_data_folder,
+            generated_data_folder=input_folder,
+            post_processed_data_folder=output_folder
+        )
 
         return True
