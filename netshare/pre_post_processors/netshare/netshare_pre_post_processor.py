@@ -342,14 +342,14 @@ class NetsharePrePostProcessor(PrePostProcessor):
                       pre_processed_data_folder, log_folder):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
-        denormalize_fields(
-            config_pre_post_processor=self._config,
-            pre_processed_data_folder=pre_processed_data_folder,
-            generated_data_folder=input_folder,
-            post_processed_data_folder=output_folder
-        )
+        # denormalize_fields(
+        #     config_pre_post_processor=self._config,
+        #     pre_processed_data_folder=pre_processed_data_folder,
+        #     generated_data_folder=input_folder,
+        #     post_processed_data_folder=output_folder
+        # )
 
-        denormalize_fields(
+        choose_best_model(
             config_pre_post_processor=self._config,
             pre_processed_data_folder=pre_processed_data_folder,
             generated_data_folder=input_folder,
