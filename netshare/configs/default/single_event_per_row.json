@@ -24,7 +24,8 @@
             "max_flow_len": null,
             "norm_option": 0,
             "split_name": "multichunk_dep_v2",
-            "df2chunks": "fixed_time"
+            "df2chunks": "fixed_time",
+            "truncate": "per_chunk"
         }
     },
     "model_manager": {

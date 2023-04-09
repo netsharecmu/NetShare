@@ -66,12 +66,15 @@ class ContinuousField(Field):
                              f"Expected dimension is {self.dim_x}")
         # [0, 1] normalization
         if self.norm_option == Normalization.ZERO_ONE:
-            to_return = norm_x * float(self.max_x - self.min_x) + self.min_x
+            to_return = np.asarray(
+                norm_x * float(self.max_x - self.min_x) + self.min_x,
+                dtype=np.float64)
 
         # [-1, 1] normalization
         elif self.norm_option == Normalization.MINUSONE_ONE:
-            to_return = (norm_x + 1) / 2.0 * \
-                float(self.max_x - self.min_x) + self.min_x
+            to_return = np.asarray((norm_x + 1) / 2.0 *
+                                   float(self.max_x - self.min_x) + self.min_x,
+                                   dtype=np.float64)
 
         else:
             raise Exception("Not valid normalization option!")

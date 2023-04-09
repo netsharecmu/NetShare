@@ -125,7 +125,7 @@ def write_to_csv(
                 interarrival_cumsum = np.cumsum(
                     timeseries_numpy[:, :, interarrival_within_flow_idx].astype(
                         float),
-                    axis=1,)
+                    axis=1)
                 # first packet has 0.0 interarrival
                 interarrival_cumsum[:, 0] = 0.0
                 flow_start_expand = (
@@ -214,8 +214,7 @@ def denormalize_fields(
         for f in os.listdir(per_chunk_basedir):
             if not f.endswith(".npz"):
                 continue
-            per_iteration_npzfile = os.path.join(per_chunk_basedir, f)
-            data = np.load(per_iteration_npzfile)
+            data = np.load(os.path.join(per_chunk_basedir, f))
             unnormalized_session_key = data["data_attribute"]
             unnormalized_timeseries = data["data_feature"]
             data_gen_flag = data["data_gen_flag"]

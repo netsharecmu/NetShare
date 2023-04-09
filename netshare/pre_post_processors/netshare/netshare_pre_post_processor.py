@@ -343,19 +343,19 @@ class NetsharePrePostProcessor(PrePostProcessor):
         print(f"{self.__class__.__name__}.{inspect.stack()[0][3]}")
 
         # Denormalize the fields (e.g. int to IP, vector to word, etc.)
-        denormalize_fields(
-            config_pre_post_processor=self._config,
-            pre_processed_data_folder=pre_processed_data_folder,
-            generated_data_folder=input_folder,
-            post_processed_data_folder=output_folder
-        )
-
-        # Choose the best generated data across different hyperparameters/checkpoints
-        # choose_best_model(
+        # denormalize_fields(
         #     config_pre_post_processor=self._config,
         #     pre_processed_data_folder=pre_processed_data_folder,
         #     generated_data_folder=input_folder,
         #     post_processed_data_folder=output_folder
         # )
+
+        # Choose the best generated data across different hyperparameters/checkpoints
+        choose_best_model(
+            config_pre_post_processor=self._config,
+            pre_processed_data_folder=pre_processed_data_folder,
+            generated_data_folder=input_folder,
+            post_processed_data_folder=output_folder
+        )
 
         return True
