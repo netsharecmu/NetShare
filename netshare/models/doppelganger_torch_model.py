@@ -212,7 +212,8 @@ class DoppelGANgerTorchModel(Model):
         generatedSamples_per_epoch = 1
 
         for epoch_id in epoch_range:
-            if last_iteration_found == True:
+            if last_iteration_found and \
+                    not self._config["given_data_attribute_flag"]:
                 break
 
             print("Processing epoch_id: {}".format(epoch_id))
