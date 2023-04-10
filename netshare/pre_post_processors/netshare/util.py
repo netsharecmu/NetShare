@@ -39,9 +39,14 @@ def convert_sdmetricsConfigQuant_to_fieldValueDict(
     fieldValueDict = {}
     for metric_type, metrics in sdmetricsConfigQuant.items():
         for metric_class_name, metric_class in metrics.items():
-            for field_name, field_value in metric_class.items():
-                fieldValueDict[ast.literal_eval(
-                    field_name)[0]] = field_value[0][0]
+            # metrics with target (e.g., attr dist similarity)
+            if isinstance(metric_class, dict):
+                for field_name, field_value in metric_class.items():
+                    fieldValueDict[ast.literal_eval(
+                        field_name)[0]] = field_value[0][0]
+            # metrics without target (e.g., session length)
+            elif isinstance(metric_class, list):
+                fieldValueDict[metric_class_name] = metric_class[0][0]
 
     return fieldValueDict
 

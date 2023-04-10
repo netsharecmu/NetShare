@@ -136,8 +136,8 @@ def choose_best_model(
         assert len(syn_dfs) >= 1
         if len(syn_dfs) > 1:
             best_syndf_idx, best_syn_df = compare_rawdf_syndfs(
-                big_raw_df, syn_dfs, config_pre_post_processor
-            )
+                big_raw_df[syn_dfs[0].columns],
+                syn_dfs, config_pre_post_processor)
             dict_dataset_bestsyndf[dpnoisemultiplier] = best_syn_df
         else:
             dict_dataset_bestsyndf[dpnoisemultiplier] = syn_dfs[0]
