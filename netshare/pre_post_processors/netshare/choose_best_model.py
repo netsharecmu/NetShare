@@ -4,12 +4,15 @@ import json
 import pandas as pd
 import numpy as np
 
+from .util import create_sdmetrics_config
+
 
 def compare_rawdf_syndfs(
     raw_df,
     syn_dfs,
     config_pre_post_processor
 ):
+    sdmetrics_config = create_sdmetrics_config(config_pre_post_processor)
 
 
 def choose_best_model(

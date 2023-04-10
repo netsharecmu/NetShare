@@ -2,6 +2,7 @@ import os
 import re
 import pickle
 import math
+import json
 import socket
 import struct
 import ipaddress
@@ -29,7 +30,9 @@ def create_sdmetrics_config(
 ):
     # Refer to https://github.com/netsharecmu/SDMetrics_timeseries/blob/master/sdmetrics/reports/timeseries/sunglasses_qr.json to see the format of the config file
     sdmetrics_config = {
-        "metadata": {},
+        "metadata": {
+            "fields": {}
+        },
         "config": {
             "metrics": {
                 "fidelity": []
@@ -39,11 +42,55 @@ def create_sdmetrics_config(
 
     # Enumerate through all the fields in the metadata, timeseries, and timestamp
     for i, field in enumerate(config_pre_post_processor.metadata +
-                              config_pre_post_processor.timeseries +
-                              [config_pre_post_processor.timestamp.column
-                               if config_pre_post_processor.timestamp.generation else
-                               None]):
-        if 'bit' in getattr(field, 'encoding', '')
+                              config_pre_post_processor.timeseries):
+        if field in config_pre_post_processor.metadata:
+            metric_class_name = "Single attribute distributional similarity"
+            class_name = "AttrDistSimilarity"
+        elif field in config_pre_post_processor.timeseries:
+            metric_class_name = "Single feature distributional similarity"
+            class_name = "FeatureDistSimilarity"
+        if 'bit' in getattr(field, 'encoding', '') or \
+            'word2vec' in getattr(field, 'encoding', '') or \
+                'categorical' in getattr(field, 'encoding', ''):
+            sdmetrics_config["metadata"]["fields"][
+                field.column] = {
+                "type": "categorical"}
+        if getattr(field, 'type', '') == 'float':
+            sdmetrics_config["metadata"]["fields"][
+                field.column] = {
+                "type": "numerical"}
+        sdmetrics_config["config"]["metrics"]["fidelity"].append(
+            {
+                metric_class_name: {
+                    "class": class_name,
+                    "target_list": [[field.column]],
+                    "configs": {
+                        "categorical_mapping": getattr(field, 'categorical_mapping', True)
+                    }
+                }
+            }
+        )
+
+    # Add session length metric if the dataset is a pcap
+    if config_pre_post_processor.dataset_type == 'pcap':
+        sdmetrics_config["config"]["metrics"]["fidelity"].append(
+            {
+                "Session length distributional similarity": {
+                    "class": "SessionLengthDistSimilarity",
+                }
+            }
+        )
+    if config_pre_post_processor.timestamp.generation:
+        sdmetrics_config["metadata"]["fields"][
+            config_pre_post_processor.timestamp.column] = {
+            "type": "numerical"}
+    sdmetrics_config["metadata"]["entity_columns"] = [
+        field.column for field in config_pre_post_processor.metadata
+    ]
+    sdmetrics_config["metadata"]["sequence_index"] = config_pre_post_processor.timestamp.column if config_pre_post_processor.timestamp.generation else None
+    sdmetrics_config["metadata"]["context_columns"] = []
+
+    return sdmetrics_config
 
 
 def _last_lvl_folder(folder):
