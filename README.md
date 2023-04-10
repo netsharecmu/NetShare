@@ -3,6 +3,7 @@
 [[paper (SIGCOMM 2022)](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)]
 [[talk (SIGCOMM 2022)](https://www.youtube.com/watch?v=mWnFIncjtWg)]
 [[talk (ZeekWeek 2022)]](https://www.youtube.com/watch?v=MN_fa-FBOHg)
+[[talk (FloCon 2023)]](https://resources.sei.cmu.edu/library/asset-view.cfm?assetid=890917)
 [[web service demo](https://drive.google.com/file/d/1vPuneEb14A2w7fKyCJ41NAHzsvpLQP5H/view)]
 
 **Authors:** 
@@ -22,6 +23,12 @@
 - Add [SDMetrics](https://github.com/netsharecmu/SDMetrics_timeseries/tree/master/sdmetrics) for hyperparameter/model selection and data visualization
 
 [2022.08]: The outdated [`camera-ready`](https://github.com/netsharecmu/NetShare/tree/camera-ready) branch holds the scripts we used to run all the experiments in the [paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251).
+
+# Users
+NetShare has been used by several independent users/companies.
+
+- [Purdue CS536 Fall 2022 Class project](https://github.com/annuszulfiqar2021/NetShare)
+- [Rockfish Data](https://rockfish.ai/index.html)
 
 # Datasets
 ***We are adding more datasets! Feel free to add your own and contribute!***
