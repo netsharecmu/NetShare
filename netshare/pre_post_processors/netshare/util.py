@@ -3,6 +3,7 @@ import re
 import pickle
 import math
 import json
+import ast
 import socket
 import struct
 import ipaddress
@@ -23,6 +24,26 @@ from .dist_metrics import (
     compute_metrics_zeeklog_v3
 )
 from ...model_managers.netshare_manager.netshare_util import get_configid_from_kv
+
+
+def convert_sdmetricsConfigQuant_to_fieldValueDict(
+    sdmetricsConfigQuant
+):
+    '''Convert the sdmetricsConfigQuant to fieldValueDict
+    Args:
+        sdmetricsConfigQuant (dict): returned by create_sdmetrics_config(...,  comparison_type='quantitative')
+    Returns:
+        fieldValueDict (dict): {field_name: value}
+    '''
+
+    fieldValueDict = {}
+    for metric_type, metrics in sdmetricsConfigQuant.items():
+        for metric_class_name, metric_class in metrics.items():
+            for field_name, field_value in metric_class.items():
+                fieldValueDict[ast.literal_eval(
+                    field_name)[0]] = field_value[0][0]
+
+    return fieldValueDict
 
 
 def create_sdmetrics_config(

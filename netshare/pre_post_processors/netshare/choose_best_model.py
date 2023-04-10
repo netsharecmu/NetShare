@@ -4,7 +4,7 @@ import json
 import pandas as pd
 import numpy as np
 
-from .util import create_sdmetrics_config
+from .util import create_sdmetrics_config, convert_sdmetricsConfigQuant_to_fieldValueDict
 from sdmetrics.reports.timeseries import QualityReport
 
 
@@ -18,7 +18,9 @@ def compare_rawdf_syndfs(
         comparison_type='quantitative')
     report = QualityReport(config_dict=sdmetrics_config['config'])
     report.generate(raw_df, syn_dfs[0], sdmetrics_config['metadata'])
-    print("\n\n\n", report.dict_metric_scores)
+    metricValueDict = convert_sdmetricsConfigQuant_to_fieldValueDict(
+        report.dict_metric_scores)
+    print(metricValueDict)
 
     ()+1
 
