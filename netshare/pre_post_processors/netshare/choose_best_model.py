@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 
 from .util import create_sdmetrics_config
+from sdmetrics.reports.timeseries import QualityReport
 
 
 def compare_rawdf_syndfs(
@@ -12,7 +13,14 @@ def compare_rawdf_syndfs(
     syn_dfs,
     config_pre_post_processor
 ):
-    sdmetrics_config = create_sdmetrics_config(config_pre_post_processor)
+    sdmetrics_config = create_sdmetrics_config(
+        config_pre_post_processor,
+        comparison_type='quantitative')
+    report = QualityReport(config_dict=sdmetrics_config['config'])
+    report.generate(raw_df, syn_dfs[0], sdmetrics_config['metadata'])
+    print("\n\n\n", report.dict_metric_scores)
+
+    ()+1
 
 
 def choose_best_model(
@@ -81,5 +89,5 @@ def choose_best_model(
 
         print("Average truncation ratio:", np.mean(truncate_ratios))
         compare_rawdf_syndfs(
-            raw_df, syn_dfs, config_pre_post_processor
+            raw_df[syn_dfs[0].columns], syn_dfs, config_pre_post_processor
         )

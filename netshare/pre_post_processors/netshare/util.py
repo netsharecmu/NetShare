@@ -26,7 +26,8 @@ from ...model_managers.netshare_manager.netshare_util import get_configid_from_k
 
 
 def create_sdmetrics_config(
-    config_pre_post_processor
+    config_pre_post_processor,
+    comparison_type='both'
 ):
     # Refer to https://github.com/netsharecmu/SDMetrics_timeseries/blob/master/sdmetrics/reports/timeseries/sunglasses_qr.json to see the format of the config file
     sdmetrics_config = {
@@ -65,7 +66,8 @@ def create_sdmetrics_config(
                     "class": class_name,
                     "target_list": [[field.column]],
                     "configs": {
-                        "categorical_mapping": getattr(field, 'categorical_mapping', True)
+                        "categorical_mapping": getattr(field, 'categorical_mapping', True),
+                        "comparison_type": comparison_type
                     }
                 }
             }
@@ -77,6 +79,9 @@ def create_sdmetrics_config(
             {
                 "Session length distributional similarity": {
                     "class": "SessionLengthDistSimilarity",
+                    "configs": {
+                        "comparison_type": comparison_type
+                    }
                 }
             }
         )
@@ -84,6 +89,21 @@ def create_sdmetrics_config(
         sdmetrics_config["metadata"]["fields"][
             config_pre_post_processor.timestamp.column] = {
             "type": "numerical"}
+        sdmetrics_config["config"]["metrics"]["fidelity"].append(
+            {
+                "Single feature distributional similarity": {
+                    "class": "FeatureDistSimilarity",
+                    "target_list": [
+                        [
+                            config_pre_post_processor.timestamp.column
+                        ]
+                    ],
+                    "configs": {
+                        "comparison_type": comparison_type
+                    }
+                }
+            }
+        )
     sdmetrics_config["metadata"]["entity_columns"] = [
         field.column for field in config_pre_post_processor.metadata
     ]
