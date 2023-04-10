@@ -5,6 +5,13 @@ import pandas as pd
 import numpy as np
 
 
+def compare_rawdf_syndfs(
+    raw_df,
+    syn_dfs,
+    config_pre_post_processor
+):
+
+
 def choose_best_model(
     config_pre_post_processor,
     pre_processed_data_folder,
@@ -37,6 +44,7 @@ def choose_best_model(
         ) == len(config_ids)
 
         best_syndfs = []
+        truncate_ratios = []
         for chunk_id, config_idx in enumerate(config_ids):
             config = configs[config_idx]
             raw_df = pd.read_csv(os.path.join(config["dataset"], "raw.csv"))
@@ -49,7 +57,6 @@ def choose_best_model(
             syn_df_folder = os.path.join(
                 syndf_root_folder, "chunk_id-{}".format(chunk_id)
             )
-            truncate_ratios = []
             for file in os.listdir(syn_df_folder):
                 if file.endswith(".csv"):
                     syn_dfs_names.append(file)
@@ -69,4 +76,7 @@ def choose_best_model(
 
                     syn_dfs.append(syn_df_truncated)
 
-            print("Average truncation ratio:", np.mean(truncate_ratios))
+        print("Average truncation ratio:", np.mean(truncate_ratios))
+        compare_rawdf_syndfs(
+            raw_df, syn_dfs, config_pre_post_processor
+        )
