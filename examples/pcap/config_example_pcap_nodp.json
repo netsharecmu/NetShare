@@ -27,13 +27,15 @@
                     "column": "srcip",
                     "type": "integer",
                     "encoding": "bit",
-                    "n_bits": 32
+                    "n_bits": 32,
+                    "categorical_mapping": false
                 },
                 {
                     "column": "dstip",
                     "type": "integer",
                     "encoding": "bit",
-                    "n_bits": 32
+                    "n_bits": 32,
+                    "categorical_mapping": false
                 },
                 {
                     "column": "srcport",
@@ -107,7 +109,7 @@
                 10
             ],
             "sample_len_expand": true,
-            "epochs": 20,
+            "epochs": 40,
             "extra_checkpoint_freq": 1,
             "epoch_checkpoint_freq": 5
         }

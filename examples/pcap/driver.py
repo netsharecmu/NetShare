@@ -16,5 +16,6 @@ if __name__ == '__main__':
     # since Ray has bugs when dealing with relative paths.
     generator.train(work_folder='../../results/test-caida')
     generator.generate(work_folder='../../results/test-caida')
+    generator.visualize(work_folder='../../results/test-caida')
 
     ray.shutdown()

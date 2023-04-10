@@ -2,6 +2,7 @@
 
 [[paper (SIGCOMM 2022)](https://dl.acm.org/doi/abs/10.1145/3544216.3544251)]
 [[talk (SIGCOMM 2022)](https://www.youtube.com/watch?v=mWnFIncjtWg)]
+[[talk (ZeekWeek 2022)]](https://www.youtube.com/watch?v=MN_fa-FBOHg)
 [[web service demo](https://drive.google.com/file/d/1vPuneEb14A2w7fKyCJ41NAHzsvpLQP5H/view)]
 
 **Authors:** 
@@ -15,9 +16,10 @@
 
 # News
 [2023.04] Woohoo! New version released with a list of new features:
+- Bump Python version to 3.9
 - Replace tensorflow 1.15 with torch
 - Support generic dataset formats
-- Add [SDMetrics](https://github.com/netsharecmu/SDMetrics_timeseries/tree/master/sdmetrics) for data visualization
+- Add [SDMetrics](https://github.com/netsharecmu/SDMetrics_timeseries/tree/master/sdmetrics) for hyperparameter/model selection and data visualization
 
 [2022.08]: The outdated [`camera-ready`](https://github.com/netsharecmu/NetShare/tree/camera-ready) branch holds the scripts we used to run all the experiments in the [paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251).
 
@@ -28,10 +30,8 @@ Our paper uses **six** public datasets for reproducibility. Please download the 
 
 You may also refer to the [README](traces/README.md) for detailed descriptions of the datasets.
 
-You may also refer to [a quick guide](netshare/pre_post_processors/README.md) to add your own datasets and [an example on pre-/post-processing zeek logs](netshare/pre_post_processors/netshare/zeeklog_pre_post_processor.py).
 
-
-# Getting started
+# Setup
 ## Step 1: Install NetShare Python package (Required)
 We recommend installing NetShare in a virtual environment (e.g., Anaconda3). We test with virtual environment with Python==3.6.
 
@@ -59,95 +59,48 @@ ray start --head --port=6379 --include-dashboard=True --dashboard-host=0.0.0.0 -
 
 Please go to [http://localhost:8265](http://localhost:8265) to view the Ray dashboard.
 
-<!-- <p align="center">
-  <img width="1000" src="doc/figs/ray_dashboard_example.png">
-</p>
-<p align="center">
-  Figure 1: Example of Ray Dashboard
-</p> -->
 
 ### Multi-machines (**strongly** recommended for faster training/generation)
 We provide a utility script and [README](util/README.md) under `util/` for setting up a Ray cluster. As a reference, we are using [Cloudlab](https://www.cloudlab.us/) which is referred as ``custom cluster'' in the Ray documentation. If you are using a different cluster (e.g., AWS, GCP, Azure), please refer to the [Ray doc](https://docs.ray.io/en/releases-2.0.0rc0/cluster/cloud.html#cluster-cloud) for full reference.
-
-## Step 3: Quick visualization (Optional)
-If you would like to have a quick idea of how the synthetic data looks like, you may preload some examples of our generated data simply by going to [examples](examples/) folder and run [vis.py](examples/vis.py):
-```Bash
-cd examples/
-python3 vis.py
-```
-
-The visualization dashboard is at http://localhost:8000/
 
 
 
 # Example usage
 ***We are adding more examples of usage (PCAP, NetFlow, w/ and w/o DP). Please stay tuned!***
 
-Here is a minimal working example to generate synthetic PCAP files without differential privacy. Please change your working directory to  `examples/` by `cd examples/`. 
+Here is a minimal working example to generate synthetic netflow files without differential privacy. Please change your working directory to  `examples/` by `cd examples/`. 
 
 You may refer to [`examples`](examples/) for more scripts and config files. 
 
-[Driver code](examples/driver.py)
+[Driver code](examples/netflow/driver.py)
 ```Python
+import random
 import netshare.ray as ray
 from netshare import Generator
 
 if __name__ == '__main__':
     # Change to False if you would not like to use Ray
-    ray.config.enabled = True
+    ray.config.enabled = False
     ray.init(address="auto")
 
     # configuration file
-    generator = Generator(config="pcap/config_example_pcap_nodp.json")
+    generator = Generator(config="config_example_netflow_nodp.json")
 
     # `work_folder` should not exist o/w an overwrite error will be thrown.
     # Please set the `worker_folder` as *absolute path*
     # if you are using Ray with multi-machine setup
     # since Ray has bugs when dealing with relative paths.
-    generator.train_and_generate(work_folder='../results/test')
+    generator.train(work_folder=f'../../results/test-ugr16')
+    generator.generate(work_folder=f'../../results/test-ugr16')
+    generator.visualize(work_folder=f'../../results/test-ugr16')
 
     ray.shutdown()
 ```
 
-The corresponding [configuration file](examples/pcap/config_example_pcap_nodp.json):
-```json
-{
-    "global_config": {
-        "original_data_file": "../traces/caida/raw.pcap",
-        "dataset_type": "pcap",
-        "n_chunks": 10,
-        "dp": false
-    },
-    "default": "pcap.json"
-}
-```
-
+The corresponding [configuration file](examples/netflow/config_example_netflow_nodp.json).
 You may refer to [README](netshare/configs/README.md) for detailed explanations of the configuration files.
 
-<!-- After generation, you will be redirected to a dashboard where a side-to-side visual comparison between real and synthetic data will be shown. -->
-
-Notice that we provide a bunch of [default configurations](netshare/configs/default) for different datasets/training mechanisms. In most cases you only need to write a few lines of configs.
-
-**Tip #1: if you only want to quickly verify NetShare does train and generate, you may use a much smaller number of training iterations to save time, simply modify the configuration file as follows:**
-```json
-{
-    "global_config": {
-        "original_data_file": "../traces/caida/raw.pcap",
-        "dataset_type": "pcap",
-        "n_chunks": 10,
-        "dp": false
-    },
-    "model": {
-        "class": "DoppelGANgerTFModel",
-        "config": {
-            "iteration": 40,
-            "extra_checkpoint_freq": 10,
-            "epoch_checkpoint_freq": 5
-        }
-    },
-    "default": "pcap.json"
-}
-```
+After generation, you will be redirected to a dashboard where a side-to-side visual comparison between real and synthetic data will be shown.
 
 # Codebase structure (for *dev* purpose)
 ```
@@ -155,7 +108,6 @@ Notice that we provide a bunch of [default configurations](netshare/configs/defa
 ├── examples                  # Examples of using NetShare on different datasets
 ├── netshare                  # NetShare source code
 │   ├── configs               # Default configurations  
-│   ├── dashboard             # visualization of real v.s. synthetic data  
 │   ├── generators            # Generator class
 │   ├── model_managers        # Core of NetShare service (i.e, train/generate)
 │   ├── models                # Timeseries GAN models (e.g., DoppelGANger)
@@ -199,7 +151,3 @@ Part of the source code is adapated from the following open-source projects:
 - [Ray](https://github.com/ray-project/ray)
 - [config_io](https://github.com/fjxmlzn/config_io)
 - [SDMetrics](https://github.com/sdv-dev/SDMetrics)
-
-# TODOs:
-- [ ] Bump Python version to 3.9
-- [ ] Hyperparameter selection using SDMetrics
