@@ -238,6 +238,6 @@ class Generator(object):
         )
         my_report = QualityReport(
             config_dict=sdmetrics_config['config'])
-        my_report.generate(real_data, synthetic_data,
+        my_report.generate(real_data[synthetic_data.columns], synthetic_data,
                            sdmetrics_config['metadata'])
         my_report.visualize()
