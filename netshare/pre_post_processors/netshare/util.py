@@ -27,9 +27,23 @@ from ...model_managers.netshare_manager.netshare_util import get_configid_from_k
 def create_sdmetrics_config(
     config_pre_post_processor
 ):
+    # Refer to https://github.com/netsharecmu/SDMetrics_timeseries/blob/master/sdmetrics/reports/timeseries/sunglasses_qr.json to see the format of the config file
     sdmetrics_config = {
-
+        "metadata": {},
+        "config": {
+            "metrics": {
+                "fidelity": []
+            }
+        }
     }
+
+    # Enumerate through all the fields in the metadata, timeseries, and timestamp
+    for i, field in enumerate(config_pre_post_processor.metadata +
+                              config_pre_post_processor.timeseries +
+                              [config_pre_post_processor.timestamp.column
+                               if config_pre_post_processor.timestamp.generation else
+                               None]):
+        if 'bit' in getattr(field, 'encoding', '')
 
 
 def _last_lvl_folder(folder):
