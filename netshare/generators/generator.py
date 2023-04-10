@@ -1,13 +1,16 @@
 import os
+import re
 import copy
 import warnings
-import shutil
+import pandas as pd
 
 import netshare.pre_post_processors as pre_post_processors
 import netshare.model_managers as model_managers
 import netshare.models as models
+from ..pre_post_processors.netshare.util import create_sdmetrics_config
 
 from config_io import Config
+from sdmetrics.reports.timeseries import QualityReport
 from ..configs import default as default_configs
 
 
@@ -200,5 +203,41 @@ class Generator(object):
     def visualize(self, work_folder):
         work_folder = os.path.expanduser(work_folder)
         os.makedirs(self._get_visualization_folder(work_folder), exist_ok=True)
+        real_data = pd.read_csv(
+            os.path.join(
+                self._get_pre_processed_data_folder(work_folder), "raw.csv"))
+        # Find synthetic data with the largest ID
+        syn_data_list = [
+            f
+            for f in os.listdir(
+                self._get_post_processed_data_folder(work_folder))
+            if f.endswith('.csv')]
+        id_pattern = re.compile(r'id-(\d+).csv')
+        ids = [int(id_pattern.search(filename).group(1))
+               for filename in syn_data_list if id_pattern.search(filename)]
+        # Find the largest ID
+        largest_id = max(ids)
+        # Find the filename corresponding to the largest ID
+        filename_with_largest_id = [
+            filename for filename in syn_data_list
+            if f'id-{largest_id}.csv' in filename][0]
+        print(
+            f'The filename with the largest ID is: {filename_with_largest_id}')
+        synthetic_data = pd.read_csv(os.path.join(
+            self._get_post_processed_data_folder(work_folder),
+            filename_with_largest_id
+        ))
 
-        return True
+        # Visualize the real data and synthetic data
+        pre_post_processor_config = Config(self._config["global_config"])
+        pre_post_processor_config.update(
+            self._config['pre_post_processor']['config'])
+        sdmetrics_config = create_sdmetrics_config(
+            pre_post_processor_config,
+            comparison_type='both'
+        )
+        my_report = QualityReport(
+            config_dict=sdmetrics_config['config'])
+        my_report.generate(real_data, synthetic_data,
+                           sdmetrics_config['metadata'])
+        my_report.visualize()
