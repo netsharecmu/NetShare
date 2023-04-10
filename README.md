@@ -38,15 +38,18 @@ We recommend installing NetShare in a virtual environment (e.g., Anaconda3). We 
 ```Bash
 # Assume Anaconda is installed
 # Create virtual environment if not exists
-conda create --name NetShare python=3.6
+conda create --name NetShare python=3.9
 
 # Activate virtual env
 conda activate NetShare
 
 # Install NetShare package
 git clone https://github.com/netsharecmu/NetShare.git
-cd NetShare/
-pip3 install -e .
+pip3 install -e NetShare/
+
+# Install SDMetrics package
+git clone https://github.com/netsharecmu/SDMetrics_timeseries
+pip3 install -e SDMetrics_timeseries/
 ```
 
 ## Step 2: How to start Ray? (Optional but **strongly** recommended)
@@ -68,7 +71,7 @@ We provide a utility script and [README](util/README.md) under `util/` for setti
 # Example usage
 ***We are adding more examples of usage (PCAP, NetFlow, w/ and w/o DP). Please stay tuned!***
 
-Here is a minimal working example to generate synthetic netflow files without differential privacy. Please change your working directory to  `examples/` by `cd examples/`. 
+Here is a minimal working example to generate synthetic netflow files without differential privacy. Please change your working directory to  `examples/<sub_example>` by `cd examples/<sub_example>`. 
 
 You may refer to [`examples`](examples/) for more scripts and config files. 
 
