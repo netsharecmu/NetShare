@@ -663,11 +663,11 @@ class DoppelGANger(object):
         if given_attribute is None and given_attribute_discrete is None:
             with torch.no_grad():
                 attribute, attribute_discrete, feature = self.generator(
-                    real_attribute_noise=real_attribute_noise,
-                    addi_attribute_noise=addi_attribute_noise,
-                    feature_input_noise=feature_input_noise,
-                    h0=h0,
-                    c0=c0
+                    real_attribute_noise=real_attribute_noise.to(self.device),
+                    addi_attribute_noise=addi_attribute_noise.to(self.device),
+                    feature_input_noise=feature_input_noise.to(self.device),
+                    h0=h0.to(self.device),
+                    c0=c0.to(self.device)
                 )
         else:
             given_attribute = torch.from_numpy(given_attribute).float()
@@ -675,15 +675,15 @@ class DoppelGANger(object):
                 given_attribute_discrete).float()
             with torch.no_grad():
                 attribute, attribute_discrete, feature = self.generator(
-                    real_attribute_noise=real_attribute_noise,
-                    addi_attribute_noise=addi_attribute_noise,
-                    feature_input_noise=feature_input_noise,
-                    h0=h0,
-                    c0=c0,
-                    given_attribute=given_attribute,
-                    given_attribute_discrete=given_attribute_discrete,
-                )
-        return attribute, attribute_discrete, feature
+                    real_attribute_noise=real_attribute_noise.to(self.device),
+                    addi_attribute_noise=addi_attribute_noise.to(self.device),
+                    feature_input_noise=feature_input_noise.to(self.device),
+                    h0=h0.to(self.device),
+                    c0=c0.to(self.device),
+                    given_attribute=given_attribute.to(self.device),
+                    given_attribute_discrete=given_attribute_discrete.to(
+                        self.device))
+        return attribute.cpu(), attribute_discrete.cpu(), feature.cpu()
 
     def _write_losses(self, loss_dict, iteration):
 
