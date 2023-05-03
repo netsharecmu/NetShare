@@ -323,6 +323,7 @@ class DoppelGANger(object):
             feature_num_layers=self.generator_feature_num_layers,
             batch_size=self.batch_size,
             use_adaptive_rolling=self.use_adaptive_rolling,
+            device=self.device
         )
         self.generator.to(self.device)
 

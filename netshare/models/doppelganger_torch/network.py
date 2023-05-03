@@ -400,7 +400,6 @@ class DoppelGANgerGenerator(torch.nn.Module):
                 batch_size, (steps - curr_step),
                 1).to(
                 self.device)
-
             feature.append(torch.cat((_zeros, _ones), 2))
             feature = torch.cat(feature, dim=1)
         else:
