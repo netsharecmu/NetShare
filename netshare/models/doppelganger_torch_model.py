@@ -73,7 +73,7 @@ class DoppelGANgerTorchModel(Model):
 
         dg = DoppelGANger(
             checkpoint_dir=checkpoint_dir,
-            sample_dir=self._config["sample_len"],
+            sample_dir=None,
             time_path=time_path,
             batch_size=self._config["batch_size"],
             real_attribute_mask=real_attribute_mask,
@@ -86,10 +86,28 @@ class DoppelGANgerTorchModel(Model):
             d_rounds=self._config["d_rounds"],
             g_rounds=self._config["g_rounds"],
             d_gp_coe=self._config["d_gp_coe"],
+            num_packing=self._config["num_packing"],
+            use_attr_discriminator=self._config["use_attr_discriminator"],
             attr_d_gp_coe=self._config["attr_d_gp_coe"],
             g_attr_d_coe=self._config["g_attr_d_coe"],
-            use_adaptive_rolling=self._config["use_adaptive_rolling"],
             epoch_checkpoint_freq=self._config["epoch_checkpoint_freq"],
+            attribute_latent_dim=self._config["attribute_latent_dim"],
+            feature_latent_dim=self._config["feature_latent_dim"],
+            g_lr=self._config["g_lr"],
+            g_beta1=self._config["g_beta1"],
+            d_lr=self._config["d_lr"],
+            d_beta1=self._config["d_beta1"],
+            attr_d_lr=self._config["attr_d_lr"],
+            attr_d_beta1=self._config["attr_d_beta1"],
+            generator_attribute_num_units=self._config["generator_attribute_num_units"],
+            generator_attribute_num_layers=self._config["generator_attribute_num_layers"],
+            generator_feature_num_units=self._config["generator_feature_num_units"],
+            generator_feature_num_layers=self._config["generator_feature_num_layers"],
+            use_adaptive_rolling=self._config["use_adaptive_rolling"],
+            discriminator_num_layers=self._config["discriminator_num_layers"],
+            discriminator_num_units=self._config["discriminator_num_units"],
+            attr_discriminator_num_layers=self._config["attr_discriminator_num_layers"],
+            attr_discriminator_num_units=self._config["attr_discriminator_num_units"],
             restore=getattr(self._config, "restore", False),
             pretrain_dir=self._config["pretrain_dir"]
         )
@@ -156,7 +174,7 @@ class DoppelGANgerTorchModel(Model):
 
         dg = DoppelGANger(
             checkpoint_dir=checkpoint_dir,
-            sample_dir=self._config["sample_len"],
+            sample_dir=None,
             time_path=time_path,
             batch_size=self._config["batch_size"],
             real_attribute_mask=real_attribute_mask,
@@ -169,13 +187,31 @@ class DoppelGANgerTorchModel(Model):
             d_rounds=self._config["d_rounds"],
             g_rounds=self._config["g_rounds"],
             d_gp_coe=self._config["d_gp_coe"],
+            num_packing=self._config["num_packing"],
+            use_attr_discriminator=self._config["use_attr_discriminator"],
             attr_d_gp_coe=self._config["attr_d_gp_coe"],
             g_attr_d_coe=self._config["g_attr_d_coe"],
+            epoch_checkpoint_freq=self._config["epoch_checkpoint_freq"],
+            attribute_latent_dim=self._config["attribute_latent_dim"],
+            feature_latent_dim=self._config["feature_latent_dim"],
+            g_lr=self._config["g_lr"],
+            g_beta1=self._config["g_beta1"],
+            d_lr=self._config["d_lr"],
+            d_beta1=self._config["d_beta1"],
+            attr_d_lr=self._config["attr_d_lr"],
+            attr_d_beta1=self._config["attr_d_beta1"],
+            generator_attribute_num_units=self._config["generator_attribute_num_units"],
+            generator_attribute_num_layers=self._config["generator_attribute_num_layers"],
+            generator_feature_num_units=self._config["generator_feature_num_units"],
+            generator_feature_num_layers=self._config["generator_feature_num_layers"],
             use_adaptive_rolling=self._config["use_adaptive_rolling"],
-            epoch_checkpoint_freq=self._config
-            ["epoch_checkpoint_freq"],
+            discriminator_num_layers=self._config["discriminator_num_layers"],
+            discriminator_num_units=self._config["discriminator_num_units"],
+            attr_discriminator_num_layers=self._config["attr_discriminator_num_layers"],
+            attr_discriminator_num_units=self._config["attr_discriminator_num_units"],
             restore=getattr(self._config, "restore", False),
-            pretrain_dir=self._config["pretrain_dir"])
+            pretrain_dir=self._config["pretrain_dir"]
+        )
 
         if self._config["given_data_attribute_flag"]:
             print("Generating from a given data attribute!")

@@ -104,7 +104,7 @@ def choose_best_model(
                     else:
                         raise ValueError("Unknown truncation methods...")
                     truncate_ratios.append(
-                        1.0 - len(syn_df_truncated)/len(syn_df))
+                        1.0 - len(syn_df_truncated) / len(syn_df))
 
                     syn_dfs.append(syn_df_truncated)
 

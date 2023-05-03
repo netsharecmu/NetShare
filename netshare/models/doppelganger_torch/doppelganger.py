@@ -36,32 +36,32 @@ class DoppelGANger(object):
         d_rounds,
         g_rounds,
         d_gp_coe,
-        num_packing=1,
-        use_attr_discriminator=True,
-        attr_d_gp_coe=None,
-        g_attr_d_coe=None,
-        epoch_checkpoint_freq=5,
-        attribute_latent_dim=5,
-        feature_latent_dim=5,
-        g_lr=0.001,
-        g_beta1=0.5,
-        d_lr=0.001,
-        d_beta1=0.5,
-        attr_d_lr=0.001,
-        attr_d_beta1=0.5,
+        num_packing,
+        use_attr_discriminator,
+        attr_d_gp_coe,
+        g_attr_d_coe,
+        epoch_checkpoint_freq,
+        attribute_latent_dim,
+        feature_latent_dim,
+        g_lr,
+        g_beta1,
+        d_lr,
+        d_beta1,
+        attr_d_lr,
+        attr_d_beta1,
         # DoppelGANgerGenerator related hyper-parameters
-        generator_attribute_num_units=100,
-        generator_attribute_num_layers=3,
-        generator_feature_num_units=100,
-        generator_feature_num_layers=1,
-        use_adaptive_rolling=True,
+        generator_attribute_num_units,
+        generator_attribute_num_layers,
+        generator_feature_num_units,
+        generator_feature_num_layers,
+        use_adaptive_rolling,
         # Discriminator related hyper-parameters
-        discriminator_num_layers=5,
-        discriminator_num_units=200,
+        discriminator_num_layers,
+        discriminator_num_units,
         # Attr discriminator related hyper-parameters
         # Please ignore these params if use_attr_discriminator = False
-        attr_discriminator_num_layers=5,
-        attr_discriminator_num_units=200,
+        attr_discriminator_num_layers,
+        attr_discriminator_num_units,
         # Pretrain-related
         restore=False,
         pretrain_dir=None
@@ -506,11 +506,13 @@ class DoppelGANger(object):
                         ).to(self.device)
                         h0 = Variable(
                             torch.normal(
-                                0, 1, (self.generator.feature_num_layers, self.batch_size, self.generator.feature_num_units)
+                                0, 1, (self.generator.feature_num_layers,
+                                       self.batch_size, self.generator.feature_num_units)
                             )).to(self.device)
                         c0 = Variable(
                             torch.normal(
-                                0, 1, (self.generator.feature_num_layers, self.batch_size, self.generator.feature_num_units)
+                                0, 1, (self.generator.feature_num_layers,
+                                       self.batch_size, self.generator.feature_num_units)
                             )).to(self.device)
 
                         fake_attribute, _, fake_feature = self.generator(
