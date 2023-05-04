@@ -26,6 +26,22 @@ from pathlib import Path
 
 
 @ray.remote(scheduling_strategy="SPREAD", max_calls=1)
+def _generate_session(
+        create_new_model,
+        configs,
+        config_idx,
+        log_folder):
+    config = configs[config_idx]
+    config["given_data_attribute_flag"] = False
+    model = create_new_model(config)
+    model.generate(
+        input_train_data_folder=config["dataset"],
+        input_model_folder=config["result_folder"],
+        output_syn_data_folder=config["eval_root_folder"],
+        log_folder=log_folder)
+
+
+@ray.remote(scheduling_strategy="SPREAD", max_calls=1)
 def _generate_attr(
         create_new_model,
         configs,

@@ -249,7 +249,7 @@ class DoppelGANgerTorchModel(Model):
 
         for epoch_id in epoch_range:
             if last_iteration_found and \
-                    not self._config["given_data_attribute_flag"]:
+                    not self._config["given_data_attribute_flag"] and getattr(self._config, "n_chunks") > 1:
                 break
 
             print("Processing epoch_id: {}".format(epoch_id))
@@ -298,15 +298,16 @@ class DoppelGANgerTorchModel(Model):
                     print(features.shape)
                     print(attributes.shape)
 
-                if getattr(self._config, "save_without_chunk", False):
+                if getattr(self._config, "save_without_chunk", False) or getattr(self._config, "n_chunks") == 1:
                     save_path = os.path.join(
                         output_syn_data_folder,
-                        f"epoch_id-{epoch_id}")
+                        "feat_raw",
+                        "chunk_id-0")
                     os.makedirs(save_path, exist_ok=True)
                     np.savez(
                         os.path.join(
                             save_path,
-                            "data.npz"),
+                            f"epoch_id-{epoch_id}.npz"),
                         data_attribute=attributes,
                         data_feature=features,
                         data_gen_flag=gen_flags)
