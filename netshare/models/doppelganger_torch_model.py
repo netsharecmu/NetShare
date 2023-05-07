@@ -202,6 +202,8 @@ class DoppelGANgerTorchModel(Model):
             d_beta1=self._config["d_beta1"],
             attr_d_lr=self._config["attr_d_lr"],
             attr_d_beta1=self._config["attr_d_beta1"],
+            adam_eps=self._config["adam_eps"],
+            adam_amsgrad=self._config["adam_amsgrad"],
             generator_attribute_num_units=self._config["generator_attribute_num_units"],
             generator_attribute_num_layers=self._config["generator_attribute_num_layers"],
             generator_feature_num_units=self._config["generator_feature_num_units"],
