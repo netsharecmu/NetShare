@@ -9,7 +9,7 @@ from netshare.utils import output
 # from gan import output  # NOQA
 # sys.modules["output"] = output  # NOQA
 from .doppelganger_torch.doppelganger import DoppelGANger  # NOQA
-from .doppelganger_torch.util import add_gen_flag, normalize_per_sample, renormalize_per_sample  # NOQA
+from .doppelganger_torch.util import add_gen_flag, normalize_per_sample, renormalize_per_sample, reverse_gen_flag  # NOQA
 from .doppelganger_torch.load_data import load_data  # NOQA
 
 
@@ -288,6 +288,8 @@ class DoppelGANgerTorchModel(Model):
                     num_samples=num_samples,
                     given_attribute=given_data_attribute,
                     given_attribute_discrete=given_data_attribute_discrete)
+
+                gen_flags = reverse_gen_flag(gen_flags)
 
                 if self._config["self_norm"]:
                     features, attributes = renormalize_per_sample(

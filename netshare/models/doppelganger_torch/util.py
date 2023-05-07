@@ -159,3 +159,7 @@ def add_gen_flag(data_feature, data_gen_flag, data_feature_outputs,
         axis=2)
 
     return data_feature, data_feature_outputs
+
+def reverse_gen_flag(gen_flags):
+    gen_flags = np.concatenate((np.ones((gen_flags.shape[0], 1)), gen_flags[:, :-1]), axis=1)
+    return gen_flags

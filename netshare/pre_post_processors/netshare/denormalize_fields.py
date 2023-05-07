@@ -169,10 +169,9 @@ def write_to_csv(
                 continue
             session_key_set.add(tuple(session_data_per_session))
             for j in range(data_gen_per_session.shape[0]):
-                timeseries_data = timeseries_per_session[j].tolist()
-                writer.writerow(session_data_per_session + timeseries_data)
-                if data_gen_per_session[j] == 0.0:
-                    break
+                if data_gen_per_session[j] == 1.0:
+                    timeseries_data = timeseries_per_session[j].tolist()
+                    writer.writerow(session_data_per_session + timeseries_data)
 
 
 def denormalize_fields(
