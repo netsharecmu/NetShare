@@ -414,6 +414,27 @@ class DoppelGANgerGenerator(torch.nn.Module):
             feature = torch.cat(feature, dim=2)
         ###########
 
+        # feature: (batch_size, step/sample_len, num_feature*sample_len)
+        all_gen_flag = feature[
+            :, :, self.feature_out_dim - 2:: self.feature_out_dim
+        ]
+
+        # mask shape: (batch_size, step/sample_len)
+        mask_, _ = torch.min((all_gen_flag > 0.5).int(), 2)
+
+        if mask_.size()[1] > 1:
+            tmp_mask = mask_[:, 0]
+            for i in range(1, mask_.size()[1]):
+                mask_[:, i] *= tmp_mask
+                tmp_mask = mask_[:, i]
+
+        mask_shift = torch.cat((torch.ones(mask_.size()[0], 1), mask_[:, :-1]), axis=1)
+        # mask shape: (batch_size, step/sample_len, 1)
+        mask_shift = torch.unsqueeze(mask_shift, 2)
+        # mask shape: (batch_size, step/sample_len, num_feature*sample_len)
+        mask_shift = mask_shift.expand(feature.shape[0], feature.shape[1], feature.shape[2])
+        feature *= mask_shift
+
         feature = torch.reshape(
             feature,
             (

@@ -78,7 +78,8 @@ def get_vector(model, word, norm_option=False):
     # Suppose that protocol is covered
     #   while very few port numbers are out of range
     if word not in all_words_str:
-        # print(f"{word} not in dict")
+        print(f"{word} not in dict")
+        print("Help!!!!")
         all_words = []
         for ele in all_words_str:
             if ele.isdigit():
