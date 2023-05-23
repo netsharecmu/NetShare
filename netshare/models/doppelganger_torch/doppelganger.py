@@ -676,8 +676,8 @@ class DoppelGANger(object):
                     real_attribute_noise=real_attribute_noise.to(self.device),
                     addi_attribute_noise=addi_attribute_noise.to(self.device),
                     feature_input_noise=feature_input_noise.to(self.device),
-                    h0=h0.to(self.device),
-                    c0=c0.to(self.device)
+                    h0=h0.to(self.device).contiguous(),
+                    c0=c0.to(self.device).contiguous()
                 )
         else:
             given_attribute = torch.from_numpy(given_attribute).float()
@@ -688,8 +688,8 @@ class DoppelGANger(object):
                     real_attribute_noise=real_attribute_noise.to(self.device),
                     addi_attribute_noise=addi_attribute_noise.to(self.device),
                     feature_input_noise=feature_input_noise.to(self.device),
-                    h0=h0.to(self.device),
-                    c0=c0.to(self.device),
+                    h0=h0.to(self.device).contiguous(),
+                    c0=c0.to(self.device).contiguous(),
                     given_attribute=given_attribute.to(self.device),
                     given_attribute_discrete=given_attribute_discrete.to(
                         self.device))
