@@ -49,6 +49,8 @@ class DoppelGANger(object):
         d_beta1,
         attr_d_lr,
         attr_d_beta1,
+        adam_eps,
+        adam_amsgrad,
         # DoppelGANgerGenerator related hyper-parameters
         generator_attribute_num_units,
         generator_attribute_num_layers,
@@ -94,6 +96,8 @@ class DoppelGANger(object):
         self.d_beta1 = d_beta1
         self.attr_d_lr = attr_d_lr
         self.attr_d_beta1 = attr_d_beta1
+        self.adam_eps = adam_eps
+        self.adam_amsgrad = adam_amsgrad
 
         self.generator_attribute_num_units = generator_attribute_num_units
         self.generator_attribute_num_layers = generator_attribute_num_layers
@@ -348,7 +352,8 @@ class DoppelGANger(object):
             self.discriminator.parameters(),
             lr=self.d_lr,
             betas=(self.d_beta1, 0.999),
-            amsgrad=True,
+            eps=self.adam_eps,
+            amsgrad=self.adam_amsgrad,
         )
 
         if self.use_attr_discriminator:
@@ -356,7 +361,8 @@ class DoppelGANger(object):
                 self.attr_discriminator.parameters(),
                 lr=self.attr_d_lr,
                 betas=(self.attr_d_beta1, 0.999),
-                amsgrad=True,
+                eps=self.adam_eps,
+                amsgrad=self.adam_amsgrad,
             )
         else:
             self.opt_attr_discriminator = None
@@ -365,7 +371,8 @@ class DoppelGANger(object):
             self.generator.parameters(),
             lr=self.g_lr,
             betas=(self.g_beta1, 0.999),
-            amsgrad=True,
+            eps=self.adam_eps,
+            amsgrad=self.adam_amsgrad,
         )
 
         self.is_build = True
@@ -489,22 +496,22 @@ class DoppelGANger(object):
 
                 real_attribute = real_attribute.to(self.device)
                 real_feature = real_feature.to(self.device)
+                real_attribute_noise = self._gen_attribute_input_noise(
+                    self.batch_size
+                ).to(self.device)
+                addi_attribute_noise = self._gen_attribute_input_noise(
+                    self.batch_size
+                ).to(self.device)
+                feature_input_noise = self._gen_feature_input_noise(
+                    self.batch_size, self.sample_time
+                ).to(self.device)
 
                 for _ in range(self.d_rounds):
-
                     fake_attribute_list = []
                     fake_feature_list = []
 
                     for _ in range(self.num_packing):
-                        real_attribute_noise = self._gen_attribute_input_noise(
-                            self.batch_size
-                        ).to(self.device)
-                        addi_attribute_noise = self._gen_attribute_input_noise(
-                            self.batch_size
-                        ).to(self.device)
-                        feature_input_noise = self._gen_feature_input_noise(
-                            self.batch_size, self.sample_time
-                        ).to(self.device)
+
                         h0 = Variable(
                             torch.normal(
                                 0, 1, (self.generator.feature_num_layers,
@@ -669,8 +676,8 @@ class DoppelGANger(object):
                     real_attribute_noise=real_attribute_noise.to(self.device),
                     addi_attribute_noise=addi_attribute_noise.to(self.device),
                     feature_input_noise=feature_input_noise.to(self.device),
-                    h0=h0.to(self.device),
-                    c0=c0.to(self.device)
+                    h0=h0.to(self.device).contiguous(),
+                    c0=c0.to(self.device).contiguous()
                 )
         else:
             given_attribute = torch.from_numpy(given_attribute).float()
@@ -681,8 +688,8 @@ class DoppelGANger(object):
                     real_attribute_noise=real_attribute_noise.to(self.device),
                     addi_attribute_noise=addi_attribute_noise.to(self.device),
                     feature_input_noise=feature_input_noise.to(self.device),
-                    h0=h0.to(self.device),
-                    c0=c0.to(self.device),
+                    h0=h0.to(self.device).contiguous(),
+                    c0=c0.to(self.device).contiguous(),
                     given_attribute=given_attribute.to(self.device),
                     given_attribute_discrete=given_attribute_discrete.to(
                         self.device))

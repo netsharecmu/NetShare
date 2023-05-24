@@ -9,7 +9,7 @@ from netshare.utils import output
 # from gan import output  # NOQA
 # sys.modules["output"] = output  # NOQA
 from .doppelganger_torch.doppelganger import DoppelGANger  # NOQA
-from .doppelganger_torch.util import add_gen_flag, normalize_per_sample, renormalize_per_sample  # NOQA
+from .doppelganger_torch.util import add_gen_flag, normalize_per_sample, renormalize_per_sample, reverse_gen_flag  # NOQA
 from .doppelganger_torch.load_data import load_data  # NOQA
 
 
@@ -99,6 +99,8 @@ class DoppelGANgerTorchModel(Model):
             d_beta1=self._config["d_beta1"],
             attr_d_lr=self._config["attr_d_lr"],
             attr_d_beta1=self._config["attr_d_beta1"],
+            adam_eps=self._config["adam_eps"],
+            adam_amsgrad=self._config["adam_amsgrad"],
             generator_attribute_num_units=self._config["generator_attribute_num_units"],
             generator_attribute_num_layers=self._config["generator_attribute_num_layers"],
             generator_feature_num_units=self._config["generator_feature_num_units"],
@@ -200,6 +202,8 @@ class DoppelGANgerTorchModel(Model):
             d_beta1=self._config["d_beta1"],
             attr_d_lr=self._config["attr_d_lr"],
             attr_d_beta1=self._config["attr_d_beta1"],
+            adam_eps=self._config["adam_eps"],
+            adam_amsgrad=self._config["adam_amsgrad"],
             generator_attribute_num_units=self._config["generator_attribute_num_units"],
             generator_attribute_num_layers=self._config["generator_attribute_num_layers"],
             generator_feature_num_units=self._config["generator_feature_num_units"],
@@ -249,7 +253,7 @@ class DoppelGANgerTorchModel(Model):
 
         for epoch_id in epoch_range:
             if last_iteration_found and \
-                    not self._config["given_data_attribute_flag"]:
+                    not self._config["given_data_attribute_flag"] and getattr(self._config, "n_chunks") > 1:
                 break
 
             print("Processing epoch_id: {}".format(epoch_id))
@@ -285,6 +289,8 @@ class DoppelGANgerTorchModel(Model):
                     given_attribute=given_data_attribute,
                     given_attribute_discrete=given_data_attribute_discrete)
 
+                gen_flags = reverse_gen_flag(gen_flags)
+
                 if self._config["self_norm"]:
                     features, attributes = renormalize_per_sample(
                         features,
@@ -298,15 +304,16 @@ class DoppelGANgerTorchModel(Model):
                     print(features.shape)
                     print(attributes.shape)
 
-                if getattr(self._config, "save_without_chunk", False):
+                if getattr(self._config, "save_without_chunk", False) or getattr(self._config, "n_chunks") == 1:
                     save_path = os.path.join(
                         output_syn_data_folder,
-                        f"epoch_id-{epoch_id}")
+                        "feat_raw",
+                        "chunk_id-0")
                     os.makedirs(save_path, exist_ok=True)
                     np.savez(
                         os.path.join(
                             save_path,
-                            "data.npz"),
+                            f"epoch_id-{epoch_id}.npz"),
                         data_attribute=attributes,
                         data_feature=features,
                         data_gen_flag=gen_flags)

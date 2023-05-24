@@ -4,6 +4,7 @@ __pycache__/
 .vscode/
 placeholder
 data
+debug
 
 netshare/dashboard/static/tmp
 

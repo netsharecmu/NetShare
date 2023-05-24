@@ -116,14 +116,15 @@ def normalize_per_sample(
     return data_feature, data_attribute, data_attribute_outputs, real_attribute_mask
 
 
-def add_gen_flag(data_feature, data_gen_flag, data_feature_outputs, sample_len):
+def add_gen_flag(data_feature, data_gen_flag, data_feature_outputs,
+                 sample_len):
     for output in data_feature_outputs:
         if output.is_gen_flag:
-            raise Exception(
-                "is_gen_flag should be False for all"
-                "feature_outputs")
+            raise Exception("is_gen_flag should be False for all"
+                            "feature_outputs")
 
-    if data_feature.shape[2] != np.sum([t.dim for t in data_feature_outputs]):
+    if (data_feature.shape[2] !=
+            np.sum([t.dim for t in data_feature_outputs])):
         raise Exception("feature dimension does not match feature_outputs")
 
     if len(data_gen_flag.shape) != 2:
@@ -133,17 +134,32 @@ def add_gen_flag(data_feature, data_gen_flag, data_feature_outputs, sample_len):
 
     data_gen_flag = np.expand_dims(data_gen_flag, 2)
 
-    data_feature_outputs.append(
-        Output(type_=OutputType.DISCRETE, dim=2, is_gen_flag=True)
-    )
+    data_feature_outputs.append(Output(
+        type_=OutputType.DISCRETE,
+        dim=2,
+        is_gen_flag=True))
 
     shift_gen_flag = np.concatenate(
-        [data_gen_flag[:, 1:, :], np.zeros((data_gen_flag.shape[0], 1, 1))], axis=1
-    )
+        [data_gen_flag[:, 1:, :],
+         np.zeros((data_gen_flag.shape[0], 1, 1))],
+        axis=1)
     if length % sample_len != 0:
         raise Exception("length must be a multiple of sample_len")
+    data_gen_flag_t = np.reshape(
+        data_gen_flag,
+        [num_sample, int(length / sample_len), sample_len])
+    data_gen_flag_t = np.sum(data_gen_flag_t, 2)
+    data_gen_flag_t = data_gen_flag_t > 0.5
+    data_gen_flag_t = np.repeat(data_gen_flag_t, sample_len, axis=1)
+    data_gen_flag_t = np.expand_dims(data_gen_flag_t, 2)
     data_feature = np.concatenate(
-        [data_feature, shift_gen_flag, (1 - shift_gen_flag)], axis=2
-    )
+        [data_feature,
+         shift_gen_flag,
+         (1 - shift_gen_flag) * data_gen_flag_t],
+        axis=2)
 
     return data_feature, data_feature_outputs
+
+def reverse_gen_flag(gen_flags):
+    gen_flags = np.concatenate((np.ones((gen_flags.shape[0], 1)), gen_flags[:, :-1]), axis=1)
+    return gen_flags

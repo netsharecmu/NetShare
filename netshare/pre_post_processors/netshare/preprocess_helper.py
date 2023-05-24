@@ -261,7 +261,7 @@ def split_per_chunk(
         time_col = config["timestamp"]["column"]
 
         if config["timestamp"]["encoding"] == "interarrival":
-            gk = df_per_chunk.groupby([m.column for m in metadata_cols])
+            gk = df_per_chunk.groupby(new_metadata_list)
             flow_start_list = list(gk.first()[time_col])
             metadata_fields.append(ContinuousField(
                 name="flow_start",

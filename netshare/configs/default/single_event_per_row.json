@@ -65,6 +65,8 @@
             "d_lr": 0.0001,
             "d_beta1": 0.5,
             "d_gp_coe": 10.0,
+            "adam_eps": 1e-8,
+            "adam_amsgrad": false,
             "generator_feature_num_layers": 1,
             "generator_feature_num_units": 100,
             "generator_attribute_num_layers": 5,

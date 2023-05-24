@@ -2,7 +2,7 @@ import inspect
 
 from ..model_manager import ModelManager
 from .train_helper import _train_specific_config_group
-from .generate_helper import _generate_attr, _merge_attr, _generate_given_attr
+from .generate_helper import _generate_attr, _merge_attr, _generate_given_attr, _generate_session
 from .netshare_util import _load_config, _configs2configsgroup
 import netshare.ray as ray
 import os
@@ -72,46 +72,57 @@ class NetShareManager(ModelManager):
             }, f, indent=4)
 
         print("Start generating attributes ...")
-        objs = []
-        for config_idx, config in enumerate(configs):
-            objs.append(
-                _generate_attr.remote(
-                    create_new_model=create_new_model,
-                    configs=configs,
-                    config_idx=config_idx,
-                    log_folder=log_folder))
-        _ = ray.get(objs)
-        time.sleep(10)
-        print("Finish generating attributes")
+        if configs[0]["n_chunks"] > 1:
+            objs = []
+            for config_idx, config in enumerate(configs):
+                objs.append(
+                    _generate_attr.remote(
+                        create_new_model=create_new_model,
+                        configs=configs,
+                        config_idx=config_idx,
+                        log_folder=log_folder))
+            _ = ray.get(objs)
+            time.sleep(10)
+            print("Finish generating attributes")
 
-        print("Start merging attributes ...")
-        objs = []
-        for config_group in config_group_list:
-            chunk0_idx = config_group["config_ids"][0]
-            eval_root_folder = configs[chunk0_idx]["eval_root_folder"]
+            print("Start merging attributes ...")
+            objs = []
+            for config_group in config_group_list:
+                chunk0_idx = config_group["config_ids"][0]
+                eval_root_folder = configs[chunk0_idx]["eval_root_folder"]
 
-            objs.append(
-                _merge_attr.remote(
-                    attr_raw_npz_folder=os.path.join(
-                        eval_root_folder, "attr_raw"),
-                    config_group=config_group,
-                    configs=configs)
-            )
-        _ = ray.get(objs)
-        time.sleep(10)
-        print("Finish merging attributes...")
+                objs.append(
+                    _merge_attr.remote(
+                        attr_raw_npz_folder=os.path.join(
+                            eval_root_folder, "attr_raw"),
+                        config_group=config_group,
+                        configs=configs)
+                )
+            _ = ray.get(objs)
+            time.sleep(10)
+            print("Finish merging attributes...")
 
-        print("Start generating features given attributes ...")
-        objs = []
-        for config_idx, config in enumerate(configs):
-            objs.append(
-                _generate_given_attr.remote(
-                    create_new_model=create_new_model,
-                    configs=configs,
-                    config_idx=config_idx,
-                    log_folder=log_folder))
-        _ = ray.get(objs)
-        time.sleep(10)
+            print("Start generating features given attributes ...")
+            objs = []
+            for config_idx, config in enumerate(configs):
+                objs.append(
+                    _generate_given_attr.remote(
+                        create_new_model=create_new_model,
+                        configs=configs,
+                        config_idx=config_idx,
+                        log_folder=log_folder))
+            _ = ray.get(objs)
+            time.sleep(10)
+        else:
+            objs = []
+            for config_idx, config in enumerate(configs):
+                objs.append(
+                    _generate_session.remote(
+                        create_new_model=create_new_model,
+                        configs=configs,
+                        config_idx=config_idx,
+                        log_folder=log_folder))
+            _ = ray.get(objs)
         print("Finish generating features given attributes ...")
 
         return True
