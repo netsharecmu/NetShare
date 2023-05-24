@@ -203,6 +203,27 @@ def split_per_chunk(
     split_name = config["split_name"]
     metadata_cols = [m for m in config["metadata"]]
 
+    # Truncate groups with length greater than global_max_flow_len
+    def process_group(group):
+        if len(group) > global_max_flow_len:
+            processed_group = group.head(global_max_flow_len)
+        else:
+            processed_group = group
+        return processed_group
+    
+    def truncate_group(raw_df, metadata_cols):
+        grouped = raw_df.groupby([m.column for m in metadata_cols])
+        processed = grouped.apply(process_group)
+
+        # reset the index of the resulting DataFrame
+        processed = processed.reset_index(drop=True)
+
+        return processed
+    
+    print("Before truncation, df_per_chunk:", df_per_chunk.shape)
+    df_per_chunk = truncate_group(df_per_chunk, metadata_cols)
+    print("After truncation, df_per_chunk:", df_per_chunk.shape)
+
     df_per_chunk, new_metadata_list = apply_per_field(
         original_df=df_per_chunk,
         config_fields=config["metadata"],
