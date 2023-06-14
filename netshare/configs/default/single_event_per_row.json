@@ -5,6 +5,7 @@
         "dataset_type": "netflow",
         "n_chunks": 10,
         "dp": false,
+        "ddp_first_chunk": true,
         "allowed_data_types": [
             "ip_string",
             "integer",

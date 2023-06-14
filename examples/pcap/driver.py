@@ -1,10 +1,13 @@
 import random
 import netshare.ray as ray
 from netshare import Generator
+import torch
 
 if __name__ == '__main__':
     # Change to False if you would not like to use Ray
     ray.config.enabled = False
+    if ray.config.enabled:
+        raise Exception("Ray cannot be launched when running on a single node with multiple gpus")
     ray.init(address="auto")
 
     # configuration file

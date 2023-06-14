@@ -8,21 +8,33 @@ class DuplicateWriter(object):
 
     def write(self, data):
         for file_object in self._file_objects:
-            file_object.write(data)
-            file_object.flush()
+            try:
+                file_object.write(data)
+                file_object.flush()
+            except:
+                pass
 
     def writelines(self, data):
         for file_object in self._file_objects:
-            file_object.write(data)
-            file_object.flush()
+            try:
+                file_object.write(data)
+                file_object.flush()
+            except:
+                pass
 
     def flush(self):
         for file_object in self._file_objects:
-            file_object.flush()
+            try:
+                file_object.flush()
+            except:
+                pass
 
     def close(self):
         for file_object in self._file_objects:
-            file_object.close()
+            try:
+                file_object.close()
+            except:
+                pass
 
 
 class Tee(object):

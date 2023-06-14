@@ -1,7 +1,8 @@
 {
     "global_config": {
         "overwrite": false,
-        "original_data_file": "<file_path>"
+        "original_data_file": "<file_path>",
+        "ddp_first_chunk": true
     },
     "pre_post_processor": {
         "class": "DGRowPerSamplePrePostProcessor",

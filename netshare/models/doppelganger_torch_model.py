@@ -11,7 +11,9 @@ from netshare.utils import output
 from .doppelganger_torch.doppelganger import DoppelGANger  # NOQA
 from .doppelganger_torch.util import add_gen_flag, normalize_per_sample, renormalize_per_sample, reverse_gen_flag  # NOQA
 from .doppelganger_torch.load_data import load_data  # NOQA
-
+from netshare.utils import exec_cmd
+import torch
+import pickle
 
 class DoppelGANgerTorchModel(Model):
     def _train(self, input_train_data_folder, output_model_folder, log_folder):
@@ -70,8 +72,12 @@ class DoppelGANgerTorchModel(Model):
         if not os.path.exists(sample_dir):
             os.makedirs(sample_dir)
         time_path = os.path.join(self._config["result_folder"], "time.txt")
-
         dg = DoppelGANger(
+            device=self._config["device"],
+            ddp=False,
+            ddp_local_rank=0,
+            master_process=True,
+            ddp_world_size=1,
             checkpoint_dir=checkpoint_dir,
             sample_dir=None,
             time_path=time_path,
@@ -111,15 +117,42 @@ class DoppelGANgerTorchModel(Model):
             attr_discriminator_num_layers=self._config["attr_discriminator_num_layers"],
             attr_discriminator_num_units=self._config["attr_discriminator_num_units"],
             restore=getattr(self._config, "restore", False),
-            pretrain_dir=self._config["pretrain_dir"]
+            pretrain_dir=self._config["pretrain_dir"],
         )
-
         dg.train(
             epochs=self._config["epochs"],
             data_feature=data_feature,
             data_attribute=data_attribute,
             data_gen_flag=data_gen_flag,
         )
+
+        print("train finished")
+
+    def _train_distributed(self, input_train_data_folder, output_model_folder, log_folder):
+        self._config["result_folder"] = getattr(
+            self._config, "result_folder", output_model_folder)
+        self._config["dataset"] = getattr(
+            self._config, "dataset", input_train_data_folder)
+
+        print("Currently training with config:", self._config)
+        # save config to the result folder
+        config_save_path = os.path.join(
+                self._config["result_folder"],
+                "config.json")
+        with open(config_save_path, 'w') as fout:
+            json.dump(self._config, fout)
+
+        # Start distributed training
+        num_gpu = torch.cuda.device_count()
+        cwd = os.path.dirname(os.path.abspath(__file__))
+        config_save_path = os.path.abspath(config_save_path)
+        cmd = f"cd {cwd} && \
+            torchrun --standalone --nproc_per_node={num_gpu} dist_train.py {config_save_path}"
+        return_code = exec_cmd(cmd, wait=True)
+        if return_code != 0:
+            raise ValueError(
+                f"DDP training failed with return code {return_code}")
+
 
     def _generate(self, input_train_data_folder,
                   input_model_folder, output_syn_data_folder, log_folder):
@@ -175,6 +208,11 @@ class DoppelGANgerTorchModel(Model):
         time_path = os.path.join(self._config["result_folder"], "time.txt")
 
         dg = DoppelGANger(
+            device="cuda" if torch.cuda.is_available() else "cpu",
+            ddp=False,
+            ddp_local_rank=0,
+            master_process=True,
+            ddp_world_size=1,
             checkpoint_dir=checkpoint_dir,
             sample_dir=None,
             time_path=time_path,

@@ -3,7 +3,7 @@
         "original_data_file": "../../traces/caida-small/raw.pcap",
         "overwrite": true,
         "dataset_type": "pcap",
-        "n_chunks": 1,
+        "n_chunks": 3,
         "dp": false
     },
     "default": "single_event_per_row.json",

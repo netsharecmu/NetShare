@@ -8,7 +8,8 @@ from .network import DoppelGANgerGenerator, Discriminator, AttrDiscriminator
 from torch.autograd import Variable
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.tensorboard import SummaryWriter
-
+from torch.utils.data.distributed import DistributedSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
 try:
     from opacus.optimizers import DPOptimizer
     from opacus.accountants import RDPAccountant
@@ -21,6 +22,11 @@ except BaseException:
 class DoppelGANger(object):
     def __init__(
         self,
+        device,
+        ddp,
+        ddp_local_rank,
+        master_process,
+        ddp_world_size,
         # General training related parameters
         checkpoint_dir,
         sample_dir,
@@ -118,8 +124,11 @@ class DoppelGANger(object):
 
         self.MODEL_NAME = "model"
 
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
+        self.ddp = ddp
+        self.ddp_local_rank = ddp_local_rank
+        self.master_process = master_process
+        self.ddp_world_size = ddp_world_size
 
         if self.max_sequence_len % self.sample_len != 0:
             raise Exception("length must be a multiple of sample_len")
@@ -189,7 +198,6 @@ class DoppelGANger(object):
             num_batches = num_samples // self.batch_size
         if num_samples % self.batch_size != 0:
             num_batches += 1
-
         real_attribute_noise = self._gen_attribute_input_noise(num_samples).to(
             self.device
         )
@@ -262,17 +270,17 @@ class DoppelGANger(object):
     def save(self, file_path, only_generator=False, include_optimizer=False):
         if only_generator:
             state = {
-                "generator_state_dict": self.generator.state_dict(),
+                "generator_state_dict": self.raw_generator.state_dict(),
             }
         else:
             state = {
-                "generator_state_dict": self.generator.state_dict(),
-                "discriminator_state_dict": self.discriminator.state_dict(),
+                "generator_state_dict": self.raw_generator.state_dict(),
+                "discriminator_state_dict": self.raw_discriminator.state_dict(),
             }
             if self.use_attr_discriminator:
                 state[
                     "attr_discriminator_state_dict"
-                ] = self.attr_discriminator.state_dict()
+                ] = self.raw_attr_discriminator.state_dict()
 
             if include_optimizer:
                 state[
@@ -330,6 +338,12 @@ class DoppelGANger(object):
             device=self.device
         )
         self.generator.to(self.device)
+        if self.ddp:
+            self.generator = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self.generator)
+            self.generator = DDP(self.generator, device_ids=[self.ddp_local_rank], find_unused_parameters=False)
+            self.raw_generator = self.generator.module
+        else:
+            self.raw_generator = self.generator
 
         self.discriminator = Discriminator(
             max_sequence_len=self.max_sequence_len,
@@ -339,6 +353,11 @@ class DoppelGANger(object):
             num_units=self.discriminator_num_units,
         )
         self.discriminator.to(self.device)
+        if self.ddp:
+            self.discriminator = DDP(self.discriminator, device_ids=[self.ddp_local_rank], find_unused_parameters=False)
+            self.raw_discriminator = self.discriminator.module
+        else:
+            self.raw_discriminator = self.discriminator
 
         if self.use_attr_discriminator:
             self.attr_discriminator = AttrDiscriminator(
@@ -347,6 +366,11 @@ class DoppelGANger(object):
                 num_units=self.attr_discriminator_num_units,
             )
             self.attr_discriminator.to(self.device)
+            if self.ddp:
+                self.attr_discriminator = DDP(self.attr_discriminator, device_ids=[self.ddp_local_rank], find_unused_parameters=False)
+                self.raw_attr_discriminator = self.attr_discriminator.module
+            else:
+                self.raw_attr_discriminator = self.attr_discriminator
 
         self.opt_discriminator = torch.optim.Adam(
             self.discriminator.parameters(),
@@ -461,16 +485,29 @@ class DoppelGANger(object):
         if self.use_attr_discriminator:
             self.attr_discriminator.train()
 
-        loader = DataLoader(
-            dataset,
-            batch_size=self.batch_size * self.num_packing,
-            shuffle=True,
-            num_workers=2,
-            pin_memory=True,
-            drop_last=True,
-            prefetch_factor=2 + self.num_packing,
-            persistent_workers=True,
-        )
+        if self.ddp:
+            sampler = DistributedSampler(dataset, num_replicas=self.ddp_world_size, rank=self.ddp_local_rank, shuffle=False, drop_last=True)
+            loader = DataLoader(
+                dataset,
+                batch_size=self.batch_size * self.num_packing,
+                shuffle=False,
+                sampler=sampler, # distributed sampler
+                num_workers=0,
+                pin_memory=False,
+                drop_last=True,
+                persistent_workers=False
+            )
+        else:
+            loader = DataLoader(
+                dataset,
+                batch_size=self.batch_size * self.num_packing,
+                shuffle=True,
+                num_workers=2,
+                pin_memory=True,
+                drop_last=True,
+                prefetch_factor=2 + self.num_packing,
+                persistent_workers=True,
+            )
         iteration = 0
         loss_dict = {
             "g_loss_d": 0.0,
@@ -488,9 +525,13 @@ class DoppelGANger(object):
             loss_dict["attr_d_loss"] = 0.0
 
         for epoch in tqdm(range(self.epochs)):
-            with open(self.time_path, "a") as f:
-                time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-                f.write("epoch {} starts: {}\n".format(epoch, time))
+            if self.master_process:
+                with open(self.time_path, "a") as f:
+                    time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+                    f.write("epoch {} starts: {}\n".format(epoch, time))
+
+            if self.ddp:
+                loader.sampler.set_epoch(epoch)
 
             for batch_idx, (real_attribute, real_feature) in enumerate(loader):
 
@@ -514,13 +555,13 @@ class DoppelGANger(object):
 
                         h0 = Variable(
                             torch.normal(
-                                0, 1, (self.generator.feature_num_layers,
-                                       self.batch_size, self.generator.feature_num_units)
+                                0, 1, (self.raw_generator.feature_num_layers,
+                                       self.batch_size, self.raw_generator.feature_num_units)
                             )).to(self.device)
                         c0 = Variable(
                             torch.normal(
-                                0, 1, (self.generator.feature_num_layers,
-                                       self.batch_size, self.generator.feature_num_units)
+                                0, 1, (self.raw_generator.feature_num_layers,
+                                       self.batch_size, self.raw_generator.feature_num_units)
                             )).to(self.device)
 
                         fake_attribute, _, fake_feature = self.generator(
@@ -650,9 +691,10 @@ class DoppelGANger(object):
                     self.checkpoint_dir, f"epoch_id-{epoch}.pt")
                 self.save(ckpt_path)
 
-            with open(self.time_path, "a") as f:
-                time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-                f.write("epoch {} ends: {}\n".format(epoch, time))
+            if self.master_process:
+                with open(self.time_path, "a") as f:
+                    time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+                    f.write("epoch {} ends: {}\n".format(epoch, time))
 
     def _generate(
         self,
