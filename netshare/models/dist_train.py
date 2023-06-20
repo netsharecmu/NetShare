@@ -93,10 +93,10 @@ if __name__ == "__main__":
     checkpoint_dir = os.path.join(
         _config["result_folder"],
         "checkpoint")
-    if not os.path.exists(checkpoint_dir):
+    if not os.path.exists(checkpoint_dir) and master_process:
         os.makedirs(checkpoint_dir)
     sample_dir = os.path.join(_config["result_folder"], "sample")
-    if not os.path.exists(sample_dir):
+    if not os.path.exists(sample_dir) and master_process:
         os.makedirs(sample_dir)
     time_path = os.path.join(_config["result_folder"], "time.txt")
     dg = DoppelGANger(
