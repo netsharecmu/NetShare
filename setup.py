@@ -33,7 +33,7 @@ setup(
         "jupyterlab",
         "statsmodels",
         "gdown",
-        "annoy",
+        "annoy==1.17.1",
         "pyshark",
         "scapy",
         "ray",
