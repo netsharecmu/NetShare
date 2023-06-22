@@ -502,7 +502,7 @@ class DoppelGANger(object):
                 dataset,
                 batch_size=self.batch_size * self.num_packing,
                 shuffle=True,
-                num_workers=2,
+                num_workers=1,
                 pin_memory=True,
                 drop_last=True,
                 prefetch_factor=2 + self.num_packing,
