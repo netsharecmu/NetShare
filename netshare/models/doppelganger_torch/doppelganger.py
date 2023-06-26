@@ -22,6 +22,7 @@ class DoppelGANger(object):
     def __init__(
         self,
         # General training related parameters
+        device,
         checkpoint_dir,
         sample_dir,
         time_path,
@@ -68,7 +69,7 @@ class DoppelGANger(object):
         restore=False,
         pretrain_dir=None
     ):
-
+        self.device=device
         self.checkpoint_dir = checkpoint_dir
         self.sample_dir = sample_dir
         self.time_path = time_path
@@ -117,9 +118,6 @@ class DoppelGANger(object):
         self.EPS = 1e-8
 
         self.MODEL_NAME = "model"
-
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu")
 
         if self.max_sequence_len % self.sample_len != 0:
             raise Exception("length must be a multiple of sample_len")
@@ -465,11 +463,8 @@ class DoppelGANger(object):
             dataset,
             batch_size=self.batch_size * self.num_packing,
             shuffle=True,
-            num_workers=2,
-            pin_memory=True,
+            num_workers=0,
             drop_last=True,
-            prefetch_factor=2 + self.num_packing,
-            persistent_workers=True,
         )
         iteration = 0
         loss_dict = {

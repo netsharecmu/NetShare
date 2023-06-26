@@ -3,6 +3,7 @@ import os
 import json
 import inspect
 import numpy as np
+import torch
 
 from .model import Model
 from netshare.utils import output
@@ -72,6 +73,7 @@ class DoppelGANgerTorchModel(Model):
         time_path = os.path.join(self._config["result_folder"], "time.txt")
 
         dg = DoppelGANger(
+            device=self._config["device"],
             checkpoint_dir=checkpoint_dir,
             sample_dir=None,
             time_path=time_path,
@@ -175,6 +177,7 @@ class DoppelGANgerTorchModel(Model):
         time_path = os.path.join(self._config["result_folder"], "time.txt")
 
         dg = DoppelGANger(
+            device="cuda" if torch.cuda.is_available() else "cpu",
             checkpoint_dir=checkpoint_dir,
             sample_dir=None,
             time_path=time_path,

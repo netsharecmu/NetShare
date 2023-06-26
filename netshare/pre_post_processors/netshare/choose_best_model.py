@@ -101,6 +101,8 @@ def choose_best_model(
                             & (syn_df[time_col_name] <= raw_df[time_col_name].max())
                         ]
                     # TODO: support more truncation methods if necessary
+                    elif config["truncate"] == "none":
+                        syn_df_truncated = syn_df.copy(deep=True)
                     else:
                         raise ValueError("Unknown truncation methods...")
                     truncate_ratios.append(
