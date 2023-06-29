@@ -1,17 +1,19 @@
 {
     "global_config": {
-        "original_data_file": "../../traces/ugr16-small/raw.csv",
+        "original_data_file": "/home/ubuntu/medium-scale/m57-800k/raw.csv",
         "overwrite": true,
-        "dataset_type": "netflow",
-        "n_chunks": 10,
+        "dataset_type": "pcap",
+        "n_chunks": 8,
         "dp": false
     },
     "default": "single_event_per_row.json",
     "pre_post_processor": {
         "class": "NetsharePrePostProcessor",
         "config": {
+            "truncate": "none",
+            "max_flow_len": 5000,
             "timestamp": {
-                "column": "ts",
+                "column": "time",
                 "generation": true,
                 "encoding": "interarrival",
                 "normalization": "ZERO_ONE"
@@ -55,27 +57,47 @@
             ],
             "timeseries": [
                 {
-                    "column": "td",
+                    "column": "pkt_len",
                     "type": "float",
-                    "normalization": "ZERO_ONE",
-                    "log1p_norm": true
+                    "normalization": "ZERO_ONE"
                 },
                 {
-                    "column": "pkt",
+                    "column": "tos",
                     "type": "float",
                     "normalization": "ZERO_ONE",
-                    "log1p_norm": true
+                    "min_x": 0.0,
+                    "max_x": 255.0
                 },
                 {
-                    "column": "byt",
+                    "column": "id",
                     "type": "float",
                     "normalization": "ZERO_ONE",
-                    "log1p_norm": true
+                    "min_x": 0.0,
+                    "max_x": 65535.0
                 },
                 {
-                    "column": "type",
-                    "type": "string",
-                    "encoding": "categorical"
+                    "column": "flag",
+                    "type": "integer",
+                    "encoding": "categorical",
+                    "choices": [
+                        0,
+                        1,
+                        2
+                    ]
+                },
+                {
+                    "column": "off",
+                    "type": "float",
+                    "normalization": "ZERO_ONE",
+                    "min_x": 0.0,
+                    "max_x": 8191.0
+                },
+                {
+                    "column": "ttl",
+                    "type": "float",
+                    "normalization": "ZERO_ONE",
+                    "min_x": 0.0,
+                    "max_x": 255.0
                 }
             ]
         }
@@ -83,14 +105,14 @@
     "model": {
         "class": "DoppelGANgerTorchModel",
         "config": {
-            "batch_size": 100,
+            "batch_size": 256,
             "sample_len": [
-                1
+                10
             ],
             "sample_len_expand": true,
-            "epochs": 40,
+            "epochs": 400,
             "extra_checkpoint_freq": 1,
-            "epoch_checkpoint_freq": 5
+            "epoch_checkpoint_freq": 50
         }
     }
 }

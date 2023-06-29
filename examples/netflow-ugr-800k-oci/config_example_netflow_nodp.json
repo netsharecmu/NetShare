@@ -1,9 +1,9 @@
 {
     "global_config": {
-        "original_data_file": "../../traces/ugr16-small/raw.csv",
+        "original_data_file": "~/medium-scale/ugr16-800k/raw.csv",
         "overwrite": true,
         "dataset_type": "netflow",
-        "n_chunks": 10,
+        "n_chunks": 8,
         "dp": false
     },
     "default": "single_event_per_row.json",
@@ -83,14 +83,14 @@
     "model": {
         "class": "DoppelGANgerTorchModel",
         "config": {
-            "batch_size": 100,
+            "batch_size": 512,
             "sample_len": [
                 1
             ],
             "sample_len_expand": true,
-            "epochs": 40,
+            "epochs": 400,
             "extra_checkpoint_freq": 1,
-            "epoch_checkpoint_freq": 5
+            "epoch_checkpoint_freq": 50
         }
     }
 }
