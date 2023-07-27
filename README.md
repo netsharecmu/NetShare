@@ -39,6 +39,17 @@ You may also refer to the [README](traces/README.md) for detailed descriptions o
 
 
 # Setup
+## Step 0: Install `libpcap` depdency (Optional)
+If you are working with PCAP files and you have not installed `libpcap`,
+- On MacOS, install using `homebrew`:
+  ```Bash
+  brew install libpcap
+  ```
+- On Debian-based system (e.g., Ubuntu), install using `apt`:
+  ```Bash
+  sudo apt install libpcap-dev
+  ```
+
 ## Step 1: Install NetShare Python package (Required)
 We recommend installing NetShare in a virtual environment (e.g., Anaconda3). We test with virtual environment with Python==3.9.
 
