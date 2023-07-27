@@ -156,7 +156,7 @@ def _configs2configsgroup(
                                 ckpt_dir = os.path.join(
                                     configs[config_id]["result_folder"],
                                     "checkpoint",
-                                    "epoch_id-{}".format(epoch_id)
+                                    "epoch_id-{}.pt".format(epoch_id)
                                 )
                                 if os.path.exists(ckpt_dir):
                                     last_epoch_found = True
