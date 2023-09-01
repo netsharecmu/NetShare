@@ -13,6 +13,7 @@ import netshare.ray as ray
 from tqdm import tqdm
 from gensim.models import Word2Vec, word2vec
 from sklearn import preprocessing
+from collections import Counter
 
 from netshare.utils import Normalization
 from netshare.utils import DiscreteField, ContinuousField, BitField
@@ -21,11 +22,7 @@ from .embedding_helper import get_vector
 
 def countList2cdf(count_list):
     # dist_dict: {key : count}
-    dist_dict = {}
-    for x in count_list:
-        if x not in dist_dict:
-            dist_dict[x] = 0
-        dist_dict[x] += 1
+    dist_dict = dict(Counter(count_list))
     dist_dict = {k: v for k, v in sorted(
         dist_dict.items(), key=lambda x: x[0])}
     x = dist_dict.keys()
