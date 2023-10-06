@@ -22,7 +22,7 @@
 - Support generic dataset formats
 - Add [SDMetrics](https://github.com/netsharecmu/SDMetrics_timeseries/tree/master/sdmetrics) for hyperparameter/model selection and data visualization
 
-[2022.08]: The outdated [`camera-ready`](https://github.com/netsharecmu/NetShare/tree/camera-ready) branch holds the scripts we used to run all the experiments in the [paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251).
+[2022.08]: The deprecated [`camera-ready`](https://github.com/netsharecmu/NetShare/releases/tag/camera-ready-deprecated) branch holds the scripts we used to run all the experiments in the [paper](https://dl.acm.org/doi/abs/10.1145/3544216.3544251).
 
 # Users
 NetShare has been used by several independent users/companies.
