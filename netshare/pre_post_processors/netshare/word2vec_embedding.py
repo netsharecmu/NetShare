@@ -79,7 +79,7 @@ def word2vec_train(
 
         model = Word2Vec(
             sentences=sentences,
-            size=word2vec_size,
+            vector_size=word2vec_size,
             window=5,
             min_count=1,
             workers=10)

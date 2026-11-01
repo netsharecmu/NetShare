@@ -71,7 +71,7 @@ def get_original_objs(ann, vectors, dic):
 
 
 def get_vector(model, word, norm_option=False):
-    all_words_str = list(model.wv.vocab.keys())
+    all_words_str = list(model.wv.key_to_index.keys())
 
     # Privacy-related
     # If word not in the vocabulary, replace with nearest neighbor
@@ -94,4 +94,4 @@ def get_vector(model, word, norm_option=False):
         return model.wv.word_vec(nearest_word, use_norm=norm_option)
     else:
         model.init_sims()
-        return model.wv.word_vec(word, use_norm=norm_option)
+        return model.wv.get_vector(word, norm=norm_option)
