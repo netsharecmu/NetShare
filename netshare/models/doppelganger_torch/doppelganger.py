@@ -292,7 +292,7 @@ class DoppelGANger(object):
         if not os.path.exists(model_path):
             raise Exception("Directory to load pytorch model doesn't exist")
 
-        state = torch.load(model_path)
+        state = torch.load(model_path, weights_only=True)
         self.generator.load_state_dict(state["generator_state_dict"])
         self.discriminator.load_state_dict(state["discriminator_state_dict"])
 
